@@ -289,17 +289,6 @@
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
     <div class="kpis" id="kpis"></div>
-    <div class="card spotlight">
-      <div class="spot-head">
-        <div class="spot-badge">📌</div>
-        <div><h3>Shared spot territories</h3><div class="cap" id="spotCap"></div></div>
-        <div class="spot-big" id="spotBig"></div>
-      </div>
-      <div class="spot-grid">
-        <div><div class="mini-t">% of territories flagged, by zone</div><div class="chartbox" id="boxSpot" data-exp="chSpot"><canvas id="chSpot"></canvas></div></div>
-        <div><div class="mini-t">Territories with the most spots <span>· click to open on the map</span></div><ol class="spotlist" id="spotList"></ol></div>
-      </div>
-    </div>
     <div class="grid3">
       <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
       <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
@@ -316,6 +305,17 @@
           </div>
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
+      </div>
+    </div>
+    <div class="card spotlight">
+      <div class="spot-head">
+        <div class="spot-badge">📌</div>
+        <div><h3>Shared spot territories</h3><div class="cap" id="spotCap"></div></div>
+        <div class="spot-big" id="spotBig"></div>
+      </div>
+      <div class="spot-grid">
+        <div class="spot-pane"><div class="mini-t">% of territories flagged, by zone</div><div class="chartbox" id="boxSpot" data-exp="chSpot"><canvas id="chSpot"></canvas></div></div>
+        <div class="spot-pane"><div class="mini-t">Territories with the most spots <span>· click to open on the map</span></div><ol class="spotlist" id="spotList"></ol></div>
       </div>
     </div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>

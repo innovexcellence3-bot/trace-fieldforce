@@ -85,12 +85,11 @@ export function renderCharts() {
 export function renderSpotChart() {
   const A = S.A;
   const z = Object.entries(A.zone).map(([k, v]) => ({ k, f: v.spotTerr, n: v.terrN, s: v.spotN, p: pct(v.spotTerr, v.terrN) })).sort((a, b) => b.p - a.p);
-  chH('boxSpot', Math.max(300, z.length * 34 + 52));
   destroy('chSpot');
   const maxP = z.length ? Math.max(...z.map((x) => x.p)) : 0;
   charts.chSpot = new Chart($('#chSpot'), {
     type: 'bar',
-    data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.p.toFixed(1)), backgroundColor: z.map((x) => `rgba(99,102,241,${0.35 + 0.65 * (maxP ? x.p / maxP : 0)})`), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.8 }] },
+    data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.p.toFixed(1)), backgroundColor: z.map((x) => `rgba(99,102,241,${0.35 + 0.65 * (maxP ? x.p / maxP : 0)})`), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.8, maxBarThickness: 30 }] },
     options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.parsed.x}% · ${z[c.dataIndex].f} of ${z[c.dataIndex].n} territories · ${z[c.dataIndex].s} spots` } } },
       scales: { x: { min: 0, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
@@ -123,7 +122,9 @@ export function renderHistory() {
     tension: 0.3, pointRadius: keys.length > 10 ? 2.5 : 3.5, pointHoverRadius: 6, borderWidth: keys.length > 10 ? 2 : 2.5, spanGaps: true, fill: false,
   }));
   destroy('chHist');
-  chH('boxHist', keys.length > 14 ? 440 : keys.length > 8 ? 410 : 380);
+  const hh = keys.length > 14 ? 440 : keys.length > 8 ? 410 : 380;
+  chH('boxHist', hh);
+  chH('boxDow', hh); // sejajar dengan Weekly trend
   /* Sumbu Y mengikuti rentang data (bukan selalu 0–100%) supaya naik-turun antar week terlihat jelas. */
   let hMin = Infinity, hMax = -Infinity;
   ds.forEach((d) => d.data.forEach((v) => { if (v != null) { if (v < hMin) hMin = v; if (v > hMax) hMax = v; } }));

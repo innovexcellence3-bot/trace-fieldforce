@@ -231,7 +231,9 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .sec{font:800 12px var(--display);text-transform:uppercase;letter-spacing:1.4px;color:var(--ink2);margin:32px 2px 14px;display:flex;align-items:center;gap:10px}
 .sec::before{content:"";width:18px;height:3px;border-radius:3px;background:var(--grad)}
 .sec .hintx{font:400 12.5px var(--font);text-transform:none;letter-spacing:0;color:var(--muted2)}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kpis .kpi{display:flex;flex-direction:column;min-height:150px}
+.kpis .kpi .foot{margin-top:auto;padding-top:4px}
 .kpi::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--grad);opacity:.9}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;animation:rise .45s both}
 .kpi .ico{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:17px;background:#eef2ff}
@@ -240,7 +242,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .kpi .val{font:800 26px var(--display);margin-top:2px;letter-spacing:-.5px}
 .kpi .foot{font-size:12px;color:var(--muted);margin-top:2px}
 .kpi .foot.up{color:var(--bad);font-weight:600}
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
 .grid-trend{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:stretch}
 #boxDow{height:380px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
@@ -401,14 +403,18 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .spot-big b{font:800 30px var(--display);color:var(--spot);letter-spacing:-.5px}
 .spot-big span{color:var(--muted);font-size:13px}
 .spot-big em{flex-basis:100%;font-style:normal;font-size:12.5px;color:var(--muted)}
-.spot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:22px}
-.mini-t{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:8px}
+.spot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:stretch}
+.spot-pane{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.spot-pane .chartbox,.spot-pane .spotlist{height:320px!important}
+.spotlist{overflow:auto;padding-right:4px!important}
+.mini-t{font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:10px}
 .mini-t span{font-weight:500;color:var(--muted)}
 .spotlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.spotlist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;gap:10px;align-items:center;padding:9px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:.15s;background:#fff}
+.spotlist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;gap:10px;align-items:center;padding:8px 12px;flex:0 0 auto;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:.15s;background:#fff}
 .spotlist li:hover{border-color:var(--spot);box-shadow:0 4px 14px rgba(99,102,241,.12)}
 .spotlist li .nm b{display:block;font-weight:700}
-.spotlist li .nm small{color:var(--muted);font-size:11.5px}
+.spotlist li .nm small{color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.spotlist li .nm{min-width:0}
 .spotlist li .max{font-size:12px;color:var(--muted);white-space:nowrap}
 .spotlist li .go{color:var(--spot);font-weight:800}
 .spotlist li.empty{cursor:default;display:block;color:var(--muted);text-align:center}
@@ -452,7 +458,9 @@ tr.terr-row:hover .open-map{opacity:1}
 @media (max-width:720px){
   .topnav{padding:0 16px;gap:12px}
   .rhead{padding:18px;border-radius:18px;margin-top:18px}
-  .pgrid,.leaders{grid-template-columns:minmax(0,1fr)}
+  .pgrid,.leaders,.grid3{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpis .kpi{min-height:0}
   .tabs a{padding:8px 11px}.tabs a span{font-size:13px}
   .sfstat #sfStatTxt,.savestat #saveStatTxt,.brand .wm,.tabs .ti{display:none}
   .content{padding:0 16px 60px}

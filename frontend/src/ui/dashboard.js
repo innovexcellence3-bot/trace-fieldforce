@@ -62,7 +62,7 @@ function renderSpotlight() {
   $('#spotCap').innerHTML = `A spot = more than <b>${sp.K}</b> unique stores visited within <b>${sp.R} m</b> of one point, by the same territory, in the selected period.`;
   $('#spotBig').innerHTML = `<b>${fmt(sp.spotTerr)}</b><span>/ ${fmt(sp.terrN)} territories</span><em>${rate.toFixed(1)}% · ${fmt(sp.spotN)} spots</em>`;
   renderSpotChart();
-  const top = Object.values(A.terr).filter((t) => t.spots).sort((a, b) => b.spots - a.spots || b.spotStores - a.spotStores).slice(0, 8);
+  const top = Object.values(A.terr).filter((t) => t.spots).sort((a, b) => b.spots - a.spots || b.spotStores - a.spotStores).slice(0, 15);
   const list = $('#spotList');
   list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
       <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max">max ${t.spotStores} stores</span><span class="go">→</span></li>`).join('')
