@@ -104,7 +104,10 @@ async function start() {
   saved = await api.state().catch(() => ({}));
   S.activeId = saved.activeDatasetId || null;
   /* parameter tersimpan dari versi default lama → mulai lagi dari default baru (mis. mismatch 500 m) */
-  S.P = saved.params?.v === PARAMS_VERSION ? { ...DEFAULT_PARAMS, ...saved.params } : { ...DEFAULT_PARAMS };
+  const sp = saved.params || {};
+  if (sp.v === PARAMS_VERSION) S.P = { ...DEFAULT_PARAMS, ...sp };
+  else if (sp.v === 2) S.P = { ...DEFAULT_PARAMS, ...sp, rapidM: DEFAULT_PARAMS.rapidM, spotM: DEFAULT_PARAMS.spotM, spotStores: DEFAULT_PARAMS.spotStores, v: PARAMS_VERSION }; // v2→v3: default baru radius & spot
+  else S.P = { ...DEFAULT_PARAMS };
   await initDataSource({ use: useDataset });
   if (S.activeId && !getDatasets().some((d) => d.id === S.activeId)) S.activeId = null;
   if (!location.hash || location.hash === '#') location.replace(S.activeId ? '#/report' : '#/connection');

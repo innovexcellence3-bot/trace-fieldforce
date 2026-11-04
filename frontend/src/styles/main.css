@@ -390,6 +390,24 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .maplegend .mapstat.warn{color:#9a6512;font-weight:600}
 .hrow select{flex:0 0 auto}
 
+/* ---------------- aturan deteksi (4 kartu) ---------------- */
+.rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.rule{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.rule::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc)}
+.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-a7{--rc:#f59e0b;--rs:#fffbeb}.r-spot{--rc:#6366f1;--rs:#eef0ff}
+.rule-art{width:72px;height:48px;flex:0 0 72px;background:var(--rs);border-radius:12px}
+.rule-body{min-width:0}
+.rule-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rule-top b{font:700 14px var(--display)}
+.rule-top em{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:#f3f4f6;padding:2px 7px;border-radius:99px}
+.rule-top em.terr{color:var(--spot);background:var(--spotsoft)}
+.rule p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.rule .th{font-weight:800;color:var(--rc);background:var(--rs);padding:0 6px;border-radius:6px;white-space:nowrap}
+.kbig{font:800 13px var(--display);color:var(--ok)}
+.kbig.bad{color:var(--bad)}.kbig.spot{color:var(--spot)}
+.kminis{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.kmini{font-size:11.5px;font-weight:600;color:var(--ink2);background:#f5f7fa;border:1px solid var(--line);padding:2px 8px;border-radius:99px}
+
 /* ---------------- Shared spot ---------------- */
 .kpi .ico.i{background:var(--spotsoft)}
 .pcard.spot{background:linear-gradient(180deg,#f6f7ff,#fafbff);border-color:var(--spotline)}
@@ -456,13 +474,13 @@ tr.terr-row:hover .open-map{opacity:1}
 @media (max-width:1100px){
   .hero{grid-template-columns:1fr;padding-top:36px}
   .conn-grid,.mapgrid,.grid-trend,.rhead{grid-template-columns:minmax(0,1fr)}
-  .pgrid,.leaders{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pgrid,.leaders,.rules{grid-template-columns:repeat(2,minmax(0,1fr))}
   .spot-grid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:720px){
   .topnav{padding:0 16px;gap:12px}
   .rhead{padding:18px;border-radius:18px;margin-top:18px}
-  .pgrid,.leaders,.grid3{grid-template-columns:minmax(0,1fr)}
+  .pgrid,.leaders,.grid3,.rules{grid-template-columns:minmax(0,1fr)}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpis .kpi{min-height:0}
   .tabs a{padding:8px 11px}.tabs a span{font-size:13px}
@@ -473,8 +491,8 @@ tr.terr-row:hover .open-map{opacity:1}
   .rtabs small,.pchips{display:none}.rtabs button{flex-direction:column;gap:4px;padding:10px 6px;text-align:center}.rtabs b{font-size:13px}
   .filterbar{position:static}
   .rtabs b{white-space:normal;line-height:1.25;font-size:12.5px}
-  .ring{width:52px;height:52px;flex-basis:52px}.ring b{font-size:12px}.score strong{font-size:15px}
-  .scores{display:grid;grid-template-columns:1fr 1fr;gap:10px}.score{min-width:0;padding:10px;gap:10px}.score span{display:none}
+  .ring{width:52px;height:52px;flex:0 0 auto}.ring b{font-size:11.5px}.score strong{font-size:13px}
+  .scores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.score{min-width:0;padding:10px 6px;gap:6px;flex-direction:column;text-align:center}.score span{display:none}.score small{font-size:9.5px;letter-spacing:.4px}
   .libitem{grid-template-columns:44px 1fr}.libitem .acts{grid-column:1/-1}
   .activecard{flex-wrap:wrap}.activecard .btn{width:100%}
     input[type=search]{min-width:0;width:100%}

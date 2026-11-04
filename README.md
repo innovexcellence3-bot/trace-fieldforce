@@ -17,7 +17,7 @@ Aplikasi punya 2 menu:
 ### Shared spot (anomaly level territory)
 
 Selain 3 parameter per visit, ada metric level **territory**: sebuah *shared spot* adalah satu titik
-di mana dalam radius **50 m** ada **lebih dari 10 toko unik** yang di-visit oleh territory yang sama,
+di mana dalam radius **20 m** ada **lebih dari 20 toko unik** yang di-visit oleh territory yang sama,
 selama periode yang difilter. Territory dengan ≥ 1 spot ter-flag; di level zone/region/area angkanya
 = % territory yang ter-flag. Metric ini terpisah dari Anomaly % (yang dihitung per visit). Radius dan
 batas toko bisa diubah di Detection parameters. Tampil di: KPI & kartu *Shared spot territories*

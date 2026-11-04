@@ -15,7 +15,7 @@ const GK = 67108864; // 2^26, kunci sel grid
 
 export function computeSpots() {
   const { B, A, P, FILT } = S;
-  const R = Math.max(1, +P.spotM || 50), K = Math.max(1, +P.spotStores || 10);
+  const R = Math.max(1, +P.spotM || 20), K = Math.max(1, +P.spotStores || 20);
   const key = `${R}|${K}|${FILT.from}|${FILT.to}|${B.n}`;
   if (S.SP && S.SP.key === key) return S.SP;
 

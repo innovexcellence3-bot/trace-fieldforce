@@ -23,15 +23,15 @@ const mapFilter = () => ({
 function renderKPIs() {
   const A = S.A;
   const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
+  const mini = (ico, v, title) => `<span class="kmini" title="${title}">${ico} ${fmt(v)}</span>`;
   $('#kpis').innerHTML =
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
-    kpi('t', '🛰️', 'Verifiable visits', fmt(A.checkable), fmt(A.notcheck) + ' missing coordinates') +
-    kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '📡', 'GPS coverage', cover.toFixed(1) + '%', 'visit & store coordinates') +
-    kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly), rate.toFixed(1) + '% of verifiable', 'up') +
-    kpi('r', '📍', 'Location Mismatch', fmt(A.lm), pct(A.lm, A.checkable).toFixed(1) + '% of verifiable') +
-    kpi('p', '⚡', 'Rapid Same Location', fmt(A.rsl), pct(A.rsl, A.checkable).toFixed(1) + '% of verifiable') +
-    kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% of verifiable') +
-    kpi('i', '📌', 'Shared spot territories', fmt(A.spot.spotTerr), pct(A.spot.spotTerr, A.spot.terrN).toFixed(1) + '% of ' + fmt(A.spot.terrN) + ' territories');
+    kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '🛰️', 'Verifiable visits', fmt(A.checkable),
+      `<b class="kbig">${cover.toFixed(1)}%</b> GPS coverage`) +
+    kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly),
+      `<b class="kbig bad">${rate.toFixed(1)}%</b> of verifiable<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}${mini('🌙', A.a7, 'Visit After 7PM')}</span>`) +
+    kpi('i', '📌', 'Shared spot territories', fmt(A.spot.spotTerr),
+      `<b class="kbig spot">${pct(A.spot.spotTerr, A.spot.terrN).toFixed(1)}%</b> of ${fmt(A.spot.terrN)} territories`);
 }
 
 /* Regional Breakdown: papan peringkat area. */
@@ -92,6 +92,11 @@ export function goToTerritory(t) {
 
 function renderParamChips() {
   const P = S.P;
+  /* kartu aturan di atas panel parameter */
+  $('#rLm').textContent = fmt(P.mismatchM) + ' m';
+  $('#rRslN').textContent = P.rapidCount; $('#rRslM').textContent = P.rapidM + ' m';
+  $('#rA7').textContent = minToHHMM(P.nightMin);
+  $('#rSpotN').textContent = P.spotStores; $('#rSpotM').textContent = P.spotM + ' m';
   $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span><span class="spotchip">📌 &gt; ${P.spotStores} stores / ${P.spotM} m · territory</span>`;
 }
 
@@ -191,11 +196,11 @@ function syncDashParams() {
 export function readParams(pre) {
   const P = S.P;
   P.mismatchM = Math.max(1, +$('#' + pre + 'Mismatch').value || 500);
-  P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 50);
+  P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 20);
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.nightMin = hhmmToMin($('#' + pre + 'Night').value);
-  P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 50);
-  P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 10);
+  P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 20);
+  P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 20);
 }
 
 /** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
