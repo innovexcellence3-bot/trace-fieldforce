@@ -6,7 +6,7 @@ import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engi
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
-import { initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
+import { alignTrendRow, initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { initMap, invalidateMaps, renderMap } from './maps.js';
@@ -126,6 +126,7 @@ export function showTab(tab, save = true) {
   const bar = $('#rtabs'), act = bar.querySelector('button.active'); // pastikan tab aktif terlihat (layar sempit)
   if (act) bar.scrollLeft = Math.max(0, act.offsetLeft - (bar.clientWidth - act.offsetWidth) / 2);
   document.querySelectorAll('.rpanel').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
+  if (tab === 'summary' && S.loaded) setTimeout(alignTrendRow, 30);
   if (tab === 'lens' && S.loaded) { invalidateMaps(); setTimeout(() => renderMap(mapFilter(), true), 80); }
   if (save) persist();
 }
