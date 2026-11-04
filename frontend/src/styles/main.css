@@ -229,7 +229,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .kpi .foot.up{color:var(--red);font-weight:600}
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
-.mapgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
+.mapgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
 .hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .hctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .chartbox{position:relative;height:250px}
@@ -262,6 +262,10 @@ td.num,th.num{text-align:right}
 .bar>i{display:block;height:100%;border-radius:6px}
 .inbar{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
 .inbar .bar{width:56px}
+#tTable{min-width:0}
+#tTable th{white-space:normal;line-height:1.25;vertical-align:bottom}
+#tTable th,#tTable td{padding:10px 7px}
+#tTable .inbar{gap:6px}#tTable .inbar .bar{width:30px}#tTable .inbar .v{min-width:32px}
 .inbar .v{min-width:44px;text-align:right;font-variant-numeric:tabular-nums}
 .pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;display:inline-block}
 .p-norm{background:#e9f8ef;color:#15803d}.p-low{background:#fef5e3;color:#b7791f}

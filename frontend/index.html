@@ -327,8 +327,9 @@
           <th data-k="name">Region</th><th class="num" data-k="total">Visits</th>
           <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable">Verifiable</th>
           <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
-          <th class="num" data-k="lm">📍</th><th class="num" data-k="a7">🌙</th>
-          <th class="num" data-k="rsl">⚡</th><th data-k="rate">Status</th>
+          <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store">📍 Location Mismatch</th>
+          <th class="num" data-k="a7" title="Visits flagged: started after the after-hours cutoff">🌙 Visit After 7PM</th>
+          <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot">⚡ Rapid Same Location</th><th data-k="rate">Status</th>
         </tr></thead><tbody></tbody></table>
       </div>
     </div>
@@ -364,7 +365,7 @@
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
             <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="gps">GPS</th><th class="num" data-k="cover">Coverage</th>
-            <th class="num" data-k="lm">📍</th><th class="num" data-k="rsl">⚡</th><th class="num" data-k="a7">🌙</th><th class="num" data-k="rate">Anomaly %</th>
+            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="a7" title="Visit After 7PM">🌙 After 7PM</th><th class="num" data-k="rate">Anomaly %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>
