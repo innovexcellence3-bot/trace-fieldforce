@@ -232,23 +232,18 @@
     <a class="btn primary" href="#/connection">🔌 Go to Data Connection</a>
   </div>
 <div id="reportBody" hidden>
-  <!-- header + tab -->
+  <!-- header: judul dataset + skor -->
   <div class="rhead">
-    <div class="rhead-top">
-      <div class="rhead-text">
-        <h1>Field Force Visit Verification</h1>
-        <div class="rsub" id="dashSub"></div>
-      </div>
+    <div class="rhead-text">
+      <span class="eyebrow" id="dashSource">Report</span>
+      <h1 id="dashTitle">—</h1>
+      <div class="dash-meta" id="dashMeta"></div>
       <div class="dash-actions">
-        <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ Raw CSV</a>
+        <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ CSV</a>
         <a class="btn ghost sm" href="#/connection">⇄ Change dataset</a>
       </div>
     </div>
-    <nav class="rtabs" id="rtabs">
-      <button data-tab="summary" class="active">Executive Summary</button>
-      <button data-tab="radar">Regional Breakdown</button>
-      <button data-tab="lens">Visit Map &amp; Geotag</button>
-    </nav>
+    <div class="scores" id="scores"></div>
   </div>
 
   <!-- parameter: panel buka-tutup -->
@@ -277,6 +272,13 @@
       </div>
     </div>
   </div>
+
+  <!-- tab section -->
+  <nav class="rtabs" id="rtabs">
+    <button data-tab="summary" class="active"><i>📊</i><span><b>Executive Summary</b><small>The big picture</small></span></button>
+    <button data-tab="radar"><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
+    <button data-tab="lens"><i>🔭</i><span><b>Visit Map &amp; Geotag</b><small>Visits &amp; store locations</small></span></button>
+  </nav>
 
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">

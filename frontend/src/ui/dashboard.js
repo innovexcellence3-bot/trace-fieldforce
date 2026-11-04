@@ -1,5 +1,5 @@
 /* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map & Geotag). Satu pipeline `recomputeAll()`. */
-import { $, esc, fmt, pct } from '../core/dom.js';
+import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
 import { S, minToHHMM, hhmmToMin } from '../core/state.js';
 import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
@@ -56,18 +56,30 @@ function renderParamChips() {
   $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span>`;
 }
 
+/* Skor di kanan atas: % anomaly & GPS coverage (ikut filter). */
+function renderScores() {
+  const A = S.A;
+  const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
+  const level = rate >= 60 ? ['Critical', 'var(--bad)'] : rate >= 40 ? ['High', 'var(--mid)'] : rate >= 20 ? ['Watch', 'var(--warn)'] : ['Healthy', 'var(--ok)'];
+  const gps = cover >= 80 ? ['Strong', 'var(--ok)'] : cover >= 50 ? ['Fair', 'var(--warn)'] : ['Weak', 'var(--bad)'];
+  const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
+  $('#scores').innerHTML =
+    `<div class="score">${ring(rate, level[1])}<div><small>Anomaly</small><strong style="color:${level[1]}">${level[0]}</strong><span>${fmt(A.anomaly)} visits</span></div></div>` +
+    `<div class="score">${ring(cover, gps[1])}<div><small>GPS coverage</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} verifiable</span></div></div>`;
+}
+
 function renderHeader() {
   const ds = S.dataset || {};
   const B = S.B;
   const p = ds.params || {};
-  const short = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
-  $('#dashSub').innerHTML = [
-    `<b>${esc(ds.name || 'Dataset')}</b>`,
-    ds.source === 'snowflake' ? `KPS ${p.weekFrom}–${p.weekTo} · ${esc(p.channel)}` : '',
-    `${fmt(B.n)} visits`,
-    `${short(B.gMin)} – ${short(B.gMax)}`,
-    `${B.iZone.size} zones · ${fmt(B.iTerr.size)} territories`,
-  ].filter(Boolean).join('<i>·</i>');
+  $('#dashTitle').textContent = ds.name || 'Dataset';
+  $('#dashSource').textContent = ds.source === 'snowflake' ? `❄️ KPS ${p.weekFrom}–${p.weekTo} · ${p.channel}` : 'Report';
+  $('#dashMeta').innerHTML = [
+    `<span><b>${fmt(B.n)}</b> visits</span>`,
+    `<span><b>${B.gMin || '—'}</b> → <b>${B.gMax || '—'}</b></span>`,
+    `<span><b>${B.iZone.size}</b> zones · <b>${fmt(B.iTerr.size)}</b> territories</span>`,
+    ds.createdAt ? `<span>Pulled ${fmtDateTime(ds.createdAt)}</span>` : '',
+  ].join('');
   $('#dlDatasetBtn').href = api.downloadUrl(ds.id);
 }
 
@@ -126,7 +138,7 @@ function refreshGeoRec() { computeGeoRec(mapFilter()); renderGeoRec(kpi, showGeo
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderKPIs(); renderCharts(); renderLeaders(); renderGeo();
+  renderScores(); renderKPIs(); renderCharts(); renderLeaders(); renderGeo();
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
