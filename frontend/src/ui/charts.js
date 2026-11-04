@@ -36,8 +36,8 @@ export function renderCharts() {
       scales: { x: { ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
   regExp('chZone', 'Anomaly rate by zone', 'trace_chart_anomaly_per_zone.csv',
-    ['zone_name', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'rapid_same_location', 'after_7pm'],
-    z.map((x) => [x.k, x.t, x.v.checkable, pct(x.v.checkable, x.v.total).toFixed(1), x.v.anomaly, x.r.toFixed(1), x.v.lm, x.v.rsl, x.v.a7]));
+    ['zone_name', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'rapid_same_location'],
+    z.map((x) => [x.k, x.t, x.v.checkable, pct(x.v.checkable, x.v.total).toFixed(1), x.v.anomaly, x.r.toFixed(1), x.v.lm, x.v.rsl]));
 
   const zc = zAll.slice().sort((a, b) => a.c - b.c);
   destroy('chCover');
@@ -58,12 +58,12 @@ export function renderCharts() {
   destroy('chReason');
   charts.chReason = new Chart($('#chReason'), {
     type: 'doughnut',
-    data: { labels: ['Location Mismatch', 'Visit After 7PM', 'Rapid Same Location'], datasets: [{ data: [A.lm, A.a7, A.rsl], backgroundColor: ['#2563eb', '#14b8a6', '#8b5cf6'], borderWidth: 0, hoverOffset: 6 }] },
+    data: { labels: ['Location Mismatch', 'Rapid Same Location'], datasets: [{ data: [A.lm, A.rsl], backgroundColor: ['#2563eb', '#8b5cf6'], borderWidth: 0, hoverOffset: 6 }] },
     options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, boxWidth: 8 } } } },
   });
   regExp('chReason', 'Anomaly mix', 'trace_chart_anomaly_mix.csv',
     ['rule', 'flagged_visits', 'pct_of_identified'],
-    [['Location Mismatch', A.lm, pct(A.lm, A.checkable).toFixed(1)], ['Visit After 7PM', A.a7, pct(A.a7, A.checkable).toFixed(1)], ['Rapid Same Location', A.rsl, pct(A.rsl, A.checkable).toFixed(1)]]);
+    [['Location Mismatch', A.lm, pct(A.lm, A.checkable).toFixed(1)], ['Rapid Same Location', A.rsl, pct(A.rsl, A.checkable).toFixed(1)]]);
 
   const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const DOWF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

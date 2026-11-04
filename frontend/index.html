@@ -113,8 +113,8 @@
           <text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#0e7490">1.240 m</text>
         </g></g>
         <g transform="translate(410 300)"><g class="chip c2">
-          <rect x="-36" y="-15" width="72" height="30" rx="15" fill="#fff" filter="url(#sh)"/>
-          <text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#111827">21:14</text>
+          <rect x="-44" y="-15" width="88" height="30" rx="15" fill="#fff" filter="url(#sh)"/>
+          <text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#111827">23 stores</text>
         </g></g>
 
         <!-- pin visit teal & oranye -->
@@ -156,7 +156,7 @@
           <div class="tk">
             <span>📍 Location mismatch · 1.2 km from store</span>
             <span>⚡ Rapid same location · 6 stores / 50 m</span>
-            <span>🌙 Visit after 7 PM · started 21:14</span>
+            <span>📌 Shared spot · 23 stores within 20 m</span>
             <span>📍 Location mismatch · 1.2 km from store</span>
           </div>
         </div>
@@ -247,6 +247,7 @@
   </div>
 
   <!-- 4 aturan deteksi: ilustrasi + 1 baris aturan (angka ikut parameter) -->
+  <div class="sec rules-sec">Detection Parameter</div>
   <div class="rules" id="rules" title="Click to adjust the parameters">
     <div class="rule r-lm">
       <svg class="rule-art" viewBox="0 0 96 64" aria-hidden="true">
@@ -268,17 +269,6 @@
       <div class="rule-body">
         <div class="rule-top"><b>Rapid Same Location</b><em>per visit</em></div>
         <p>More than <span class="th" data-t="rslN"></span> stores within <span class="th" data-t="rslM"></span> on the same day.</p>
-      </div>
-    </div>
-    <div class="rule r-a7">
-      <svg class="rule-art" viewBox="0 0 96 64" aria-hidden="true">
-        <circle cx="40" cy="34" r="20" fill="#f59e0b" opacity=".12"/>
-        <path d="M46 16a18 18 0 1 0 14 28 15 15 0 0 1-14-28z" fill="#f59e0b"/>
-        <g fill="#f59e0b" opacity=".7"><circle cx="70" cy="18" r="2"/><circle cx="78" cy="30" r="1.6"/><circle cx="66" cy="44" r="1.4"/></g>
-      </svg>
-      <div class="rule-body">
-        <div class="rule-top"><b>Visit After 7PM</b><em>per visit</em></div>
-        <p>Visit starts after <span class="th" data-t="a7"></span>.</p>
       </div>
     </div>
     <div class="rule r-spot">
@@ -324,15 +314,6 @@
           <label>Radius<span><input type="number" id="dRadius" value="20" min="1"><em>m</em></span></label>
           <label>Store limit<span><input type="number" id="dStores" value="5" min="1"><em>stores</em></span></label>
         </div>
-      </section>
-      <section class="prule r-a7">
-        <div class="pr-top"><svg class="pr-art" viewBox="0 0 96 64" aria-hidden="true">
-        <circle cx="40" cy="34" r="20" fill="#f59e0b" opacity=".12"/>
-        <path d="M46 16a18 18 0 1 0 14 28 15 15 0 0 1-14-28z" fill="#f59e0b"/>
-        <g fill="#f59e0b" opacity=".7"><circle cx="70" cy="18" r="2"/><circle cx="78" cy="30" r="1.6"/><circle cx="66" cy="44" r="1.4"/></g>
-      </svg><div><b>Visit After 7PM</b><em>per visit</em></div></div>
-        <p>Visit starts after <span class="th" data-t="a7"></span>.</p>
-        <div class="pr-in"><label>Cutoff time<span><input type="time" id="dNight" value="19:00"></span></label></div>
       </section>
       <section class="prule r-spot">
         <div class="pr-top"><svg class="pr-art" viewBox="0 0 96 64" aria-hidden="true">
@@ -423,7 +404,6 @@
           <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable">Verifiable</th>
           <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
           <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store">📍 Location Mismatch</th>
-          <th class="num" data-k="a7" title="Visits flagged: started after the after-hours cutoff">🌙 Visit After 7PM</th>
           <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot">⚡ Rapid Same Location</th><th data-k="rate">Status</th>
           <th class="num" data-k="spotPct" title="Territories with at least one shared spot (whole period)">📌 Shared spot territories</th>
         </tr></thead><tbody></tbody></table>
@@ -445,7 +425,6 @@
             <option value="normal">Normal only</option>
             <option value="lm">📍 Location Mismatch</option>
             <option value="rsl">⚡ Rapid Same Location</option>
-            <option value="a7">🌙 Visit After 7PM</option>
             <option value="spot">📌 Shared spot visits (all weeks)</option>
           </select>
                   </div>
@@ -464,7 +443,7 @@
           <table id="tTable"><thead><tr>
             <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>
             <th class="num" data-k="spots" title="Shared spots in this territory (whole period)">📌 Spots</th>
-            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="a7" title="Visit After 7PM">🌙 After 7PM</th><th class="num" data-k="rate">Anom. %</th>
+            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="rate">Anom. %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>

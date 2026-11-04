@@ -370,10 +370,10 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .hrow select{flex:0 0 auto}
 
 /* ---------------- aturan deteksi (4 kartu) ---------------- */
-.rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:12px}
 .rule{cursor:pointer;transition:.15s;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
 .rule::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc)}
-.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-a7{--rc:#f59e0b;--rs:#fffbeb}.r-spot{--rc:#6366f1;--rs:#eef0ff}
+.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-spot{--rc:#6366f1;--rs:#eef0ff}
 .rule-art{width:72px;height:48px;flex:0 0 72px;background:var(--rs);border-radius:12px}
 .rule-body{min-width:0}
 .rule-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -405,7 +405,7 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .pd-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .prule{flex:0 0 auto;position:relative;border:1px solid var(--line);border-radius:16px;padding:14px 14px 14px 16px;background:#fff;overflow:hidden}
 .prule::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc)}
-.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-a7{--rc:#f59e0b;--rs:#fffbeb}.r-spot{--rc:#6366f1;--rs:#eef0ff}
+.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-spot{--rc:#6366f1;--rs:#eef0ff}
 .pr-top{display:flex;align-items:center;gap:12px}
 .pr-top b{display:block;font:700 15px var(--display)}
 .pr-top em{display:inline-block;margin-top:3px;font-style:normal;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:#f3f4f6;padding:2px 7px;border-radius:99px}
@@ -489,7 +489,7 @@ tr.terr-row:hover .open-map{opacity:1}
 @media (max-width:1100px){
   .hero{grid-template-columns:1fr;padding-top:36px}
   .conn-grid,.mapgrid,.grid-trend,.rhead{grid-template-columns:minmax(0,1fr)}
-  .leaders,.rules{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .leaders{grid-template-columns:repeat(2,minmax(0,1fr))}
   .spot-grid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:720px){
@@ -516,3 +516,5 @@ tr.terr-row:hover .open-map{opacity:1}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition:none!important}
 }
+
+.rules-sec{margin:22px 2px 12px}

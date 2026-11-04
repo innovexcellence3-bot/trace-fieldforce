@@ -1,7 +1,7 @@
 # TRACE · Field Force Location Intelligence
 
 Aplikasi web untuk verifikasi lokasi visit field force: membandingkan titik GPS visit dengan lokasi toko
-(store master), lalu mendeteksi **Location Mismatch**, **Rapid Same Location**, dan **Visit After 7 PM**,
+(store master), lalu mendeteksi **Location Mismatch** dan **Rapid Same Location** (per visit) serta **Shared Spot** (per territory),
 lengkap dengan peta dan peringkat wilayah.
 
 Aplikasi punya 2 menu:
@@ -16,7 +16,7 @@ Aplikasi punya 2 menu:
 
 ### Shared spot (anomaly level territory)
 
-Selain 3 parameter per visit, ada metric level **territory**: sebuah *shared spot* adalah satu titik
+Selain 2 parameter per visit, ada metric level **territory**: sebuah *shared spot* adalah satu titik
 di mana dalam radius **20 m** ada **lebih dari 20 toko unik** yang di-visit oleh territory yang sama,
 selama periode yang difilter. Territory dengan ≥ 1 spot ter-flag; di level zone/region/area angkanya
 = % territory yang ter-flag. Metric ini terpisah dari Anomaly % (yang dihitung per visit). Radius dan

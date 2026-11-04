@@ -91,7 +91,7 @@ function rowEl(o, level, parentId, myId) {
     <td class="num">${inbar(o.cover, coverColor(o.cover), o.cover.toFixed(0) + '%')}</td>
     <td class="num">${fmt(o.checkable)}</td><td class="num">${fmt(o.anomaly)}</td>
     <td class="num">${inbar(o.rate, barColor(o.rate), o.rate.toFixed(1) + '%')}</td>
-    <td class="num">${fmt(o.lm)}</td><td class="num">${fmt(o.a7)}</td><td class="num">${fmt(o.rsl)}</td>
+    <td class="num">${fmt(o.lm)}</td><td class="num">${fmt(o.rsl)}</td>
     <td><span class="pill ${riskClass(o.rate)}">${riskLabel(o.rate)}</span></td>
     <td class="num">${spotCell(o, isTerr)}</td>`;
   if (isTerr) { tr.classList.add('terr-row'); tr.addEventListener('click', () => geoPick?.(S.A.terr[o.tid])); }
@@ -128,7 +128,7 @@ export function renderTerr(onPick) {
       <td class="num">${fmt(t.total)}</td>
       <td class="num">${inbar(t.cover, coverColor(t.cover), t.cover.toFixed(0) + '%')}</td>
       <td class="num">${t.spots ? `<span class="spotpill${t.spots > 1 ? ' multi' : ''}" title="${t.spots} shared spot(s) · most crowded: ${t.spotStores} stores">📌 ${t.spots}</span>` : '<span class="dim">—</span>'}</td>
-      <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td><td class="num">${fmt(t.a7)}</td>
+      <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td>
       <td class="num">${t.gps ? t.rate.toFixed(0) + '%' : '—'}</td>`;
     tr.addEventListener('click', () => {
       $$('#tTable .trow').forEach((x) => x.classList.remove('active'));

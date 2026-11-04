@@ -1,6 +1,6 @@
 /* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map). Satu pipeline `recomputeAll()`. */
 import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
-import { S, DEFAULT_PARAMS, minToHHMM, hhmmToMin } from '../core/state.js';
+import { S, DEFAULT_PARAMS, minToHHMM } from '../core/state.js';
 import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
@@ -29,7 +29,7 @@ function renderKPIs() {
     kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '🛰️', 'Verifiable visits', fmt(A.checkable),
       `<b class="kbig">${cover.toFixed(1)}%</b> GPS coverage`) +
     kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly),
-      `<b class="kbig bad">${rate.toFixed(1)}%</b> of verifiable<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}${mini('🌙', A.a7, 'Visit After 7PM')}</span>`) +
+      `<b class="kbig bad">${rate.toFixed(1)}%</b> of verifiable<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}</span>`) +
     kpi('i', '📌', 'Shared spot territories', fmt(A.spot.spotTerr),
       `<b class="kbig spot">${pct(A.spot.spotTerr, A.spot.terrN).toFixed(1)}%</b> of ${fmt(A.spot.terrN)} territories`);
 }
@@ -93,7 +93,7 @@ export function goToTerritory(t) {
 function renderParamChips() {
   const P = S.P;
   /* kartu aturan di atas panel parameter */
-  const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', a7: minToHHMM(P.nightMin), spotN: P.spotStores, spotM: P.spotM + ' m' };
+  const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', spotN: P.spotStores, spotM: P.spotM + ' m' };
   document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; }); // kartu aturan + panel kanan
 }
 
@@ -187,7 +187,7 @@ export function recomputeAll() {
 
 function syncDashParams() {
   const P = S.P;
-  $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount; $('#dNight').value = minToHHMM(P.nightMin);
+  $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount;
   $('#dSpotM').value = P.spotM; $('#dSpotStores').value = P.spotStores;
 }
 export function readParams(pre) {
@@ -195,7 +195,6 @@ export function readParams(pre) {
   P.mismatchM = Math.max(1, +$('#' + pre + 'Mismatch').value || 500);
   P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 20);
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
-  P.nightMin = hhmmToMin($('#' + pre + 'Night').value);
   P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 20);
   P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 20);
 }
@@ -310,12 +309,12 @@ export function initDashboard() {
   $('#pdReset').addEventListener('click', () => {
     const D = DEFAULT_PARAMS;
     $('#dMismatch').value = D.mismatchM; $('#dRadius').value = D.rapidM; $('#dStores').value = D.rapidCount;
-    $('#dNight').value = minToHHMM(D.nightMin); $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
+    $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
     scheduleRecalc();
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
-  ['dMismatch', 'dRadius', 'dStores', 'dNight', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
+  ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);
   $('#resetFilterBtn').addEventListener('click', resetFilters);

@@ -34,7 +34,7 @@ export function invalidateMaps() {
 function popupHtml(i) {
   const B = S.B;
   const reason = [];
-  if (B.lmA[i]) reason.push('Location Mismatch'); if (B.rslA[i]) reason.push('Rapid Same Location'); if (B.a7A[i]) reason.push('After 7PM');
+  if (B.lmA[i]) reason.push('Location Mismatch'); if (B.rslA[i]) reason.push('Rapid Same Location');
   const lat = B.latV[i], lon = B.lonV[i];
   return `<b>${esc(B.iCust.val(B.cust[i]))}</b><br>${esc(B.iEmp.val(B.emp[i]))}<br>` +
     `${esc(B.iTerr.val(B.terr[i]))} · ${esc(B.iDist.val(B.district[i]))}<br>` +
@@ -102,7 +102,6 @@ export function renderMap(f, fit) {
     if (f.mode === 'normal' && an) continue;
     if (f.mode === 'lm' && !B.lmA[i]) continue;
     if (f.mode === 'rsl' && !B.rslA[i]) continue;
-    if (f.mode === 'a7' && !B.a7A[i]) continue;
     if (f.mode === 'spot' && !(S.SP && S.SP.visitFlag[i])) continue;
     match.push(i);
   }

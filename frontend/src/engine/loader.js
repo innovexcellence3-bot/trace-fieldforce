@@ -101,7 +101,7 @@ class Col {
 }
 
 export function emptyBuffer() {
-  const B = { n: 0, gMin: '', gMax: '', visitId: new Map(), tsRaw: new Map(), uniq: null, uniqM: null, lmA: null, rslA: null, a7A: null, anA: null };
+  const B = { n: 0, gMin: '', gMax: '', visitId: new Map(), tsRaw: new Map(), uniq: null, uniqM: null, lmA: null, rslA: null, anA: null };
   for (const d of Object.values(ID_COLS)) B[d] = Interner();
   return B;
 }
