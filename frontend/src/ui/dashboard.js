@@ -5,7 +5,7 @@ import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engi
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
-import { initChartContextMenu, renderCharts, renderHistory } from './charts.js';
+import { initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { initMap, invalidateMaps, renderMap } from './maps.js';
@@ -30,7 +30,8 @@ function renderKPIs() {
     kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly), rate.toFixed(1) + '% of verifiable', 'up') +
     kpi('r', '📍', 'Location Mismatch', fmt(A.lm), pct(A.lm, A.checkable).toFixed(1) + '% of verifiable') +
     kpi('p', '⚡', 'Rapid Same Location', fmt(A.rsl), pct(A.rsl, A.checkable).toFixed(1) + '% of verifiable') +
-    kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% of verifiable');
+    kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% of verifiable') +
+    kpi('i', '📌', 'Shared spot territories', fmt(A.spot.spotTerr), pct(A.spot.spotTerr, A.spot.terrN).toFixed(1) + '% of ' + fmt(A.spot.terrN) + ' territories');
 }
 
 /* Regional Breakdown: papan peringkat area. */
@@ -49,11 +50,39 @@ function renderLeaders() {
   $('#leadHot').innerHTML = hot.map((a) => li(a, a.r.toFixed(1) + '%', a.r, 'var(--bad)')).join('') || empty;
   $('#leadCool').innerHTML = cool.map((a) => li(a, a.r.toFixed(1) + '%', a.r, 'var(--ok)')).join('') || empty;
   $('#leadBlind').innerHTML = blind.map((a) => li(a, a.c.toFixed(0) + '%', a.c, 'var(--warn)')).join('') || empty;
+  const spotted = Object.entries(A.area).map(([k, v]) => { const p = k.split('||'); return { name: p[2], sub: p[1], f: v.spotTerr, n: v.terrN, p: pct(v.spotTerr, v.terrN) }; })
+    .filter((a) => a.f > 0).sort((a, b) => b.p - a.p || b.f - a.f).slice(0, 5);
+  $('#leadSpot').innerHTML = spotted.map((a) => li(a, `${a.p.toFixed(0)}% <small>${a.f}/${a.n}</small>`, a.p, 'var(--spot)')).join('') || '<li class="empty">No shared spots 🎉</li>';
+}
+
+/* Executive Summary: kartu Shared spot (ringkasan, grafik per zone, daftar territory terbanyak). */
+function renderSpotlight() {
+  const A = S.A, sp = A.spot;
+  const rate = pct(sp.spotTerr, sp.terrN);
+  $('#spotCap').innerHTML = `A spot = more than <b>${sp.K}</b> unique stores visited within <b>${sp.R} m</b> of one point, by the same territory, in the selected period.`;
+  $('#spotBig').innerHTML = `<b>${fmt(sp.spotTerr)}</b><span>/ ${fmt(sp.terrN)} territories</span><em>${rate.toFixed(1)}% · ${fmt(sp.spotN)} spots</em>`;
+  renderSpotChart();
+  const top = Object.values(A.terr).filter((t) => t.spots).sort((a, b) => b.spots - a.spots || b.spotStores - a.spotStores).slice(0, 8);
+  const list = $('#spotList');
+  list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
+      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max">max ${t.spotStores} stores</span><span class="go">→</span></li>`).join('')
+    : '<li class="empty">No territory has a shared spot in this selection 🎉</li>';
+}
+
+/** Buka Visit Map dan fokus ke satu territory. */
+export function goToTerritory(t) {
+  showTab('lens');
+  $('#mDistrict').value = t.district; refreshCombo('mDistrict');
+  buildTerrOptions();
+  $('#mTerr').value = t.terr; refreshCombo('mTerr');
+  refreshTerr();
+  setTimeout(() => renderMap(mapFilter(), true), 120);
+  window.scrollTo({ top: $('#rtabs').getBoundingClientRect().top + window.scrollY - 140, behavior: 'smooth' });
 }
 
 function renderParamChips() {
   const P = S.P;
-  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span>`;
+  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span><span class="spotchip">📌 &gt; ${P.spotStores} stores / ${P.spotM} m · territory</span>`;
 }
 
 /* Skor di kanan atas: % anomaly & GPS coverage (ikut filter). */
@@ -136,7 +165,7 @@ function refreshTerr() { computeTerrData(mapFilter()); renderTerr(onTerrPick); }
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderScores(); renderKPIs(); renderCharts(); renderLeaders(); renderGeo();
+  renderScores(); renderKPIs(); renderSpotlight(); renderCharts(); renderLeaders(); renderGeo(goToTerritory);
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
@@ -146,6 +175,7 @@ export function recomputeAll() {
 function syncDashParams() {
   const P = S.P;
   $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount; $('#dNight').value = minToHHMM(P.nightMin);
+  $('#dSpotM').value = P.spotM; $('#dSpotStores').value = P.spotStores;
 }
 export function readParams(pre) {
   const P = S.P;
@@ -153,6 +183,8 @@ export function readParams(pre) {
   P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 50);
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.nightMin = hhmmToMin($('#' + pre + 'Night').value);
+  P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 50);
+  P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 10);
 }
 
 /** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
@@ -243,7 +275,9 @@ export function initDashboard() {
   initChartContextMenu();
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
-  $('#geoSearch').addEventListener('input', renderGeo);
+  $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
+  $('#spotList').addEventListener('click', (e) => { const li = e.target.closest('li[data-tid]'); if (li) goToTerritory(S.A.terr[li.dataset.tid]); });
+  $('#tSpotOnly').addEventListener('change', () => renderTerr(onTerrPick));
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   $('#pboxToggle').addEventListener('click', () => {
@@ -252,7 +286,7 @@ export function initDashboard() {
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
-  ['dMismatch', 'dRadius', 'dStores', 'dNight'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
+  ['dMismatch', 'dRadius', 'dStores', 'dNight', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);
   $('#resetFilterBtn').addEventListener('click', resetFilters);

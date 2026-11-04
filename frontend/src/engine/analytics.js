@@ -7,6 +7,7 @@
 import { pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { haversine, weekdayOf } from './loader.js';
+import { computeSpots } from './spots.js';
 
 const K20 = 1048576; // 2^20, untuk menggabungkan beberapa id menjadi 1 kunci angka
 
@@ -97,14 +98,16 @@ export function aggregate() {
   const n = B.n;
   if (!B.lmA || B.lmA.length !== n) { B.lmA = new Int8Array(n); B.rslA = new Int8Array(n); B.a7A = new Int8Array(n); B.anA = new Int8Array(n); }
   buildDateOK();
+  const SP = computeSpots(); // Shared Spot per territory (ikut filter tanggal)
   let total = 0, anomaly = 0, sLm = 0, sRsl = 0, sA7 = 0, checkable = 0, notcheck = 0, nCust = 0;
   const reasonCnt = new Float64Array(9); // 0..7 = mask anomaly (visit teridentifikasi), 8 = koordinat tidak lengkap
   const custSeen = new Uint8Array(B.iCust.size);
-  const newAgg = () => ({ total: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0, checkable: 0 });
-  const bump = (map, key, isA, lm, rsl, a7, chk) => {
+  const newAgg = () => ({ total: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0, checkable: 0, terrs: new Set(), lt: -1 });
+  const bump = (map, key, isA, lm, rsl, a7, chk, tid) => {
     let o = map.get(key);
     if (!o) { o = newAgg(); map.set(key, o); }
     o.total++; if (isA) o.anomaly++; o.lm += lm; o.rsl += rsl; o.a7 += a7; if (chk) o.checkable++;
+    if (o.lt !== tid) { o.terrs.add(tid); o.lt = tid; }
   };
   const tri = () => ({ t: 0, c: 0, a: 0 });
   const zoneM = new Map(), regM = new Map(), areaM = new Map(), wkZM = new Map(), wkRM = new Map();
@@ -136,12 +139,17 @@ export function aggregate() {
     if (!custSeen[c]) { custSeen[c] = 1; nCust++; }
     const z = B.zone[i], r = B.region[i];
     const kR = z * K20 + r;
-    bump(zoneM, z, isA, lm, rsl, a7, chk);
-    bump(regM, kR, isA, lm, rsl, a7, chk);
-    bump(areaM, kR * K20 + B.area[i], isA, lm, rsl, a7, chk);
     const tid = B.terr[i];
+    bump(zoneM, z, isA, lm, rsl, a7, chk, tid);
+    bump(regM, kR, isA, lm, rsl, a7, chk, tid);
+    bump(areaM, kR * K20 + B.area[i], isA, lm, rsl, a7, chk, tid);
     let te = terr[tid];
-    if (!te) { te = { terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone: B.iZone.val(z), total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0 }; terr[tid] = te; }
+    if (!te) {
+      const sp = SP.spots.get(tid);
+      te = { tid, terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone: B.iZone.val(z), region: B.iReg.val(r), area: B.iArea.val(B.area[i]),
+        total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0, spots: sp ? sp.length : 0, spotStores: sp ? sp[0].stores : 0 };
+      terr[tid] = te;
+    }
     te.total++; if (chk) te.gps++; if (isA) te.anomaly++; te.lm += lm; te.rsl += rsl; te.a7 += a7;
     const wd = dowCache[di];
     if (wd >= 0) { const dd = dow[wd]; dd.t++; if (chk) dd.c++; if (isA) dd.a++; }
@@ -154,6 +162,18 @@ export function aggregate() {
     if (!rg) { rg = tri(); wkRM.set(w * K20 + r, rg); }
     rg.t++; if (chk) rg.c++; if (isA) rg.a++;
   }
+
+  /* Shared Spot: jumlah territory & territory ter-flag per zone/region/area */
+  const spotAgg = (o) => {
+    let flagged = 0, nSpots = 0;
+    for (const t of o.terrs) { const sp = SP.spots.get(t); if (sp) { flagged++; nSpots += sp.length; } }
+    o.terrN = o.terrs.size; o.spotTerr = flagged; o.spotN = nSpots;
+    delete o.terrs; delete o.lt;
+  };
+  for (const m of [zoneM, regM, areaM]) for (const o of m.values()) spotAgg(o);
+  let terrN = 0, spotTerr = 0, spotN = 0;
+  for (const t of Object.values(terr)) { terrN++; if (t.spots) { spotTerr++; spotN += t.spots; } }
+  A.spot = { terrN, spotTerr, spotN, R: SP.R, K: SP.K };
 
   /* konversi ke struktur berkunci nama (dipakai grafik, tabel, export) */
   Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, a7: sA7, checkable, notcheck, cust: { size: nCust }, terr, dow });
@@ -231,7 +251,12 @@ export function computeTerrData({ week, district, terr }) {
     if (tfId >= 0 && B.terr[i] !== tfId) continue;
     const tid = B.terr[i];
     let t = m.get(tid);
-    if (!t) { t = { terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone: B.iZone.val(B.zone[i]), total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0 }; m.set(tid, t); }
+    if (!t) {
+      const sp = S.SP?.spots.get(tid);
+      t = { tid, terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone: B.iZone.val(B.zone[i]), total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0,
+        spots: sp ? sp.length : 0, spotStores: sp ? sp[0].stores : 0 };
+      m.set(tid, t);
+    }
     t.total++; if (B.chk[i]) t.gps++; if (B.anA[i]) t.anomaly++; t.lm += B.lmA[i]; t.rsl += B.rslA[i]; t.a7 += B.a7A[i];
   }
   A.terrData = [...m.values()];

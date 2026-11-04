@@ -269,6 +269,12 @@
         <label class="pcard"><span class="pc-top"><i>🌙</i><b>After-hours cutoff</b></span>
           <span class="pc-in"><input type="time" id="dNight" value="19:00"></span>
           <small>Visit starts after this time.</small></label>
+        <label class="pcard spot"><span class="pc-top"><i>📌</i><b>Shared spot · radius</b><em class="lvl">territory</em></span>
+          <span class="pc-in"><input type="number" id="dSpotM" value="50" min="1"><em>m</em></span>
+          <small>One spot = visits within this radius.</small></label>
+        <label class="pcard spot"><span class="pc-top"><i>📌</i><b>Shared spot · store limit</b><em class="lvl">territory</em></span>
+          <span class="pc-in"><input type="number" id="dSpotStores" value="10" min="1"><em>stores</em></span>
+          <small>Territory is flagged if a spot has more unique stores than this (whole period).</small></label>
       </div>
     </div>
   </div>
@@ -283,6 +289,17 @@
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
     <div class="kpis" id="kpis"></div>
+    <div class="card spotlight">
+      <div class="spot-head">
+        <div class="spot-badge">📌</div>
+        <div><h3>Shared spot territories</h3><div class="cap" id="spotCap"></div></div>
+        <div class="spot-big" id="spotBig"></div>
+      </div>
+      <div class="spot-grid">
+        <div><div class="mini-t">% of territories flagged, by zone</div><div class="chartbox" id="boxSpot" data-exp="chSpot"><canvas id="chSpot"></canvas></div></div>
+        <div><div class="mini-t">Territories with the most spots <span>· click to open on the map</span></div><ol class="spotlist" id="spotList"></ol></div>
+      </div>
+    </div>
     <div class="grid3">
       <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
       <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
@@ -310,10 +327,11 @@
       <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
       <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
       <div class="card lead-card blind"><h3>Lowest GPS coverage</h3><div class="cap">Bottom 5 areas</div><ol id="leadBlind"></ol></div>
+      <div class="card lead-card spotted"><h3>Most shared-spot territories</h3><div class="cap">% of territories flagged</div><ol id="leadSpot"></ol></div>
     </div>
     <div class="card">
       <div class="toolbar">
-        <input type="search" id="geoSearch" placeholder="🔎 Search zone / region / area">
+        <input type="search" id="geoSearch" placeholder="🔎 Search zone / region / area / territory">
         <div class="legend inline">
           <span><span class="dot" style="background:var(--ok)"></span>Healthy &lt;20%</span>
           <span><span class="dot" style="background:var(--warn)"></span>Watch</span>
@@ -330,6 +348,7 @@
           <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store">📍 Location Mismatch</th>
           <th class="num" data-k="a7" title="Visits flagged: started after the after-hours cutoff">🌙 Visit After 7PM</th>
           <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot">⚡ Rapid Same Location</th><th data-k="rate">Status</th>
+          <th class="num" data-k="spotPct" title="Territories with at least one shared spot (whole period)">📌 Shared spot territories</th>
         </tr></thead><tbody></tbody></table>
       </div>
     </div>
@@ -350,21 +369,25 @@
             <option value="lm">📍 Location Mismatch</option>
             <option value="rsl">⚡ Rapid Same Location</option>
             <option value="a7">🌙 Visit After 7PM</option>
+            <option value="spot">📌 Shared spot visits (all weeks)</option>
           </select>
                   </div>
         <div id="map" class="map"></div>
         <div class="maplegend">
           <span><span class="dot" style="background:#e5484d"></span> Anomaly</span>
           <span><span class="dot" style="background:#16a34a"></span> Normal</span>
+          <span><span class="ring-dot"></span> Shared spot</span>
           <span class="mapstat" id="mapStat"></span>
         </div>
       </div>
       <div class="card">
-        <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div><select id="mWeek"></select></div>
+        <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div>
+          <div class="hctl"><select id="tSpotOnly"><option value="">All territories</option><option value="1">📌 With shared spot</option></select><select id="mWeek"></select></div></div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
-            <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="gps">GPS</th><th class="num" data-k="cover">Coverage</th>
-            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="a7" title="Visit After 7PM">🌙 After 7PM</th><th class="num" data-k="rate">Anomaly %</th>
+            <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>
+            <th class="num" data-k="spots" title="Shared spots in this territory (whole period)">📌 Spots</th>
+            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="a7" title="Visit After 7PM">🌙 After 7PM</th><th class="num" data-k="rate">Anom. %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>

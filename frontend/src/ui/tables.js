@@ -1,4 +1,4 @@
-/* Tabel: drill-down wilayah (zone → region → area) dan territory. */
+/* Tabel: drill-down wilayah (zone → region → area → territory) dan territory per week. */
 import { $, $$, esc, fmt, pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { barColor } from './charts.js';
@@ -24,76 +24,110 @@ const cmpBy = (so) => (a, b) => {
 };
 const inbar = (v, color, label) => `<span class="inbar"><span class="bar"><i style="width:${Math.min(100, v)}%;background:${color}"></i></span><span class="v">${label}</span></span>`;
 
-/* ---------------- drill-down wilayah ---------------- */
+/* ---------------- drill-down wilayah: zone → region → area → territory ---------------- */
 const geoSort = { k: 'rate', dir: -1 };
-const decorate = (v) => ({ ...v, rate: pct(v.anomaly, v.checkable), cover: pct(v.checkable, v.total) });
+const decorate = (v) => ({ ...v, rate: pct(v.anomaly, v.checkable), cover: pct(v.checkable, v.total), spotPct: pct(v.spotTerr || 0, v.terrN || 0) });
+let geoPick = null;
 
-export function renderGeo() {
+/* sel "Shared spot": territory → jumlah spot; level di atasnya → % territory ter-flag */
+export const spotCell = (o, isTerr) => {
+  if (isTerr) {
+    return o.spots
+      ? `<span class="spotpill${o.spots > 1 ? ' multi' : ''}" title="Most crowded spot: ${o.spotStores} stores">📌 ${o.spots} spot${o.spots > 1 ? 's' : ''}</span>`
+      : '<span class="dim">—</span>';
+  }
+  return `<span class="inbar" title="${o.spotTerr} of ${o.terrN} territories">${o.spotTerr ? `<b class="spotfrac">${o.spotTerr}/${o.terrN}</b>` : ''}` +
+    `<span class="bar"><i style="width:${Math.min(100, o.spotPct)}%;background:var(--spot)"></i></span><span class="v">${o.spotPct.toFixed(0)}%</span></span>`;
+};
+
+export function renderGeo(onTerr) {
+  if (onTerr) geoPick = onTerr;
   const A = S.A;
   const q = ($('#geoSearch').value || '').toLowerCase();
   const tb = $('#geoTable tbody');
   markSort('geoTable', geoSort);
   const cmp = cmpBy(geoSort);
-  const hasChildMatch = (zone) => Object.keys(A.region).some((k) => k.startsWith(zone + '||') && k.toLowerCase().includes(q)) ||
-    Object.keys(A.area).some((k) => k.startsWith(zone + '||') && k.toLowerCase().includes(q));
+  /* territory per area (kunci zone||region||area) */
+  const terrByArea = new Map();
+  for (const t of Object.values(A.terr)) {
+    const k = t.zone + '||' + t.region + '||' + t.area;
+    if (!terrByArea.has(k)) terrByArea.set(k, []);
+    terrByArea.get(k).push({ ...t, name: t.terr, ...decorate({ ...t, checkable: t.gps }) });
+  }
+  const match = (x) => !q || x.toLowerCase().includes(q);
+  const areaMatch = (k) => match(k) || (terrByArea.get(k) || []).some((t) => match(t.terr));
   const frag = document.createDocumentFragment();
   Object.entries(A.zone).map(([k, v]) => ({ name: k, ...decorate(v) })).sort(cmp).forEach((z, zi) => {
-    if (q && !z.name.toLowerCase().includes(q) && !hasChildMatch(z.name)) return;
-    frag.appendChild(rowEl(z, 'parent', null, 'z' + zi));
-    Object.entries(A.region).filter(([k]) => k.startsWith(z.name + '||'))
-      .map(([k, v]) => ({ name: k.split('||')[1], key: k, ...decorate(v) })).sort(cmp)
-      .forEach((rg, ri) => {
-        frag.appendChild(rowEl(rg, 'child', 'z' + zi, 'r' + zi + '_' + ri));
-        Object.entries(A.area).filter(([k]) => k.startsWith(rg.key + '||'))
-          .map(([k, v]) => ({ name: k.split('||')[2], ...decorate(v) })).sort(cmp)
-          .forEach((ar) => frag.appendChild(rowEl(ar, 'child2', 'r' + zi + '_' + ri, null)));
-      });
+    const regs = Object.entries(A.region).filter(([k]) => k.startsWith(z.name + '||'));
+    const zAreas = Object.keys(A.area).filter((k) => k.startsWith(z.name + '||'));
+    if (q && !match(z.name) && !regs.some(([k]) => match(k)) && !zAreas.some(areaMatch)) return;
+    frag.appendChild(rowEl(z, 0, null, 'z' + zi));
+    regs.map(([k, v]) => ({ name: k.split('||')[1], key: k, ...decorate(v) })).sort(cmp).forEach((rg, ri) => {
+      const rid = 'r' + zi + '_' + ri;
+      frag.appendChild(rowEl(rg, 1, 'z' + zi, rid));
+      Object.entries(A.area).filter(([k]) => k.startsWith(rg.key + '||'))
+        .map(([k, v]) => ({ name: k.split('||')[2], key: k, ...decorate(v) })).sort(cmp).forEach((ar, ai) => {
+          const aid = rid + '_' + ai;
+          frag.appendChild(rowEl(ar, 2, rid, aid));
+          (terrByArea.get(ar.key) || []).sort(cmp).forEach((t) => frag.appendChild(rowEl(t, 3, aid, null)));
+        });
+    });
   });
   tb.innerHTML = '';
   tb.appendChild(frag);
 }
-function rowEl(o, cls, parentId, myId) {
+const LEVEL_CLS = ['parent', 'child', 'child2', 'child3'];
+function rowEl(o, level, parentId, myId) {
   const tr = document.createElement('tr');
-  tr.className = cls;
+  tr.className = LEVEL_CLS[level];
   if (myId) tr.dataset.group = myId;
   if (parentId) tr.dataset.parent = parentId;
-  const chev = cls !== 'child2' ? '<span class="chev">▶</span> ' : '';
-  tr.innerHTML = `<td>${chev}${esc(o.name)}</td><td class="num">${fmt(o.total)}</td>
+  const isTerr = level === 3;
+  const chev = isTerr ? '' : '<span class="chev">▶</span> ';
+  const name = isTerr
+    ? `<span class="tname">${esc(o.name)}</span><span class="sub"> · ${esc(o.district)}</span><span class="open-map">Open on map →</span>`
+    : esc(o.name);
+  tr.innerHTML = `<td>${chev}${name}</td><td class="num">${fmt(o.total)}</td>
     <td class="num">${inbar(o.cover, coverColor(o.cover), o.cover.toFixed(0) + '%')}</td>
     <td class="num">${fmt(o.checkable)}</td><td class="num">${fmt(o.anomaly)}</td>
     <td class="num">${inbar(o.rate, barColor(o.rate), o.rate.toFixed(1) + '%')}</td>
     <td class="num">${fmt(o.lm)}</td><td class="num">${fmt(o.a7)}</td><td class="num">${fmt(o.rsl)}</td>
-    <td><span class="pill ${riskClass(o.rate)}">${riskLabel(o.rate)}</span></td>`;
-  if (cls !== 'child2') { tr.classList.add('parent'); tr.addEventListener('click', () => toggle(myId, tr)); }
+    <td><span class="pill ${riskClass(o.rate)}">${riskLabel(o.rate)}</span></td>
+    <td class="num">${spotCell(o, isTerr)}</td>`;
+  if (isTerr) { tr.classList.add('terr-row'); tr.addEventListener('click', () => geoPick?.(S.A.terr[o.tid])); }
+  else tr.addEventListener('click', () => toggle(myId, tr));
   return tr;
 }
+/* buka/tutup satu level; menutup juga menutup semua turunan */
 function toggle(id, tr) {
   const open = tr.classList.toggle('open');
   tr.querySelector('.chev')?.classList.toggle('open', open);
-  $$('#geoTable tbody tr').forEach((r) => {
-    if (r.dataset.parent !== id) return;
-    r.style.display = open ? 'table-row' : 'none';
-    if (!open && r.classList.contains('open')) {
-      r.classList.remove('open');
-      r.querySelector('.chev')?.classList.remove('open');
-      $$('#geoTable tbody tr').forEach((rr) => { if (rr.dataset.parent === r.dataset.group) rr.style.display = 'none'; });
-    }
+  const rows = [...$$('#geoTable tbody tr')];
+  const hide = (pid) => rows.forEach((r) => {
+    if (r.dataset.parent !== pid) return;
+    r.style.display = 'none';
+    if (r.classList.contains('open')) { r.classList.remove('open'); r.querySelector('.chev')?.classList.remove('open'); }
+    if (r.dataset.group) hide(r.dataset.group);
   });
+  if (open) rows.forEach((r) => { if (r.dataset.parent === id) r.style.display = 'table-row'; });
+  else hide(id);
 }
 
 /* ---------------- territory level ---------------- */
 const terrSort = { k: 'cover', dir: -1 };
 export function renderTerr(onPick) {
   markSort('tTable', terrSort);
-  const arr = (S.A.terrData || []).map((t) => ({ ...t, cover: pct(t.gps, t.total), rate: pct(t.anomaly, t.gps) })).sort(cmpBy(terrSort));
+  const spotOnly = $('#tSpotOnly').value === '1';
+  const arr = (S.A.terrData || []).filter((t) => !spotOnly || t.spots).map((t) => ({ ...t, cover: pct(t.gps, t.total), rate: pct(t.anomaly, t.gps) })).sort(cmpBy(terrSort));
   const tb = $('#tTable tbody');
   tb.innerHTML = '';
   arr.slice(0, 400).forEach((t) => {
     const tr = document.createElement('tr');
     tr.className = 'trow';
     tr.innerHTML = `<td><b>${esc(t.terr)}</b><div class="sub">${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</div></td>
-      <td class="num">${fmt(t.total)}</td><td class="num">${fmt(t.gps)}</td>
+      <td class="num">${fmt(t.total)}</td>
       <td class="num">${inbar(t.cover, coverColor(t.cover), t.cover.toFixed(0) + '%')}</td>
+      <td class="num">${t.spots ? `<span class="spotpill${t.spots > 1 ? ' multi' : ''}" title="${t.spots} shared spot(s) · most crowded: ${t.spotStores} stores">📌 ${t.spots}</span>` : '<span class="dim">—</span>'}</td>
       <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td><td class="num">${fmt(t.a7)}</td>
       <td class="num">${t.gps ? t.rate.toFixed(0) + '%' : '—'}</td>`;
     tr.addEventListener('click', () => {

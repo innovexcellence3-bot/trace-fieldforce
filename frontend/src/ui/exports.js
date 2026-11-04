@@ -18,9 +18,9 @@ export function downloadCSV(name, header, rows) {
 export function exportGeo() {
   const A = S.A;
   const rows = [];
-  const push = (lvl, z, ar, v) => rows.push([lvl, z, ar, v.total, v.checkable, pct(v.checkable, v.total).toFixed(1), v.anomaly, pct(v.anomaly, v.checkable).toFixed(1), v.lm, v.a7, v.rsl]);
+  const push = (lvl, z, ar, v) => rows.push([lvl, z, ar, v.total, v.checkable, pct(v.checkable, v.total).toFixed(1), v.anomaly, pct(v.anomaly, v.checkable).toFixed(1), v.lm, v.a7, v.rsl, v.terrN, v.spotTerr, pct(v.spotTerr, v.terrN).toFixed(1), v.spotN]);
   Object.entries(A.zone).forEach(([z, v]) => push('Zone', z, '', v));
   Object.entries(A.region).forEach(([k, v]) => { const p = k.split('||'); push('Region', p[0], p[1], v); });
   Object.entries(A.area).forEach(([k, v]) => { const p = k.split('||'); push('Area', p[0] + ' / ' + p[1], p[2], v); });
-  downloadCSV('trace_anomaly_by_region.csv', ['level', 'zone_region', 'area', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'after_7pm', 'rapid_same_location'], rows);
+  downloadCSV('trace_anomaly_by_region.csv', ['level', 'zone_region', 'area', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'after_7pm', 'rapid_same_location', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged', 'shared_spots'], rows);
 }

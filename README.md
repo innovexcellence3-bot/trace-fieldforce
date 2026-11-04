@@ -14,6 +14,16 @@ Aplikasi punya 2 menu:
   dibuka-tutup (default Location Mismatch 500 m). Dataset aktif, parameter, dan filter terakhir disimpan otomatis
   (`data/state.json`), jadi refresh atau buka ulang aplikasi langsung kembali ke Report yang sama.
 
+### Shared spot (anomaly level territory)
+
+Selain 3 parameter per visit, ada metric level **territory**: sebuah *shared spot* adalah satu titik
+di mana dalam radius **50 m** ada **lebih dari 10 toko unik** yang di-visit oleh territory yang sama,
+selama periode yang difilter. Territory dengan ≥ 1 spot ter-flag; di level zone/region/area angkanya
+= % territory yang ter-flag. Metric ini terpisah dari Anomaly % (yang dihitung per visit). Radius dan
+batas toko bisa diubah di Detection parameters. Tampil di: KPI & kartu *Shared spot territories*
+(Executive Summary), kolom & peringkat di Regional Breakdown (bisa di-drill sampai territory), serta
+lingkaran spot, filter, dan kolom *Spots* di Visit Map.
+
 Saat dataset pertama kali dibuka, CSV diolah lalu disimpan sebagai **snapshot** biner
 (`data/cache/<id>.snap/`). Pembukaan berikutnya memuat snapshot ini (uji: 1,2 juta baris → ~3 detik,
 dibanding ~28 detik dari CSV). Hasil Rapid Same Location juga di-cache per radius.
