@@ -10,7 +10,7 @@ const rapidFile = (m) => `rapid-${String(m).replace(/[^0-9]/g, '_')}.bin`;
 
 async function put(id, file, body) {
   const res = await fetch(url(id, file), { method: 'PUT', body, headers: { 'Content-Type': 'application/octet-stream' } });
-  if (!res.ok) throw new Error(`Gagal menyimpan snapshot (${file}): HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`Could not save snapshot (${file}): HTTP ${res.status}`);
 }
 
 export async function saveSnapshot(id, B) {
@@ -38,9 +38,9 @@ export async function loadSnapshot(id, onProgress) {
   let done = 0;
   await Promise.all(keys.map(async (k) => {
     const r = await fetch(url(id, `${k}.bin`));
-    if (!r.ok) throw new Error(`Snapshot rusak (${k}).`);
+    if (!r.ok) throw new Error(`Snapshot corrupted (${k}).`);
     B[k] = new COLS[k](await r.arrayBuffer());
-    if (B[k].length !== B.n) throw new Error(`Snapshot rusak (${k}).`);
+    if (B[k].length !== B.n) throw new Error(`Snapshot corrupted (${k}).`);
     onProgress?.(++done / keys.length);
   }));
   return B;

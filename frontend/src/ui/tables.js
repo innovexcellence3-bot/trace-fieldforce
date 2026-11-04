@@ -5,7 +5,7 @@ import { barColor } from './charts.js';
 import { downloadCSV } from './exports.js';
 
 export const riskClass = (r) => (r >= 60 ? 'p-high' : r >= 40 ? 'p-mid' : r >= 20 ? 'p-low' : 'p-norm');
-export const riskLabel = (r) => (r >= 60 ? 'Kritis' : r >= 40 ? 'Tinggi' : r >= 20 ? 'Waspada' : 'Sehat');
+export const riskLabel = (r) => (r >= 60 ? 'Critical' : r >= 40 ? 'High' : r >= 20 ? 'Watch' : 'Healthy');
 const coverColor = (c) => (c >= 80 ? '#16a34a' : c >= 50 ? '#f59e0b' : '#e3141b');
 
 function markSort(tableId, so) {
@@ -103,8 +103,8 @@ export function renderTerr(onPick) {
     });
     tb.appendChild(tr);
   });
-  if (!arr.length) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Tidak ada territory sesuai filter.</td></tr>';
-  $('#tFoot').textContent = (arr.length > 400 ? `400 dari ${fmt(arr.length)}` : fmt(arr.length)) + ' territory · KPS week ' + $('#mWeek').value;
+  if (!arr.length) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No territories match the filters.</td></tr>';
+  $('#tFoot').textContent = (arr.length > 400 ? `400 of ${fmt(arr.length)}` : fmt(arr.length)) + ' territories · KPS week ' + $('#mWeek').value;
 }
 export function initTerrSort(rerender) {
   $$('#tTable th[data-k]').forEach((th) => th.addEventListener('click', () => {
@@ -116,8 +116,8 @@ export function initTerrSort(rerender) {
 }
 
 /* ---------------- geotag recommendation ---------------- */
-const GR_META = { ok: { label: 'Rekomendasi tersedia', cls: 'p-norm', note: 'Modus ≥ 2 titik — kredibel' }, need: { label: 'Butuh data lebih', cls: 'p-high', note: 'Modus ≤ 1 titik — need more data' } };
-const GR_STATUS = { ok: { label: 'Long lat sudah sesuai', cls: 'p-norm' }, update: { label: 'Perlu update long lat', cls: 'p-mid' }, need: { label: 'Butuh data lebih', cls: 'p-high' } };
+const GR_META = { ok: { label: 'Reliable', cls: 'p-norm', note: 'Mode ≥ 2 points' }, need: { label: 'Not enough data', cls: 'p-high', note: 'Mode ≤ 1 point' } };
+const GR_STATUS = { ok: { label: 'Accurate', cls: 'p-norm' }, update: { label: 'Needs update', cls: 'p-mid' }, need: { label: 'Not enough data', cls: 'p-high' } };
 const grSort = { k: 'dist', dir: -1 };
 
 function grList() {
@@ -149,11 +149,11 @@ export function renderGeoRec(kpiFn, onPick) {
   const nSesuai = arr.filter((x) => x.status === 'ok').length;
   const moved = arr.filter((x) => x.status === 'update').length;
   $('#grKpis').innerHTML =
-    kpiFn('', '🏬', 'Customer', fmt(arr.length), 'sesuai filter') +
-    kpiFn('g', '✅', 'Rekomendasi Tersedia', fmt(nOK), 'modus ≥ 2 titik') +
-    kpiFn('r', '⛔', 'Butuh Data Lebih', fmt(nNeed), 'modus ≤ 1 titik') +
-    kpiFn('t', '📌', 'Long Lat Sudah Sesuai', fmt(nSesuai), '≤ 100 m dari existing') +
-    kpiFn('p', '📍', 'Perlu Update Long Lat', fmt(moved), '> 100 m dari existing');
+    kpiFn('', '🏬', 'Customers', fmt(arr.length), 'matching filters') +
+    kpiFn('g', '✅', 'Recommendation ready', fmt(nOK), 'mode ≥ 2 points') +
+    kpiFn('r', '⛔', 'Not enough data', fmt(nNeed), 'mode ≤ 1 point') +
+    kpiFn('t', '📌', 'Location accurate', fmt(nSesuai), '≤ 100 m from current') +
+    kpiFn('p', '📍', 'Needs update', fmt(moved), '> 100 m from current');
   markSort('grTable', grSort);
   const list = grList();
   const tb = $('#grTable tbody');
@@ -161,9 +161,9 @@ export function renderGeoRec(kpiFn, onPick) {
   list.slice(0, 600).forEach((x) => {
     const m = GR_META[x.conf], st = GR_STATUS[x.status];
     const exist = isNaN(x.latC) ? '<span style="color:var(--muted)">—</span>'
-      : `${x.latC.toFixed(5)}, ${x.lonC.toFixed(5)} <a href="${streetView(x.latC, x.lonC)}" target="_blank" rel="noopener" title="Street View titik existing" style="text-decoration:none">👁️</a>`;
+      : `${x.latC.toFixed(5)}, ${x.lonC.toFixed(5)} <a href="${streetView(x.latC, x.lonC)}" target="_blank" rel="noopener" title="Street View: current location" style="text-decoration:none">👁️</a>`;
     const rec = (x.conf === 'need' || isNaN(x.recLat)) ? '<span style="color:var(--muted)">need more data</span>'
-      : `${x.recLat.toFixed(4)}, ${x.recLon.toFixed(4)} <a href="${streetView(x.recLat, x.recLon)}" target="_blank" rel="noopener" title="Street View titik rekomendasi" style="text-decoration:none">👁️</a>`;
+      : `${x.recLat.toFixed(4)}, ${x.recLon.toFixed(4)} <a href="${streetView(x.recLat, x.recLon)}" target="_blank" rel="noopener" title="Street View: recommended point" style="text-decoration:none">👁️</a>`;
     const dcell = (x.conf === 'need' || isNaN(x.recLat) || isNaN(x.dist)) ? '—' : fmt(Math.round(x.dist)) + ' m';
     const tr = document.createElement('tr');
     tr.className = 'grrow';
@@ -181,8 +181,8 @@ export function renderGeoRec(kpiFn, onPick) {
     });
     tb.appendChild(tr);
   });
-  if (!list.length) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">Tidak ada customer sesuai filter.</td></tr>';
-  $('#grFoot').textContent = list.length > 600 ? `600 dari ${fmt(list.length)} customer ditampilkan · CSV berisi semua` : `${fmt(list.length)} customer`;
+  if (!list.length) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No customers match the filters.</td></tr>';
+  $('#grFoot').textContent = list.length > 600 ? `Showing 600 of ${fmt(list.length)} customers · CSV has all` : `${fmt(list.length)} customers`;
 }
 export function initGeoRecSort(rerender) {
   $$('#grTable th[data-k]').forEach((th) => th.addEventListener('click', () => {

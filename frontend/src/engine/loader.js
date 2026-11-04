@@ -174,7 +174,7 @@ export async function parseCsvStream(stream, totalBytes, onProgress) {
       if (head.charCodeAt(0) === 0xfeff) head = head.slice(1);
       parseLine(head).forEach((h, i) => { const c = h.trim().toUpperCase(); COL[COL_ALIASES[c] || c] = i; });
       const missing = REQUIRED.filter((c) => COL[c] == null);
-      if (missing.length) throw new Error('Kolom wajib tidak ditemukan di CSV: ' + missing.join(', '));
+      if (missing.length) throw new Error('Required columns missing from CSV: ' + missing.join(', '));
       ingest = makeIngest(B, C, COL);
       start = nl < 0 ? text.length : nl + 1;
     }
@@ -204,8 +204,8 @@ export async function parseCsvStream(stream, totalBytes, onProgress) {
     }
   }
   handleText(leftover + dec.decode(), true);
-  if (!ingest) throw new Error('File CSV kosong.');
-  if (!B.n) throw new Error('CSV tidak berisi baris data.');
+  if (!ingest) throw new Error('CSV file is empty.');
+  if (!B.n) throw new Error('CSV has no data rows.');
   for (const k of Object.keys(COLS)) B[k] = C[k].done();
   onProgress?.(1, B.n);
   S.B = B;

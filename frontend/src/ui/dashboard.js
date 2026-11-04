@@ -1,7 +1,7 @@
-/* Report Field Force: 3 tab (Ringkasan, Radar Wilayah, Lensa Lapangan). Satu pipeline `recomputeAll()`. */
-import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
+/* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map & Geotag). Satu pipeline `recomputeAll()`. */
+import { $, esc, fmt, pct } from '../core/dom.js';
 import { S, minToHHMM, hhmmToMin } from '../core/state.js';
-import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData, computeZoneProgress } from '../engine/analytics.js';
+import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
@@ -24,51 +24,16 @@ function renderKPIs() {
   const A = S.A;
   const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
   $('#kpis').innerHTML =
-    kpi('', '📋', 'Total Visit', fmt(A.total), fmt(A.cust.size) + ' toko unik') +
-    kpi('t', '🛰️', 'Visit Teridentifikasi', fmt(A.checkable), fmt(A.notcheck) + ' tak teridentifikasi') +
-    kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '📡', 'Cakupan GPS', cover.toFixed(1) + '%', 'punya long-lat visit & toko') +
-    kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Visit Anomaly', fmt(A.anomaly), rate.toFixed(1) + '% dari teridentifikasi', 'up') +
-    kpi('r', '📍', 'Location Mismatch', fmt(A.lm), pct(A.lm, A.checkable).toFixed(1) + '% terident.') +
-    kpi('p', '⚡', 'Rapid Same Location', fmt(A.rsl), pct(A.rsl, A.checkable).toFixed(1) + '% terident.') +
-    kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% terident.');
+    kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
+    kpi('t', '🛰️', 'Verifiable visits', fmt(A.checkable), fmt(A.notcheck) + ' missing coordinates') +
+    kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '📡', 'GPS coverage', cover.toFixed(1) + '%', 'visit & store coordinates') +
+    kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly), rate.toFixed(1) + '% of verifiable', 'up') +
+    kpi('r', '📍', 'Location Mismatch', fmt(A.lm), pct(A.lm, A.checkable).toFixed(1) + '% of verifiable') +
+    kpi('p', '⚡', 'Rapid Same Location', fmt(A.rsl), pct(A.rsl, A.checkable).toFixed(1) + '% of verifiable') +
+    kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% of verifiable');
 }
 
-/* Skor besar di kanan atas: % anomaly & cakupan GPS (ikut filter). */
-function renderScores() {
-  const A = S.A;
-  const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
-  const level = rate >= 60 ? ['Kritis', 'var(--bad)'] : rate >= 40 ? ['Tinggi', 'var(--mid)'] : rate >= 20 ? ['Waspada', 'var(--warn)'] : ['Sehat', 'var(--ok)'];
-  const gps = cover >= 80 ? ['Kuat', 'var(--ok)'] : cover >= 50 ? ['Cukup', 'var(--warn)'] : ['Lemah', 'var(--bad)'];
-  const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
-  $('#scores').innerHTML =
-    `<div class="score">${ring(rate, level[1])}<div><small>Anomaly</small><strong style="color:${level[1]}">${level[0]}</strong><span>${fmt(A.anomaly)} visit</span></div></div>` +
-    `<div class="score">${ring(cover, gps[1])}<div><small>Cakupan GPS</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} visit terbaca</span></div></div>`;
-}
-
-/* Temuan utama dalam bentuk kartu singkat (pengganti paragraf panjang). */
-function renderInsights() {
-  const A = S.A;
-  const zones = Object.entries(A.zone).map(([k, v]) => ({ k: k.replace('Zone ', ''), r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), t: v.total }))
-    .filter((z) => z.t >= 30).sort((a, b) => b.r - a.r);
-  const worst = zones[0], best = zones.length > 1 ? zones[zones.length - 1] : null;
-  const lowCover = zones.slice().sort((a, b) => a.c - b.c)[0];
-  const doms = [['Location Mismatch', A.lm, '📍'], ['Rapid Same Location', A.rsl, '⚡'], ['Visit After 7PM', A.a7, '🌙']].sort((a, b) => b[1] - a[1]);
-  const DOW = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  let peak = -1, peakv = -1;
-  A.dow.forEach((d, i) => { const r = pct(d.a, d.c); if (d.c > 0 && r > peakv) { peakv = r; peak = i; } });
-  const prog = computeZoneProgress();
-  const card = (cls, e, label, title, sub) => `<div class="ins ${cls}"><div class="e">${e}</div><div><small>${label}</small><b>${title}</b><span>${sub}</span></div></div>`;
-  const out = [];
-  if (worst) out.push(card('red', '🔥', 'Zona paling berisiko', esc(worst.k), `${worst.r.toFixed(1)}% anomaly`));
-  if (best) out.push(card('green', '🌿', 'Zona paling sehat', esc(best.k), `${best.r.toFixed(1)}% anomaly`));
-  if (A.anomaly) out.push(card('amber', doms[0][2], 'Anomaly terbanyak', doms[0][0], `${pct(doms[0][1], A.anomaly).toFixed(0)}% dari visit anomaly`));
-  if (peak >= 0) out.push(card('blue', '📅', 'Hari paling rawan', DOW[peak], `${peakv.toFixed(1)}% anomaly`));
-  if (prog) out.push(card('green', '📈', 'Paling membaik', esc(prog.zone.replace('Zone ', '')), `GPS ${prog.dCover >= 0 ? '+' : ''}${prog.dCover.toFixed(1)} pts · anomaly ${prog.dAnom.toFixed(1)} pts`));
-  else if (lowCover && lowCover.c < 80) out.push(card('amber', '📡', 'GPS paling lemah', esc(lowCover.k), `cakupan ${lowCover.c.toFixed(1)}%`));
-  $('#insights').innerHTML = out.join('');
-}
-
-/* Radar Wilayah: papan peringkat area. */
+/* Regional Breakdown: papan peringkat area. */
 function renderLeaders() {
   const A = S.A;
   const areas = Object.entries(A.area).map(([k, v]) => {
@@ -76,7 +41,7 @@ function renderLeaders() {
     return { name: p[2], sub: p[1], r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), chk: v.checkable, t: v.total };
   });
   const li = (a, v, w, color) => `<li><span class="nm"><b title="${esc(a.name)} · ${esc(a.sub)}">${esc(a.name)}</b><span class="bar"><i style="width:${Math.min(100, w)}%;background:${color}"></i></span></span><span class="v">${v}</span></li>`;
-  const empty = '<li class="empty">Data belum cukup</li>';
+  const empty = '<li class="empty">Not enough data</li>';
   const rated = areas.filter((a) => a.chk >= 30);
   const hot = rated.slice().sort((a, b) => b.r - a.r).slice(0, 5);
   const cool = rated.slice().sort((a, b) => a.r - b.r).slice(0, 5);
@@ -88,21 +53,21 @@ function renderLeaders() {
 
 function renderParamChips() {
   const P = S.P;
-  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} toko / ${P.rapidM} m</span><span>🌙 ≥ ${minToHHMM(P.nightMin)}</span>`;
+  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span>`;
 }
 
 function renderHeader() {
   const ds = S.dataset || {};
   const B = S.B;
   const p = ds.params || {};
-  $('#dashTitle').textContent = ds.name || 'Dataset';
-  $('#dashSource').textContent = ds.source === 'snowflake' ? `❄️ KPS ${p.weekFrom}–${p.weekTo} · ${p.channel}` : 'Report';
-  $('#dashMeta').innerHTML = [
-    `<span><b>${fmt(B.n)}</b> visit</span>`,
-    `<span><b>${B.gMin || '—'}</b> → <b>${B.gMax || '—'}</b></span>`,
-    `<span><b>${B.iZone.size}</b> zone · <b>${fmt(B.iTerr.size)}</b> territory</span>`,
-    ds.createdAt ? `<span>Diambil ${fmtDateTime(ds.createdAt)}</span>` : '',
-  ].join('');
+  const short = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  $('#dashSub').innerHTML = [
+    `<b>${esc(ds.name || 'Dataset')}</b>`,
+    ds.source === 'snowflake' ? `KPS ${p.weekFrom}–${p.weekTo} · ${esc(p.channel)}` : '',
+    `${fmt(B.n)} visits`,
+    `${short(B.gMin)} – ${short(B.gMax)}`,
+    `${B.iZone.size} zones · ${fmt(B.iTerr.size)} territories`,
+  ].filter(Boolean).join('<i>·</i>');
   $('#dlDatasetBtn').href = api.downloadUrl(ds.id);
 }
 
@@ -112,6 +77,8 @@ export function showTab(tab, save = true) {
   if (!TABS.includes(tab)) tab = 'summary';
   S.tab = tab;
   document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  const bar = $('#rtabs'), act = bar.querySelector('button.active'); // pastikan tab aktif terlihat (layar sempit)
+  if (act) bar.scrollLeft = Math.max(0, act.offsetLeft - (bar.clientWidth - act.offsetWidth) / 2);
   document.querySelectorAll('.rpanel').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
   if (tab === 'lens' && S.loaded) { invalidateMaps(); setTimeout(() => renderMap(mapFilter(), true), 80); }
   if (save) persist();
@@ -122,7 +89,7 @@ function buildMapFilters() {
   const A = S.A;
   const prev = $('#mDistrict').value;
   const ds = [...new Set(Object.values(A.terr).map((t) => t.district))].sort();
-  $('#mDistrict').innerHTML = '<option value="">Semua District</option>' + ds.map((d) => `<option>${esc(d)}</option>`).join('');
+  $('#mDistrict').innerHTML = '<option value="">All districts</option>' + ds.map((d) => `<option>${esc(d)}</option>`).join('');
   if (ds.includes(prev)) $('#mDistrict').value = prev;
   refreshCombo('mDistrict');
   buildTerrOptions();
@@ -133,7 +100,7 @@ function buildTerrOptions() {
   let arr = Object.values(S.A.terr);
   if (df) arr = arr.filter((t) => t.district === df);
   arr.sort((a, b) => (a.terr < b.terr ? -1 : 1));
-  $('#mTerr').innerHTML = '<option value="">Semua Territory</option>' + arr.map((t) => `<option>${esc(t.terr)}</option>`).join('');
+  $('#mTerr').innerHTML = '<option value="">All territories</option>' + arr.map((t) => `<option>${esc(t.terr)}</option>`).join('');
   if (arr.some((t) => t.terr === prev)) $('#mTerr').value = prev;
   refreshCombo('mTerr');
 }
@@ -159,7 +126,7 @@ function refreshGeoRec() { computeGeoRec(mapFilter()); renderGeoRec(kpi, showGeo
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderScores(); renderKPIs(); renderInsights(); renderCharts(); renderLeaders(); renderGeo();
+  renderKPIs(); renderCharts(); renderLeaders(); renderGeo();
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
@@ -173,7 +140,7 @@ function syncDashParams() {
 }
 export function readParams(pre) {
   const P = S.P;
-  P.mismatchM = Math.max(1, +$('#' + pre + 'Mismatch').value || 1000);
+  P.mismatchM = Math.max(1, +$('#' + pre + 'Mismatch').value || 500);
   P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 50);
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.nightMin = hhmmToMin($('#' + pre + 'Night').value);
@@ -197,8 +164,8 @@ export function openDashboard(saved = {}) {
   buildAllMS(recomputeAll);
   initMap();
   ensureGrMap();
-  makeSearchable('mDistrict', 'Cari district...');
-  makeSearchable('mTerr', 'Cari territory...');
+  makeSearchable('mDistrict', 'Search district...');
+  makeSearchable('mTerr', 'Search territory...');
   recomputeAll();
   renderHeader();
   showTab(saved.view?.tab || S.tab || 'summary', false);
@@ -236,7 +203,7 @@ export { ensureRapid };
 let recalcTimer = null;
 function scheduleRecalc() {
   $('#recalc').classList.add('busy');
-  $('#recalcTxt').textContent = 'Menghitung…';
+  $('#recalcTxt').textContent = 'Recalculating…';
   clearTimeout(recalcTimer);
   recalcTimer = setTimeout(() => {
     readParams('d');

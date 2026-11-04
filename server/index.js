@@ -56,7 +56,7 @@ app.get('/api/datasets', wrap(async (_req, res) => res.json(await listDatasets()
 
 async function requireDataset(req, res) {
   const meta = await getDataset(req.params.id);
-  if (!meta) res.status(404).json({ error: 'Dataset tidak ditemukan.' });
+  if (!meta) res.status(404).json({ error: 'Dataset not found.' });
   return meta;
 }
 
@@ -75,7 +75,7 @@ app.get('/api/datasets/:id/download', wrap(async (req, res) => {
 
 app.patch('/api/datasets/:id', wrap(async (req, res) => {
   const meta = await updateDataset(req.params.id, req.body || {});
-  if (!meta) return res.status(404).json({ error: 'Dataset tidak ditemukan.' });
+  if (!meta) return res.status(404).json({ error: 'Dataset not found.' });
   res.json(meta);
 }));
 
@@ -86,14 +86,14 @@ app.delete('/api/datasets/:id', wrap(async (req, res) => {
 
 /* ---------------- Snapshot (hasil olahan dashboard) ---------------- */
 app.get('/api/datasets/:id/snap/:file', wrap(async (req, res) => {
-  if (!isValidId(req.params.id) || !isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Nama file tidak valid.' });
+  if (!isValidId(req.params.id) || !isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Invalid file name.' });
   const file = snapPath(req.params.id, req.params.file);
-  if (!existsSync(file)) return res.status(404).json({ error: 'Snapshot belum ada.' });
+  if (!existsSync(file)) return res.status(404).json({ error: 'Snapshot not found.' });
   res.sendFile(file, { headers: { 'Cache-Control': 'no-store' } });
 }));
 
 app.put('/api/datasets/:id/snap/:file', wrap(async (req, res) => {
-  if (!isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Nama file tidak valid.' });
+  if (!isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Invalid file name.' });
   const meta = await requireDataset(req, res);
   if (!meta) return;
   await writeSnapFile(meta.id, req.params.file, req);
@@ -101,7 +101,7 @@ app.put('/api/datasets/:id/snap/:file', wrap(async (req, res) => {
 }));
 
 app.delete('/api/datasets/:id/snap', wrap(async (req, res) => {
-  if (!isValidId(req.params.id)) return res.status(400).json({ error: 'ID tidak valid.' });
+  if (!isValidId(req.params.id)) return res.status(400).json({ error: 'Invalid ID.' });
   await clearSnapshot(req.params.id);
   res.json({ ok: true });
 }));
@@ -121,18 +121,18 @@ function publicJob(j) {
 
 app.post('/api/snowflake/query', wrap(async (req, res) => {
   if (activeJob && activeJob.status === 'running') {
-    return res.status(409).json({ error: 'Masih ada query yang berjalan. Tunggu selesai atau batalkan dulu.', jobId: activeJob.id });
+    return res.status(409).json({ error: 'Another query is still running. Wait for it or cancel it first.', jobId: activeJob.id });
   }
   const { weekFrom, weekTo, channel, name, user } = req.body || {};
   const wf = Number(weekFrom), wt = Number(weekTo);
   if (!/^\d{6}$/.test(String(wf)) || !/^\d{6}$/.test(String(wt))) {
-    return res.status(400).json({ error: 'KPS week harus 6 digit, contoh 202630.' });
+    return res.status(400).json({ error: 'KPS week must be 6 digits, e.g. 202630.' });
   }
-  if (wf > wt) return res.status(400).json({ error: 'KPS week awal harus ≤ KPS week akhir.' });
-  if (!channel || String(channel).length > 60) return res.status(400).json({ error: 'Channel wajib diisi.' });
+  if (wf > wt) return res.status(400).json({ error: 'From KPS week must be ≤ To KPS week.' });
+  if (!channel || String(channel).length > 60) return res.status(400).json({ error: 'Channel is required.' });
 
   const job = {
-    id: newId('job'), status: 'running', phase: 'start', message: 'Menyiapkan...',
+    id: newId('job'), status: 'running', phase: 'start', message: 'Preparing...',
     rows: 0, totalRows: null, startedAt: new Date().toISOString(), finishedAt: null,
     params: { weekFrom: wf, weekTo: wt, channel: String(channel) }, dataset: null, error: null,
   };
@@ -144,12 +144,12 @@ app.post('/api/snowflake/query', wrap(async (req, res) => {
     job.dataset = await sf.runVisitQuery({ weekFrom: wf, weekTo: wt, channel: String(channel), name, user }, job);
     job.status = 'done';
     job.phase = 'done';
-    job.message = `Selesai — ${job.rows.toLocaleString('id-ID')} baris tersimpan di Data Library.`;
+    job.message = `Done — ${job.rows.toLocaleString('id-ID')} rows saved.`;
   } catch (err) {
     job.status = job.status === 'cancelled' ? 'cancelled' : 'error';
     const detail = [err?.code && `code ${err.code}`, err?.sqlState && `sqlState ${err.sqlState}`].filter(Boolean).join(', ');
     job.error = String(err?.message || err) + (detail ? ` (${detail})` : '');
-    job.message = job.status === 'cancelled' ? 'Query dibatalkan.' : 'Query gagal.';
+    job.message = job.status === 'cancelled' ? 'Query cancelled.' : 'Query failed.';
     console.error('[snowflake]', job.error, err?.data ? JSON.stringify(err.data) : '');
   } finally {
     job.finishedAt = new Date().toISOString();
@@ -158,13 +158,13 @@ app.post('/api/snowflake/query', wrap(async (req, res) => {
 
 app.get('/api/jobs/:id', (req, res) => {
   const job = jobs.get(req.params.id);
-  if (!job) return res.status(404).json({ error: 'Job tidak ditemukan.' });
+  if (!job) return res.status(404).json({ error: 'Job not found.' });
   res.json(publicJob(job));
 });
 
 app.post('/api/jobs/:id/cancel', wrap(async (req, res) => {
   const job = jobs.get(req.params.id);
-  if (!job) return res.status(404).json({ error: 'Job tidak ditemukan.' });
+  if (!job) return res.status(404).json({ error: 'Job not found.' });
   if (job.status === 'running') {
     job.status = 'cancelled';
     if (job.cancel) await job.cancel().catch(() => {});
@@ -185,7 +185,7 @@ if (existsSync(DIST_DIR)) {
   app.get('/', (_req, res) => res.type('text').send('Tampilan belum di-build. Jalankan "npm run build" (atau start.bat), atau "npm run dev" untuk development.'));
 }
 
-app.use('/api', (_req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan.' }));
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Endpoint not found.' }));
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);

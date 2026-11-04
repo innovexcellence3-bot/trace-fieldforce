@@ -85,12 +85,12 @@ const csvCell = (v) => {
 /* Jalankan query visit dan simpan ke Data Library. `job` di-update untuk progress di UI. */
 export async function runVisitQuery({ weekFrom, weekTo, channel, name, user }, job) {
   job.phase = 'auth';
-  job.message = 'Login SSO Snowflake — selesaikan login di jendela browser yang terbuka.';
+  job.message = 'Snowflake SSO — complete the sign-in in the browser window that opened.';
   const c = await getConnection(user);
-  if (job.status === 'cancelled') throw new Error('Dibatalkan.');
+  if (job.status === 'cancelled') throw new Error('Cancelled.');
 
   job.phase = 'query';
-  job.message = 'Query berjalan di Snowflake...';
+  job.message = 'Query running in Snowflake...';
   /* Format timestamp konsisten 'YYYY-MM-DD HH:MM:SS.mmm' (dibaca dashboard sebagai tanggal + jam). */
   await exec(c, "ALTER SESSION SET TIMESTAMP_OUTPUT_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF3', TIMESTAMP_NTZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF3', TIMESTAMP_LTZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF3', TIMESTAMP_TZ_OUTPUT_FORMAT = 'YYYY-MM-DD HH24:MI:SS.FF3', DATE_OUTPUT_FORMAT = 'YYYY-MM-DD'");
   if (config.snowflake.warehouse) await exec(c, `USE WAREHOUSE ${config.snowflake.warehouse.replace(/[^A-Za-z0-9_$]/g, '')}`);
@@ -111,7 +111,7 @@ export async function runVisitQuery({ weekFrom, weekTo, channel, name, user }, j
   });
 
   job.phase = 'fetch';
-  job.message = 'Mengunduh hasil & menyimpan ke CSV...';
+  job.message = 'Downloading results and saving to CSV...';
   job.totalRows = stmt.getNumRows();
   const cols = stmt.getColumns().map((col) => col.getName());
 

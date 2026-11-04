@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,12 +38,12 @@
 <div class="filterbar" id="filterbar" hidden>
   <div class="fb-inner">
     <div class="datefilter">📅 <input type="date" id="dateFrom"> <span>–</span> <input type="date" id="dateTo"></div>
-    <div class="ms" id="msZone"><button class="ms-btn" id="msZoneBtn">Zone: <b>Semua</b> ▾</button><div class="ms-panel" id="msZonePanel"></div></div>
-    <div class="ms" id="msRegion"><button class="ms-btn" id="msRegionBtn">Region: <b>Semua</b> ▾</button><div class="ms-panel" id="msRegionPanel"></div></div>
-    <div class="ms" id="msArea"><button class="ms-btn" id="msAreaBtn">Area: <b>Semua</b> ▾</button><div class="ms-panel" id="msAreaPanel"></div></div>
-    <div class="ms" id="msDistrict"><button class="ms-btn" id="msDistrictBtn">District: <b>Semua</b> ▾</button><div class="ms-panel" id="msDistrictPanel"></div></div>
-    <div class="ms" id="msTerritory"><button class="ms-btn" id="msTerritoryBtn">Territory: <b>Semua</b> ▾</button><div class="ms-panel" id="msTerritoryPanel"></div></div>
-    <button class="btn-ghost sm" id="resetFilterBtn">↺ Reset filter</button>
+    <div class="ms" id="msZone"><button class="ms-btn" id="msZoneBtn">Zone: <b>All</b> ▾</button><div class="ms-panel" id="msZonePanel"></div></div>
+    <div class="ms" id="msRegion"><button class="ms-btn" id="msRegionBtn">Region: <b>All</b> ▾</button><div class="ms-panel" id="msRegionPanel"></div></div>
+    <div class="ms" id="msArea"><button class="ms-btn" id="msAreaBtn">Area: <b>All</b> ▾</button><div class="ms-panel" id="msAreaPanel"></div></div>
+    <div class="ms" id="msDistrict"><button class="ms-btn" id="msDistrictBtn">District: <b>All</b> ▾</button><div class="ms-panel" id="msDistrictPanel"></div></div>
+    <div class="ms" id="msTerritory"><button class="ms-btn" id="msTerritoryBtn">Territory: <b>All</b> ▾</button><div class="ms-panel" id="msTerritoryPanel"></div></div>
+    <button class="btn-ghost sm" id="resetFilterBtn">↺ Reset filters</button>
   </div>
 </div>
 
@@ -54,7 +54,7 @@
     <div class="hero-text">
       <span class="eyebrow">Location Verification Report</span>
       <h1>Field Force <em>Location Intelligence.</em></h1>
-      <p class="lead">Tarik data visit dari Snowflake, pilih dataset, dan lihat hasilnya di Report.</p>
+      <p class="lead">Pull visit data from Snowflake, pick a dataset, and explore it in the Report.</p>
       <div class="activecard" id="activeCard"></div>
     </div>
     <div class="hero-visual" aria-hidden="true">
@@ -154,10 +154,10 @@
         <b>Signal to evidence</b>
         <div class="ticker">
           <div class="tk">
-            <span>📍 Location mismatch · 1,2 km dari toko</span>
-            <span>⚡ Rapid same location · 6 toko / 50 m</span>
-            <span>🌙 Visit after 7 PM · mulai 21:14</span>
-            <span>📍 Location mismatch · 1,2 km dari toko</span>
+            <span>📍 Location mismatch · 1.2 km from store</span>
+            <span>⚡ Rapid same location · 6 stores / 50 m</span>
+            <span>🌙 Visit after 7 PM · started 21:14</span>
+            <span>📍 Location mismatch · 1.2 km from store</span>
           </div>
         </div>
         <small>Store master · visit GPS · shared location</small>
@@ -168,31 +168,31 @@
   <div class="conn-grid">
     <div class="card sfcard">
       <div class="card-head">
-        <div><h3>❄️ Tarik data baru</h3><div class="cap">Snowflake · DB_ID_PRD</div></div>
+        <div><h3>❄️ Pull new data</h3><div class="cap">Snowflake · DB_ID_PRD</div></div>
         <div class="sf-conn" id="sfConn"></div>
       </div>
       <form class="sf-form" id="sfForm" autocomplete="off">
         <div class="frow3">
-          <label>KPS week awal<input type="number" id="sfWeekFrom" value="202630" min="200001" max="209952" required></label>
-          <label>KPS week akhir<input type="number" id="sfWeekTo" value="202644" min="200001" max="209952" required></label>
+          <label>From KPS week<input type="number" id="sfWeekFrom" value="202630" min="200001" max="209952" required></label>
+          <label>To KPS week<input type="number" id="sfWeekTo" value="202644" min="200001" max="209952" required></label>
           <label>Channel
             <input type="text" id="sfChannel" value="General Trade" list="channelList" required>
             <datalist id="channelList"><option>General Trade</option><option>Modern Trade</option></datalist>
           </label>
         </div>
         <div class="weekchips" id="weekChips">
-          <button type="button" data-weeks="4">4 week</button>
-          <button type="button" data-weeks="8">8 week</button>
-          <button type="button" data-weeks="15">15 week</button>
+          <button type="button" data-weeks="4">Last 4 weeks</button>
+          <button type="button" data-weeks="8">8 weeks</button>
+          <button type="button" data-weeks="15">15 weeks</button>
         </div>
-        <label>Nama dataset <small>opsional</small><input type="text" id="sfName" placeholder="mis. HoZ review KPS 30–44"></label>
+        <label>Dataset name <small>optional</small><input type="text" id="sfName" placeholder="e.g. HoZ review KPS 30–44"></label>
         <details class="adv">
           <summary>Login</summary>
-          <label>Username Snowflake<input type="text" id="sfUser"></label>
+          <label>Snowflake username<input type="text" id="sfUser"></label>
           <div class="hint" id="sfInfo"></div>
         </details>
         <div class="sf-actions">
-          <button class="btn primary" type="submit" id="sfRunBtn">▶ Jalankan query</button>
+          <button class="btn primary" type="submit" id="sfRunBtn">▶ Run query</button>
           <button class="btn ghost" type="button" id="sfSqlBtn">{ } SQL</button>
         </div>
       </form>
@@ -200,14 +200,14 @@
         <ol class="hsteps" id="sfSteps">
           <li data-step="auth"><span class="b"></span><b>Login</b></li>
           <li data-step="query"><span class="b"></span><b>Query</b></li>
-          <li data-step="fetch"><span class="b"></span><b>Simpan</b><small id="sfRows"></small></li>
-          <li data-step="done"><span class="b"></span><b>Selesai</b></li>
+          <li data-step="fetch"><span class="b"></span><b>Save</b><small id="sfRows"></small></li>
+          <li data-step="done"><span class="b"></span><b>Done</b></li>
         </ol>
         <div class="sf-msg" id="sfMsg"></div>
         <div class="sf-jobactions">
           <span class="elapsed" id="sfElapsed"></span>
-          <button class="btn ghost sm" id="sfCancelBtn" type="button">Batalkan</button>
-          <button class="btn primary sm" id="sfUseBtn" type="button" hidden>Pakai untuk Report →</button>
+          <button class="btn ghost sm" id="sfCancelBtn" type="button">Cancel</button>
+          <button class="btn primary sm" id="sfUseBtn" type="button" hidden>Use in Report →</button>
         </div>
       </div>
       <pre class="sqlbox" id="sqlBox" hidden></pre>
@@ -215,8 +215,8 @@
 
     <div class="card libcard">
       <div class="card-head">
-        <div><h3>📚 Dataset tersimpan</h3><div class="cap">Pilih satu untuk Report</div></div>
-        <button class="iconbtn" id="libRefresh" title="Muat ulang">↻</button>
+        <div><h3>📚 Saved datasets</h3><div class="cap">Pick one for the Report</div></div>
+        <button class="iconbtn" id="libRefresh" title="Refresh">↻</button>
       </div>
       <div class="liblist" id="libList"></div>
     </div>
@@ -227,30 +227,35 @@
 <section id="view-report" hidden>
   <div class="report-empty" id="reportEmpty" hidden>
     <div class="radar"><i></i><i></i><i></i><span></span></div>
-    <h2>Belum ada dataset</h2>
-    <p>Pilih atau tarik dataset di Data Connection.</p>
-    <a class="btn primary" href="#/connection">🔌 Ke Data Connection</a>
+    <h2>No dataset selected</h2>
+    <p>Pick or pull a dataset in Data Connection.</p>
+    <a class="btn primary" href="#/connection">🔌 Go to Data Connection</a>
   </div>
 <div id="reportBody" hidden>
-  <!-- header: judul dataset + skor -->
+  <!-- header + tab -->
   <div class="rhead">
-    <div class="rhead-text">
-      <span class="eyebrow" id="dashSource">Report</span>
-      <h1 id="dashTitle">—</h1>
-      <div class="dash-meta" id="dashMeta"></div>
+    <div class="rhead-top">
+      <div class="rhead-text">
+        <h1>Field Force Visit Verification</h1>
+        <div class="rsub" id="dashSub"></div>
+      </div>
       <div class="dash-actions">
-        <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ CSV</a>
-        <a class="btn ghost sm" href="#/connection">⇄ Ganti dataset</a>
+        <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ Raw CSV</a>
+        <a class="btn ghost sm" href="#/connection">⇄ Change dataset</a>
       </div>
     </div>
-    <div class="scores" id="scores"></div>
+    <nav class="rtabs" id="rtabs">
+      <button data-tab="summary" class="active">Executive Summary</button>
+      <button data-tab="radar">Regional Breakdown</button>
+      <button data-tab="lens">Visit Map &amp; Geotag</button>
+    </nav>
   </div>
 
   <!-- parameter: panel buka-tutup -->
   <div class="pbox" id="pbox">
     <button class="pbox-head" id="pboxToggle" type="button" aria-expanded="false">
       <span class="pbox-ico">⚙️</span>
-      <span class="pbox-title">Parameter</span>
+      <span class="pbox-title">Detection parameters</span>
       <span class="pchips" id="pchips"></span>
       <span class="recalc" id="recalc"><span class="spin"></span><span id="recalcTxt"></span></span>
       <span class="pbox-chev">▾</span>
@@ -258,76 +263,68 @@
     <div class="pbox-body">
       <div class="pgrid">
         <label class="pcard"><span class="pc-top"><i>📍</i><b>Location Mismatch</b></span>
-          <span class="pc-in"><input type="number" id="dMismatch" value="1000" min="1"><em>m</em></span>
-          <small>Jarak GPS visit ke toko lebih dari ini.</small></label>
+          <span class="pc-in"><input type="number" id="dMismatch" value="500" min="1"><em>m</em></span>
+          <small>Visit GPS is farther than this from the store.</small></label>
         <label class="pcard"><span class="pc-top"><i>⚡</i><b>Rapid · radius</b></span>
           <span class="pc-in"><input type="number" id="dRadius" value="50" min="1"><em>m</em></span>
-          <small>Radius titik visit yang dianggap sama.</small></label>
-        <label class="pcard"><span class="pc-top"><i>⚡</i><b>Rapid · batas toko</b></span>
-          <span class="pc-in"><input type="number" id="dStores" value="5" min="1"><em>toko</em></span>
-          <small>Toko unik dalam radius, per hari &amp; territory.</small></label>
-        <label class="pcard"><span class="pc-top"><i>🌙</i><b>Jam malam</b></span>
+          <small>Visits within this radius count as one spot.</small></label>
+        <label class="pcard"><span class="pc-top"><i>⚡</i><b>Rapid · store limit</b></span>
+          <span class="pc-in"><input type="number" id="dStores" value="5" min="1"><em>stores</em></span>
+          <small>Unique stores in that spot, per day &amp; territory.</small></label>
+        <label class="pcard"><span class="pc-top"><i>🌙</i><b>After-hours cutoff</b></span>
           <span class="pc-in"><input type="time" id="dNight" value="19:00"></span>
-          <small>Visit mulai setelah jam ini.</small></label>
+          <small>Visit starts after this time.</small></label>
       </div>
     </div>
   </div>
 
-  <!-- tab section -->
-  <nav class="rtabs" id="rtabs">
-    <button data-tab="summary" class="active"><i>📊</i><span><b>Ringkasan</b><small>Gambaran besar</small></span></button>
-    <button data-tab="radar"><i>🧭</i><span><b>Radar Wilayah</b><small>Zone → region → area</small></span></button>
-    <button data-tab="lens"><i>🔭</i><span><b>Lensa Lapangan</b><small>Peta visit &amp; geotag</small></span></button>
-  </nav>
-
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
     <div class="kpis" id="kpis"></div>
-    <div class="insights" id="insights"></div>
     <div class="grid3">
-      <div class="card"><h3>Anomaly per zone</h3><div class="cap">% dari visit teridentifikasi</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
-      <div class="card"><h3>Cakupan GPS per zone</h3><div class="cap">% visit dengan long-lat lengkap</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
-      <div class="card"><h3>Jenis anomaly</h3><div class="cap">Jumlah visit per parameter</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
+      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+      <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+      <div class="card"><h3>Anomaly mix</h3><div class="cap">Visits flagged per rule</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
     </div>
     <div class="grid2">
-      <div class="card"><h3>Pola per hari</h3><div class="cap">% anomaly, Minggu–Sabtu</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+      <div class="card"><h3>Anomaly by weekday</h3><div class="cap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
       <div class="card">
         <div class="hrow">
-          <div><h3>Tren mingguan</h3><div class="cap" id="histCap"></div></div>
+          <div><h3>Weekly trend</h3><div class="cap" id="histCap"></div></div>
           <div class="hctl">
-            <select id="histDim"><option value="zone">Per zone</option><option value="region">Per region</option></select>
-            <select id="histMetric"><option value="cover">% Cakupan GPS</option><option value="anom">% Anomaly</option></select>
+            <select id="histDim"><option value="zone">By zone</option><option value="region">By region</option></select>
+            <select id="histMetric"><option value="cover">GPS coverage %</option><option value="anom">Anomaly %</option></select>
           </div>
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
       </div>
     </div>
-    <div class="tip">💡 Klik kanan grafik untuk copy gambar atau export data.</div>
+    <div class="tip">Right-click a chart to copy it or export its data.</div>
   </section>
 
   <!-- ===== Radar Wilayah ===== -->
   <section class="rpanel" data-panel="radar" hidden>
     <div class="leaders">
-      <div class="card lead-card hot"><h3>🔥 Area paling berisiko</h3><div class="cap">% anomaly tertinggi</div><ol id="leadHot"></ol></div>
-      <div class="card lead-card cool"><h3>🌿 Area paling sehat</h3><div class="cap">% anomaly terendah</div><ol id="leadCool"></ol></div>
-      <div class="card lead-card blind"><h3>📡 GPS paling lemah</h3><div class="cap">Cakupan GPS terendah</div><ol id="leadBlind"></ol></div>
+      <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
+      <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
+      <div class="card lead-card blind"><h3>Lowest GPS coverage</h3><div class="cap">Bottom 5 areas</div><ol id="leadBlind"></ol></div>
     </div>
     <div class="card">
       <div class="toolbar">
-        <input type="search" id="geoSearch" placeholder="🔎 Cari zone / region / area">
+        <input type="search" id="geoSearch" placeholder="🔎 Search zone / region / area">
         <div class="legend inline">
-          <span><span class="dot" style="background:var(--ok)"></span>Sehat &lt;20%</span>
-          <span><span class="dot" style="background:var(--warn)"></span>Waspada</span>
-          <span><span class="dot" style="background:var(--mid)"></span>Tinggi</span>
-          <span><span class="dot" style="background:var(--bad)"></span>Kritis &gt;60%</span>
+          <span><span class="dot" style="background:var(--ok)"></span>Healthy &lt;20%</span>
+          <span><span class="dot" style="background:var(--warn)"></span>Watch</span>
+          <span><span class="dot" style="background:var(--mid)"></span>High</span>
+          <span><span class="dot" style="background:var(--bad)"></span>Critical &gt;60%</span>
         </div>
         <button class="btn-ghost" id="geoExport">⬇ CSV</button>
       </div>
       <div class="tbl-wrap" style="max-height:620px">
         <table id="geoTable"><thead><tr>
-          <th data-k="name">Wilayah</th><th class="num" data-k="total">Visit</th>
-          <th class="num" data-k="cover">Cakupan GPS</th><th class="num" data-k="checkable">Terident.</th>
-          <th class="num" data-k="anomaly">Anomaly</th><th class="num" data-k="rate">% Anomaly</th>
+          <th data-k="name">Region</th><th class="num" data-k="total">Visits</th>
+          <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable">Verifiable</th>
+          <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
           <th class="num" data-k="lm">📍</th><th class="num" data-k="a7">🌙</th>
           <th class="num" data-k="rsl">⚡</th><th data-k="rate">Status</th>
         </tr></thead><tbody></tbody></table>
@@ -337,75 +334,75 @@
 
   <!-- ===== Lensa Lapangan ===== -->
   <section class="rpanel" data-panel="lens" hidden>
-    <div class="subhead"><h2>🗺️ Peta visit</h2><span>Klik titik untuk melihat tokonya · klik territory untuk zoom</span></div>
+    <div class="subhead"><h2>Visit map</h2><span>Click a point to see its store · click a territory to zoom</span></div>
     <div class="mapgrid">
       <div class="card">
         <div class="toolbar">
-          <select id="mDistrict"><option value="">Semua District</option></select>
-          <select id="mTerr"><option value="">Semua Territory</option></select>
+          <select id="mDistrict"><option value="">All districts</option></select>
+          <select id="mTerr"><option value="">All territories</option></select>
           <select id="mMode">
-            <option value="all">Semua visit</option>
-            <option value="anom">Hanya anomaly</option>
-            <option value="normal">Hanya normal</option>
+            <option value="all">All visits</option>
+            <option value="anom">Anomalies only</option>
+            <option value="normal">Normal only</option>
             <option value="lm">📍 Location Mismatch</option>
             <option value="rsl">⚡ Rapid Same Location</option>
             <option value="a7">🌙 Visit After 7PM</option>
           </select>
-          <label class="chk"><input type="checkbox" id="mLine" checked> Garis ke toko</label>
+          <label class="chk"><input type="checkbox" id="mLine" checked> Line to store</label>
         </div>
         <div id="map" class="map"></div>
         <div class="maplegend">
           <span><span class="dot" style="background:#e3141b"></span> Anomaly</span>
           <span><span class="dot" style="background:#16a34a"></span> Normal</span>
-          <span><span class="dot" style="background:#2563eb"></span> Toko</span>
+          <span><span class="dot" style="background:#2563eb"></span> Store</span>
           <span class="mapstat" id="mapStat"></span>
         </div>
       </div>
       <div class="card">
-        <div class="hrow"><div><h3>Territory</h3><div class="cap">Klik baris untuk lihat di peta</div></div><select id="mWeek"></select></div>
+        <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div><select id="mWeek"></select></div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
-            <th data-k="terr">Territory</th><th class="num" data-k="total">Visit</th><th class="num" data-k="gps">GPS</th><th class="num" data-k="cover">Cakupan</th>
-            <th class="num" data-k="lm">📍</th><th class="num" data-k="rsl">⚡</th><th class="num" data-k="a7">🌙</th><th class="num" data-k="rate">% Anom</th>
+            <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="gps">GPS</th><th class="num" data-k="cover">Coverage</th>
+            <th class="num" data-k="lm">📍</th><th class="num" data-k="rsl">⚡</th><th class="num" data-k="a7">🌙</th><th class="num" data-k="rate">Anomaly %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>
       </div>
     </div>
 
-    <div class="subhead"><h2>📌 Geotag recommendation</h2><span>Titik toko yang paling sering dikunjungi (modus) vs lokasi toko saat ini</span></div>
+    <div class="subhead"><h2>Geotag recommendation</h2><span>Most frequent visit point (mode) vs. current store location</span></div>
     <div class="kpis sm" id="grKpis"></div>
     <div class="grgrid">
       <div class="card">
-        <h3>Histori visit toko</h3>
-        <div class="cap" id="grMapCap">Pilih customer di tabel.</div>
+        <h3>Store visit history</h3>
+        <div class="cap" id="grMapCap">Select a customer in the table.</div>
         <div id="grMap" class="map"></div>
         <div class="maplegend">
           <span><span class="dot" style="background:#94a3b8"></span> Visit</span>
-          <span><span class="dot" style="background:#2563eb"></span> Toko saat ini</span>
-          <span><span class="dot" style="background:#14b8a6"></span> Rekomendasi</span>
+          <span><span class="dot" style="background:#2563eb"></span> Current location</span>
+          <span><span class="dot" style="background:#14b8a6"></span> Recommended</span>
         </div>
       </div>
       <div class="card">
         <div class="toolbar">
-          <input type="search" id="grSearch" placeholder="🔎 Cari customer / territory">
+          <input type="search" id="grSearch" placeholder="🔎 Search customer / territory">
           <select id="grFilter">
-            <option value="all">Semua status</option>
-            <option value="ok">✅ Sudah sesuai</option>
-            <option value="update">🟠 Perlu update</option>
-            <option value="need">⛔ Butuh data</option>
+            <option value="all">All statuses</option>
+            <option value="ok">✅ Accurate</option>
+            <option value="update">🟠 Needs update</option>
+            <option value="need">⛔ Not enough data</option>
           </select>
           <button class="btn-ghost" id="grExport">⬇ CSV</button>
         </div>
         <div class="tbl-wrap" style="max-height:560px">
           <table id="grTable"><thead><tr>
             <th data-k="name">Customer</th><th data-k="terr">Territory</th>
-            <th class="num" data-k="total">Visit</th>
-            <th data-k="existing">Saat ini</th>
-            <th data-k="rec">Rekomendasi</th>
-            <th class="num" data-k="modeCount">Modus</th>
-            <th class="num" data-k="distinct">Titik</th>
-            <th class="num" data-k="dist">Geser</th>
+            <th class="num" data-k="total">Visits</th>
+            <th data-k="existing">Current</th>
+            <th data-k="rec">Recommended</th>
+            <th class="num" data-k="modeCount">Mode</th>
+            <th class="num" data-k="distinct">Points</th>
+            <th class="num" data-k="dist">Shift</th>
             <th data-k="status">Status</th>
             <th data-k="conf">Confidence</th>
           </tr></thead><tbody></tbody></table>
@@ -425,7 +422,7 @@
 <div class="loader" id="loader" hidden>
   <div class="loader-card">
     <div class="radar sm"><i></i><i></i><i></i><span></span></div>
-    <h3 id="loaderTitle">Membuka dataset</h3>
+    <h3 id="loaderTitle">Opening dataset</h3>
     <div class="progress"><i id="loaderBar"></i></div>
     <div class="phase" id="loaderPhase"></div>
   </div>

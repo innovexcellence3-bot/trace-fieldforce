@@ -16,18 +16,18 @@ async function loadConfig() {
   try {
     cfg = await api.config();
   } catch (e) {
-    $('#sfConn').innerHTML = `<span class="d"></span><div class="grow"><b>Server tidak terjangkau</b></div>`;
+    $('#sfConn').innerHTML = `<span class="d"></span><div class="grow"><b>Server unreachable</b></div>`;
     return;
   }
   const s = cfg.snowflake;
   if (!$('#sfUser').value) $('#sfUser').value = store.get('sfUser', s.user || '');
-  $('#sfInfo').innerHTML = `<code>${esc(s.account)}</code> · <code>${esc(s.warehouse)}</code>${s.role ? ` · <code>${esc(s.role)}</code>` : ''} · SSO. Default di <code>.env</code>.`;
+  $('#sfInfo').innerHTML = `<code>${esc(s.account)}</code> · <code>${esc(s.warehouse)}</code>${s.role ? ` · <code>${esc(s.role)}</code>` : ''} · SSO. Defaults in <code>.env</code>.`;
   $('#sqlBox').textContent = cfg.sql;
   const on = !!s.connected;
   $('#sfConn').className = 'sf-conn' + (on ? ' on' : '');
   $('#sfConn').innerHTML = on
-    ? `<span class="d"></span><div class="grow"><b>Terhubung</b><small>${esc(s.user)}</small></div><button type="button" class="btn ghost sm" id="sfLogout">Putuskan</button>`
-    : `<span class="d"></span><div class="grow"><b>Belum login</b><small>SSO saat query dijalankan</small></div>`;
+    ? `<span class="d"></span><div class="grow"><b>Connected</b><small>${esc(s.user)}</small></div><button type="button" class="btn ghost sm" id="sfLogout">Disconnect</button>`
+    : `<span class="d"></span><div class="grow"><b>Not signed in</b><small>SSO starts when you run a query</small></div>`;
   $('#sfStat').classList.toggle('on', on);
   $('#sfStatTxt').textContent = on ? 'Snowflake terhubung' : 'Snowflake';
   $('#sfLogout')?.addEventListener('click', async () => { await api.disconnect().catch(() => {}); loadConfig(); });
@@ -56,8 +56,8 @@ function renderJob(job) {
   msg.className = 'sf-msg' + (failed ? ' err' : '');
   msg.hidden = !failed && job.status !== 'done' && job.phase !== 'auth';
   msg.innerHTML = failed ? esc(job.message) + '\n' + esc(job.error || '') + hintFor(job.error)
-    : job.status === 'done' ? `✅ <b>${fmt(job.rows)}</b> baris tersimpan.`
-    : '🔐 Selesaikan login SSO di tab browser yang terbuka.';
+    : job.status === 'done' ? `✅ <b>${fmt(job.rows)}</b> rows saved.`
+    : '🔐 Complete the SSO sign-in in the browser tab that opened.';
   $('#sfElapsed').textContent = '⏱ ' + fmtDuration(job.elapsedMs || 0);
   $('#sfCancelBtn').hidden = job.status !== 'running';
   $('#sfUseBtn').hidden = job.status !== 'done';
@@ -65,8 +65,8 @@ function renderJob(job) {
 }
 function hintFor(err) {
   const e = String(err || '').toLowerCase();
-  if (e.includes('timeout') || e.includes('browser')) return '\nLogin SSO belum selesai dalam 3 menit — coba lagi.';
-  if (e.includes('enotfound') || e.includes('getaddrinfo') || e.includes('network') || e.includes('403')) return '\nCek koneksi jaringan kantor / VPN.';
+  if (e.includes('timeout') || e.includes('browser')) return '\nSSO sign-in was not completed within 3 minutes — try again.';
+  if (e.includes('enotfound') || e.includes('getaddrinfo') || e.includes('network') || e.includes('403')) return '\nCheck the office network / VPN connection.';
   return '';
 }
 async function poll() {
@@ -115,25 +115,25 @@ export function renderActiveCard() {
   const el = $('#activeCard');
   if (!d) {
     el.className = 'activecard none';
-    el.innerHTML = '<div class="ico">📭</div><div class="grow"><small>Report</small><b>Belum ada dataset aktif</b><span>Tarik data atau pilih dataset di bawah</span></div>';
+    el.innerHTML = '<div class="ico">📭</div><div class="grow"><small>Report</small><b>No active dataset</b><span>Pull data or pick a dataset below</span></div>';
     return;
   }
   el.className = 'activecard';
-  el.innerHTML = `<div class="ico">📊</div><div class="grow"><small>Report aktif</small><b>${esc(d.name)}</b>
-    <span>${fmtCompact(d.rows || 0)} visit · ${rangeOf(d)}</span></div><a class="btn primary" href="#/report">Buka Report →</a>`;
+  el.innerHTML = `<div class="ico">📊</div><div class="grow"><small>Active report</small><b>${esc(d.name)}</b>
+    <span>${fmtCompact(d.rows || 0)} visits · ${rangeOf(d)}</span></div><a class="btn primary" href="#/report">Open Report →</a>`;
 }
 
 export async function refreshLibrary() {
   try {
     datasets = await api.datasets();
   } catch (e) {
-    $('#libList').innerHTML = `<div class="empty"><div class="big">⚠️</div><h4>Gagal memuat</h4>${esc(e.message)}</div>`;
+    $('#libList').innerHTML = `<div class="empty"><div class="big">⚠️</div><h4>Could not load</h4>${esc(e.message)}</div>`;
     return datasets;
   }
   renderActiveCard();
   const list = $('#libList');
   if (!datasets.length) {
-    list.innerHTML = '<div class="empty"><div class="big">📭</div><h4>Belum ada dataset</h4>Jalankan query di sebelah kiri.</div>';
+    list.innerHTML = '<div class="empty"><div class="big">📭</div><h4>No datasets yet</h4>Run a query to create one.</div>';
     return datasets;
   }
   list.innerHTML = datasets.map((d) => {
@@ -141,14 +141,14 @@ export async function refreshLibrary() {
     return `<div class="libitem${active ? ' active' : ''}" data-id="${esc(d.id)}">
       <div class="ico">${d.source === 'snowflake' ? '❄️' : '📄'}</div>
       <div>
-        <div class="nm">${esc(d.name)}${active ? '<span class="tag active">Aktif</span>' : ''}${d.snapshot ? '<span class="tag fast" title="Sudah diolah — Report terbuka cepat">⚡ Cepat</span>' : ''}</div>
-        <div class="meta"><span>${rangeOf(d)}</span><span><b>${fmtCompact(d.rows || 0)}</b> visit</span><span>${fmtBytes(d.bytes)}</span><span>${fmtDateTime(d.createdAt)}</span></div>
+        <div class="nm">${esc(d.name)}${active ? '<span class="tag active">Active</span>' : ''}${d.snapshot ? '<span class="tag fast" title="Processed — opens fast">⚡ Fast</span>' : ''}</div>
+        <div class="meta"><span>${rangeOf(d)}</span><span><b>${fmtCompact(d.rows || 0)}</b> visits</span><span>${fmtBytes(d.bytes)}</span><span>${fmtDateTime(d.createdAt)}</span></div>
       </div>
       <div class="acts">
-        ${active ? '<a class="btn ghost sm" href="#/report">Buka</a>' : '<button class="btn primary sm" data-act="use">Pakai</button>'}
-        <a class="iconbtn" href="${api.downloadUrl(d.id)}" title="Unduh CSV">⬇</a>
-        <button class="iconbtn" data-act="rename" title="Ganti nama">✎</button>
-        <button class="iconbtn del" data-act="del" title="Hapus">🗑</button>
+        ${active ? '<a class="btn ghost sm" href="#/report">Open</a>' : '<button class="btn primary sm" data-act="use">Use</button>'}
+        <a class="iconbtn" href="${api.downloadUrl(d.id)}" title="Download CSV">⬇</a>
+        <button class="iconbtn" data-act="rename" title="Rename">✎</button>
+        <button class="iconbtn del" data-act="del" title="Delete">🗑</button>
       </div></div>`;
   }).join('');
   return datasets;
@@ -162,13 +162,13 @@ async function onLibraryClick(e) {
   if (!d) return;
   if (btn.dataset.act === 'use') onUse(id);
   else if (btn.dataset.act === 'rename') {
-    const name = prompt('Nama dataset:', d.name);
+    const name = prompt('Dataset name:', d.name);
     if (name && name.trim()) { await api.rename(id, name.trim()).catch((err) => toast('⚠️ ' + esc(err.message), 'err')); refreshLibrary(); }
   } else if (btn.dataset.act === 'del') {
-    if (!confirm(`Hapus "${d.name}"?`)) return;
+    if (!confirm(`Delete "${d.name}"?`)) return;
     await api.remove(id).catch((err) => toast('⚠️ ' + esc(err.message), 'err'));
     if (id === S.activeId) S.activeId = null;
-    toast('🗑 Dataset dihapus.');
+    toast('🗑 Dataset deleted.');
     refreshLibrary();
   }
 }

@@ -3,7 +3,9 @@
    A   = hasil agregasi untuk filter yang aktif
    P   = parameter deteksi anomaly
    FILT= filter tanggal, GF = filter geo multi-select, GEOALL = hierarki geo lengkap */
-export const DEFAULT_PARAMS = { mismatchM: 1000, rapidM: 50, rapidCount: 5, nightMin: 19 * 60 };
+/* v = versi default. Naikkan bila default berubah supaya state lama ikut memakai default baru. */
+export const PARAMS_VERSION = 2;
+export const DEFAULT_PARAMS = { mismatchM: 500, rapidM: 50, rapidCount: 5, nightMin: 19 * 60, v: PARAMS_VERSION };
 
 export const S = {
   P: { ...DEFAULT_PARAMS },

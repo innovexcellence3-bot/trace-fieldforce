@@ -32,8 +32,8 @@ export function invalidateMaps() {
 
 const svButtons = (i) => {
   const B = S.B;
-  let h = `<div class="svbtns"><a href="${streetView(B.latV[i], B.lonV[i])}" target="_blank" rel="noopener">👁️ Street View titik visit</a>`;
-  if (!isNaN(B.latC[i]) && !isNaN(B.lonC[i])) h += `<a class="st" href="${streetView(B.latC[i], B.lonC[i])}" target="_blank" rel="noopener">🏬 Street View toko</a>`;
+  let h = `<div class="svbtns"><a href="${streetView(B.latV[i], B.lonV[i])}" target="_blank" rel="noopener">👁️ Street View: visit</a>`;
+  if (!isNaN(B.latC[i]) && !isNaN(B.lonC[i])) h += `<a class="st" href="${streetView(B.latC[i], B.lonC[i])}" target="_blank" rel="noopener">🏬 Street View: store</a>`;
   return h + '</div>';
 };
 function popupHtml(i) {
@@ -43,8 +43,8 @@ function popupHtml(i) {
   return `<b>${esc(B.iCust.val(B.cust[i]))}</b><br>${esc(B.iEmp.val(B.emp[i]))}<br>` +
     `${esc(B.iTerr.val(B.terr[i]))} · ${esc(B.iDist.val(B.district[i]))}<br>` +
     `${esc(B.iArea.val(B.area[i]))} · ${esc(B.iZone.val(B.zone[i]))}<br>` +
-    `Tanggal: ${esc(B.iDate.val(B.date[i]))} · Week ${esc(B.iWeek.val(B.week[i]))}<br>` +
-    (isNaN(B.dist[i]) ? '' : `Jarak ke toko: <b>${B.dist[i].toFixed(0)} m</b><br>`) +
+    `Date: ${esc(B.iDate.val(B.date[i]))} · Week ${esc(B.iWeek.val(B.week[i]))}<br>` +
+    (isNaN(B.dist[i]) ? '' : `Distance to store: <b>${B.dist[i].toFixed(0)} m</b><br>`) +
     `Status: <b style="color:${B.anA[i] ? RED : GREEN}">${B.anA[i] ? reason.join(' | ') : 'Normal'}</b>` + svButtons(i);
 }
 function highlightStore(i) {
@@ -55,7 +55,7 @@ function highlightStore(i) {
   L.polyline([[lat, lon], [B.latC[i], B.lonC[i]]], { color: '#1d4ed8', weight: 3, opacity: 0.95 }).addTo(highlightLayer);
   L.circleMarker([lat, lon], { radius: 11, color: '#1d4ed8', weight: 2, fill: false, opacity: 0.8 }).addTo(highlightLayer);
   L.circleMarker([B.latC[i], B.lonC[i]], { radius: 10, color: '#fff', weight: 2.5, fillColor: BLUE, fillOpacity: 1 }).addTo(highlightLayer)
-    .bindPopup(`🏬 <b>Lokasi toko asli</b><br>${esc(B.iCust.val(B.cust[i]))}<br>` + (isNaN(B.dist[i]) ? '' : `Jarak dari titik visit: <b>${B.dist[i].toFixed(0)} m</b>`) + svButtons(i)).openPopup();
+    .bindPopup(`🏬 <b>Store location</b><br>${esc(B.iCust.val(B.cust[i]))}<br>` + (isNaN(B.dist[i]) ? '' : `Distance from visit: <b>${B.dist[i].toFixed(0)} m</b>`) + svButtons(i)).openPopup();
 }
 
 /** Gambar titik visit sesuai filter peta. `f` = { district, terr, week, mode, line } */
@@ -82,7 +82,7 @@ export function renderMap(f, fit) {
   const stat = $('#mapStat');
   if (match.length > CLUSTER_MAX && tfId < 0) {
     stat.className = 'mapstat warn';
-    stat.innerHTML = `⚠️ ${fmt(match.length)} titik — pilih district / territory dulu`;
+    stat.innerHTML = `⚠️ ${fmt(match.length)} points — pick a district or territory first`;
     return;
   }
   const markers = [], bounds = [];
@@ -103,7 +103,7 @@ export function renderMap(f, fit) {
   cluster.addLayers(markers);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
-  stat.innerHTML = `<b>${fmt(match.length)}</b> visit · <b style="color:${RED}">${fmt(anom)}</b> anomaly`;
+  stat.innerHTML = `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly`;
 }
 
 /* ---------------- peta geotag recommendation ---------------- */
@@ -132,16 +132,16 @@ export function showGeoRecMap(item) {
   });
   if (!isNaN(item.latC) && !isNaN(item.lonC)) {
     L.circleMarker([item.latC, item.lonC], { radius: 9, color: '#fff', weight: 2.5, fillColor: BLUE, fillOpacity: 1 })
-      .bindPopup(`🏬 <b>Lokasi toko existing</b><br>${esc(item.name)}<br>${item.latC.toFixed(5)}, ${item.lonC.toFixed(5)}`).addTo(grLayer);
+      .bindPopup(`🏬 <b>Current store location</b><br>${esc(item.name)}<br>${item.latC.toFixed(5)}, ${item.lonC.toFixed(5)}`).addTo(grLayer);
     bounds.push([item.latC, item.lonC]);
   }
   if (!isNaN(item.recLat) && !isNaN(item.recLon)) {
     L.circleMarker([item.recLat, item.recLon], { radius: 10, color: '#fff', weight: 2.5, fillColor: '#14b8a6', fillOpacity: 1 })
-      .bindPopup(`📌 <b>Rekomendasi (modus)</b><br>${esc(item.name)}<br>${item.recLat.toFixed(5)}, ${item.recLon.toFixed(5)}<br>Modus: <b>${item.modeCount || 0} titik</b>` +
-        (!isNaN(item.dist) ? `<br>Jarak dari existing: <b>${Math.round(item.dist)} m</b>` : '')).addTo(grLayer);
+      .bindPopup(`📌 <b>Recommended (mode)</b><br>${esc(item.name)}<br>${item.recLat.toFixed(5)}, ${item.recLon.toFixed(5)}<br>Mode: <b>${item.modeCount || 0} visits</b>` +
+        (!isNaN(item.dist) ? `<br>Distance from current: <b>${Math.round(item.dist)} m</b>` : '')).addTo(grLayer);
     bounds.push([item.recLat, item.recLon]);
     if (!isNaN(item.latC) && !isNaN(item.lonC)) L.polyline([[item.latC, item.lonC], [item.recLat, item.recLon]], { color: '#14b8a6', weight: 2, opacity: 0.6, dashArray: '5 4' }).addTo(grLayer);
   }
-  $('#grMapCap').innerHTML = `<b>${esc(item.name)}</b> · ${esc(item.terr)} · ${esc(item.district)} — ${fmt(pts.length)} historical visit${item.distinct ? ` · ${item.distinct} titik unik` : ''}.`;
+  $('#grMapCap').innerHTML = `<b>${esc(item.name)}</b> · ${esc(item.terr)} · ${esc(item.district)} — ${fmt(pts.length)} visits${item.distinct ? ` · ${item.distinct} unique points` : ''}`;
   if (bounds.length) { try { grMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 17 }); } catch { /* ignore */ } }
 }

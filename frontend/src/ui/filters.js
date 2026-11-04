@@ -5,15 +5,15 @@ import { S } from '../core/state.js';
 const MS_IDS = ['msZone', 'msRegion', 'msArea', 'msDistrict', 'msTerritory'];
 
 function msLabel(id, arr, noun) {
-  $('#' + id + 'Btn').innerHTML = noun + ': <b>' + (arr.length ? arr.length + ' dipilih' : 'Semua') + '</b> ▾';
+  $('#' + id + 'Btn').innerHTML = noun + ': <b>' + (arr.length ? arr.length + ' selected' : 'All') + '</b> ▾';
 }
 function fillMS(id, options, selected, onChange) {
   const panel = $('#' + id + 'Panel');
   const sel = new Set(selected);
-  const find = options.length > 12 ? '<input class="msfind" type="search" placeholder="Cari...">' : '';
-  panel.innerHTML = '<div class="mshead"><a data-act="all">Pilih semua</a><a data-act="none">Kosongkan</a></div>' + find +
+  const find = options.length > 12 ? '<input class="msfind" type="search" placeholder="Search...">' : '';
+  panel.innerHTML = '<div class="mshead"><a data-act="all">Select all</a><a data-act="none">Clear</a></div>' + find +
     '<div class="msrows">' + options.map((o) => `<label class="msrow"><input type="checkbox" value="${esc(o)}" ${sel.has(o) ? 'checked' : ''}>${esc(o)}</label>`).join('') + '</div>' +
-    (options.length ? '' : '<div style="padding:8px;color:var(--muted);font-size:12px">Tidak ada opsi</div>');
+    (options.length ? '' : '<div style="padding:8px;color:var(--muted);font-size:12px">No options</div>');
   panel.querySelectorAll('input[type=checkbox]').forEach((cb) => cb.addEventListener('change', () => {
     onChange([...panel.querySelectorAll('input[type=checkbox]:checked')].map((x) => x.value));
   }));
@@ -96,7 +96,7 @@ export function makeSearchable(selId, placeholder) {
   const wrap = document.createElement('div');
   wrap.className = 'scombo';
   const input = document.createElement('input');
-  input.type = 'text'; input.className = 'scombo-input'; input.placeholder = placeholder || 'Cari...';
+  input.type = 'text'; input.className = 'scombo-input'; input.placeholder = placeholder || 'Search...';
   const panel = document.createElement('div');
   panel.className = 'scombo-panel';
   wrap.append(input, panel);
@@ -115,7 +115,7 @@ export function makeSearchable(selId, placeholder) {
       it.addEventListener('mousedown', (e) => { e.preventDefault(); sel.value = o.value; input.value = o.textContent; panel.classList.remove('open'); sel.dispatchEvent(new Event('change')); });
       panel.appendChild(it);
     }
-    if (!panel.children.length) panel.innerHTML = '<div class="scombo-empty">Tidak ada opsi</div>';
+    if (!panel.children.length) panel.innerHTML = '<div class="scombo-empty">No options</div>';
   }
   input.addEventListener('focus', () => { input.value = ''; renderPanel(''); panel.classList.add('open'); });
   input.addEventListener('input', () => { renderPanel(input.value); panel.classList.add('open'); });

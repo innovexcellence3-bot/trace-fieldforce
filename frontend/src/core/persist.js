@@ -19,14 +19,14 @@ function setSaveStat(busy) {
   const el = $('#saveStat');
   el.hidden = false;
   el.classList.toggle('busy', busy);
-  $('#saveStatTxt').textContent = busy ? 'Menyimpan…' : 'Tersimpan';
+  $('#saveStatTxt').textContent = busy ? 'Saving…' : 'Saved';
 }
 
 /** Simpan state (debounce). `now` = tanpa jeda. */
 export function persist(now = false) {
   clearTimeout(timer);
   setSaveStat(true);
-  const run = () => api.saveState(snapshotState()).then(() => setSaveStat(false)).catch(() => { $('#saveStatTxt').textContent = 'Gagal simpan'; });
+  const run = () => api.saveState(snapshotState()).then(() => setSaveStat(false)).catch(() => { $('#saveStatTxt').textContent = 'Save failed'; });
   if (now) return run();
   timer = setTimeout(run, 600);
   return Promise.resolve();
