@@ -4,9 +4,9 @@ import { $, fmt, pct, esc } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { downloadCSV } from './exports.js';
 
-export const barColor = (r) => (r >= 60 ? '#e3141b' : r >= 40 ? '#f97316' : r >= 20 ? '#f59e0b' : '#16a34a');
-const HPAL = ['#2563eb', '#e3141b', '#14b8a6', '#f59e0b', '#7c3aed', '#f97316', '#0ea5e9', '#16a34a', '#db2777', '#84cc16',
-  '#0f766e', '#b91c1c', '#a16207', '#1e40af', '#9333ea', '#059669', '#be185d', '#4d7c0f', '#0891b2', '#78350f'];
+export const barColor = (r) => (r >= 60 ? '#e5484d' : r >= 40 ? '#f97316' : r >= 20 ? '#f59e0b' : '#16a34a');
+const HPAL = ['#2563eb', '#14b8a6', '#f59e0b', '#8b5cf6', '#0891b2', '#ec4899', '#22c55e', '#f97316', '#1e3a8a', '#84cc16',
+  '#0f766e', '#6366f1', '#a16207', '#1e40af', '#9333ea', '#059669', '#be185d', '#4d7c0f', '#06b6d4', '#78350f'];
 const HDASH = [[], [], [], [], [], [], [], [], [], [], [6, 3], [6, 3], [6, 3], [6, 3], [6, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]];
 const HIST_MAX_SERIES = 20;
 
@@ -47,7 +47,7 @@ export function renderCharts() {
   const cvXMax = Math.min(100, Math.max(cvXMin + 10, Math.ceil((cvMax + 2) / 5) * 5));
   charts.chCover = new Chart($('#chCover'), {
     type: 'bar',
-    data: { labels: zc.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: zc.map((x) => +x.c.toFixed(1)), backgroundColor: zc.map((x) => (x.c >= 80 ? '#16a34a' : x.c >= 40 ? '#f59e0b' : '#e3141b')), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
+    data: { labels: zc.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: zc.map((x) => +x.c.toFixed(1)), backgroundColor: zc.map((x) => (x.c >= 80 ? '#16a34a' : x.c >= 40 ? '#f59e0b' : '#e5484d')), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
     options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% GPS coverage · ' + fmt(zc[c.dataIndex].t) + ' visits' } } },
       scales: { x: { min: cvXMin, max: cvXMax, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
@@ -58,7 +58,7 @@ export function renderCharts() {
   destroy('chReason');
   charts.chReason = new Chart($('#chReason'), {
     type: 'doughnut',
-    data: { labels: ['Location Mismatch', 'Visit After 7PM', 'Rapid Same Location'], datasets: [{ data: [A.lm, A.a7, A.rsl], backgroundColor: ['#e3141b', '#f59e0b', '#2563eb'], borderWidth: 0, hoverOffset: 6 }] },
+    data: { labels: ['Location Mismatch', 'Visit After 7PM', 'Rapid Same Location'], datasets: [{ data: [A.lm, A.a7, A.rsl], backgroundColor: ['#2563eb', '#14b8a6', '#8b5cf6'], borderWidth: 0, hoverOffset: 6 }] },
     options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, boxWidth: 8 } } } },
   });
   regExp('chReason', 'Anomaly mix', 'trace_chart_anomaly_mix.csv',

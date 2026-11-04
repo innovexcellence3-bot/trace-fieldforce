@@ -8,7 +8,7 @@ import { geoIds, passGeo } from '../engine/analytics.js';
 const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPT = { maxZoom: 19, attribution: '© OpenStreetMap' };
 const CLUSTER_MAX = 80000;
-const RED = '#e3141b', GREEN = '#16a34a', BLUE = '#2563eb';
+const RED = '#e5484d', GREEN = '#16a34a', BLUE = '#2563eb';
 
 let map, cluster, highlightLayer, iconAnom, iconNorm;
 

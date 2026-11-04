@@ -6,7 +6,7 @@ import { downloadCSV } from './exports.js';
 
 export const riskClass = (r) => (r >= 60 ? 'p-high' : r >= 40 ? 'p-mid' : r >= 20 ? 'p-low' : 'p-norm');
 export const riskLabel = (r) => (r >= 60 ? 'Critical' : r >= 40 ? 'High' : r >= 20 ? 'Watch' : 'Healthy');
-const coverColor = (c) => (c >= 80 ? '#16a34a' : c >= 50 ? '#f59e0b' : '#e3141b');
+const coverColor = (c) => (c >= 80 ? '#16a34a' : c >= 50 ? '#f59e0b' : '#e5484d');
 
 function markSort(tableId, so) {
   $$('#' + tableId + ' th[data-k]').forEach((th) => {
