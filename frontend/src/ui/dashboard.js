@@ -1,6 +1,6 @@
 /* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map). Satu pipeline `recomputeAll()`. */
 import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
-import { S, minToHHMM, hhmmToMin } from '../core/state.js';
+import { S, DEFAULT_PARAMS, minToHHMM, hhmmToMin } from '../core/state.js';
 import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
@@ -298,9 +298,24 @@ export function initDashboard() {
   $('#spotSort').addEventListener('change', () => { renderSpotList(); persist(); });
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
-  $('#pboxToggle').addEventListener('click', () => {
-    const open = $('#pbox').classList.toggle('open');
+  /* panel parameter di kanan: buka lewat strip / tab tepi, tutup lewat ×, latar, atau Esc */
+  const drawer = (open) => {
+    $('#pdrawer').classList.toggle('open', open);
+    $('#pveil').classList.toggle('open', open);
+    $('#pdrawer').setAttribute('aria-hidden', String(!open));
     $('#pboxToggle').setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('pd-open', open);
+  };
+  $('#pboxToggle').addEventListener('click', () => drawer(true));
+  $('#pEdge').addEventListener('click', () => drawer(!$('#pdrawer').classList.contains('open')));
+  $('#pdClose').addEventListener('click', () => drawer(false));
+  $('#pveil').addEventListener('click', () => drawer(false));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') drawer(false); });
+  $('#pdReset').addEventListener('click', () => {
+    const D = DEFAULT_PARAMS;
+    $('#dMismatch').value = D.mismatchM; $('#dRadius').value = D.rapidM; $('#dStores').value = D.rapidCount;
+    $('#dNight').value = minToHHMM(D.nightMin); $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
+    scheduleRecalc();
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
