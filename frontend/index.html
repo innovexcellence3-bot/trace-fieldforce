@@ -277,7 +277,7 @@
   <nav class="rtabs" id="rtabs">
     <button data-tab="summary" class="active"><i>📊</i><span><b>Executive Summary</b><small>The big picture</small></span></button>
     <button data-tab="radar"><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
-    <button data-tab="lens"><i>🔭</i><span><b>Visit Map &amp; Geotag</b><small>Visits &amp; store locations</small></span></button>
+    <button data-tab="lens"><i>🔭</i><span><b>Visit Map</b><small>Visits by territory</small></span></button>
   </nav>
 
   <!-- ===== Ringkasan ===== -->
@@ -350,8 +350,7 @@
             <option value="rsl">⚡ Rapid Same Location</option>
             <option value="a7">🌙 Visit After 7PM</option>
           </select>
-          <label class="chk"><input type="checkbox" id="mLine" checked> Line to store</label>
-        </div>
+                  </div>
         <div id="map" class="map"></div>
         <div class="maplegend">
           <span><span class="dot" style="background:#e3141b"></span> Anomaly</span>
@@ -369,47 +368,6 @@
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>
-      </div>
-    </div>
-
-    <div class="subhead"><h2>Geotag recommendation</h2><span>Most frequent visit point (mode) vs. current store location</span></div>
-    <div class="kpis sm" id="grKpis"></div>
-    <div class="grgrid">
-      <div class="card">
-        <h3>Store visit history</h3>
-        <div class="cap" id="grMapCap">Select a customer in the table.</div>
-        <div id="grMap" class="map"></div>
-        <div class="maplegend">
-          <span><span class="dot" style="background:#94a3b8"></span> Visit</span>
-          <span><span class="dot" style="background:#2563eb"></span> Current location</span>
-          <span><span class="dot" style="background:#14b8a6"></span> Recommended</span>
-        </div>
-      </div>
-      <div class="card">
-        <div class="toolbar">
-          <input type="search" id="grSearch" placeholder="🔎 Search customer / territory">
-          <select id="grFilter">
-            <option value="all">All statuses</option>
-            <option value="ok">✅ Accurate</option>
-            <option value="update">🟠 Needs update</option>
-            <option value="need">⛔ Not enough data</option>
-          </select>
-          <button class="btn-ghost" id="grExport">⬇ CSV</button>
-        </div>
-        <div class="tbl-wrap" style="max-height:560px">
-          <table id="grTable"><thead><tr>
-            <th data-k="name">Customer</th><th data-k="terr">Territory</th>
-            <th class="num" data-k="total">Visits</th>
-            <th data-k="existing">Current</th>
-            <th data-k="rec">Recommended</th>
-            <th class="num" data-k="modeCount">Mode</th>
-            <th class="num" data-k="distinct">Points</th>
-            <th class="num" data-k="dist">Shift</th>
-            <th data-k="status">Status</th>
-            <th data-k="conf">Confidence</th>
-          </tr></thead><tbody></tbody></table>
-        </div>
-        <div class="foot-note" id="grFoot"></div>
       </div>
     </div>
   </section>

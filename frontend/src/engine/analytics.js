@@ -237,45 +237,6 @@ export function computeTerrData({ week, district, terr }) {
   A.terrData = [...m.values()];
 }
 
-/* Geotag recommendation: modus titik visit per customer (dibulatkan 4 desimal). */
-export function computeGeoRec({ district, terr }) {
-  const { B, A } = S;
-  const ids = geoIds();
-  const dfId = district ? B.iDist.id(district) : -1, tfId = terr ? B.iTerr.id(terr) : -1;
-  const map = new Map();
-  for (let i = 0; i < B.n; i++) {
-    if (!A.dateOK[B.date[i]]) continue;
-    if (!passGeo(i, ids)) continue;
-    if (dfId >= 0 && B.district[i] !== dfId) continue;
-    if (tfId >= 0 && B.terr[i] !== tfId) continue;
-    const cid = B.cust[i];
-    let o = map.get(cid);
-    if (!o) { o = { cid, name: B.iCust.val(cid), terr: B.iTerr.val(B.terr[i]), district: B.iDist.val(B.district[i]), zone: B.iZone.val(B.zone[i]), total: 0, latC: NaN, lonC: NaN, pts: new Map() }; map.set(cid, o); }
-    o.total++;
-    if (isNaN(o.latC) && !isNaN(B.latC[i]) && B.latC[i] !== 0 && !isNaN(B.lonC[i]) && B.lonC[i] !== 0) { o.latC = B.latC[i]; o.lonC = B.lonC[i]; }
-    const lv = B.latV[i], ov = B.lonV[i];
-    if (!isNaN(lv) && !isNaN(ov) && lv !== 0 && ov !== 0) {
-      /* titik dibulatkan 4 desimal (toFixed, sama seperti versi lama), dikodekan jadi 1 angka */
-      const key = (Math.round(+lv.toFixed(4) * 1e4) + 900000) * 4000000 + (Math.round(+ov.toFixed(4) * 1e4) + 1800000);
-      o.pts.set(key, (o.pts.get(key) || 0) + 1);
-    }
-  }
-  const arr = [];
-  for (const o of map.values()) {
-    let bestKey = null, bestCount = 0;
-    for (const [k, c] of o.pts) if (c > bestCount) { bestCount = c; bestKey = k; }
-    let recLat = NaN, recLon = NaN;
-    if (bestKey !== null) { recLat = (Math.floor(bestKey / 4000000) - 900000) / 1e4; recLon = ((bestKey % 4000000) - 1800000) / 1e4; }
-    const conf = bestCount >= 2 ? 'ok' : 'need';
-    let d = NaN;
-    if (!isNaN(o.latC) && !isNaN(recLat)) d = haversine(o.latC, o.lonC, recLat, recLon);
-    const status = conf === 'need' ? 'need' : (!isNaN(d) && d <= 100 ? 'ok' : 'update');
-    arr.push({ cid: o.cid, name: o.name, terr: o.terr, district: o.district, zone: o.zone, total: o.total,
-      latC: o.latC, lonC: o.lonC, recLat, recLon, modeCount: bestCount, distinct: o.pts.size, conf, status, dist: d });
-  }
-  A.geoRec = arr;
-}
-
 /* Ringkasan dataset (dikirim ke server untuk ditampilkan di Data Library). */
 export function datasetStats() {
   const B = S.B;

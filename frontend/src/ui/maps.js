@@ -1,4 +1,4 @@
-/* Peta sebaran visit (cluster) + peta historical visit per toko (geotag recommendation). */
+/* Peta sebaran visit (cluster). Klik titik → tampilkan lokasi tokonya. */
 import L from './leaflet-setup.js';
 import 'leaflet.markercluster';
 import { $, esc, fmt, streetView } from '../core/dom.js';
@@ -10,7 +10,7 @@ const TILE_OPT = { maxZoom: 19, attribution: '© OpenStreetMap' };
 const CLUSTER_MAX = 80000;
 const RED = '#e3141b', GREEN = '#16a34a', BLUE = '#2563eb';
 
-let map, cluster, lineLayer, outletLayer, highlightLayer, iconAnom, iconNorm;
+let map, cluster, highlightLayer, iconAnom, iconNorm;
 
 export function initMap() {
   if (map) return;
@@ -18,8 +18,6 @@ export function initMap() {
   L.tileLayer(TILE, TILE_OPT).addTo(map);
   cluster = L.markerClusterGroup({ chunkedLoading: true, disableClusteringAtZoom: 16, maxClusterRadius: 50, spiderfyOnMaxZoom: true });
   map.addLayer(cluster);
-  lineLayer = L.layerGroup().addTo(map);
-  outletLayer = L.layerGroup().addTo(map);
   highlightLayer = L.layerGroup().addTo(map);
   map.on('click', () => highlightLayer.clearLayers());
   const dot = (c) => L.divIcon({ className: '', iconSize: [12, 12], iconAnchor: [6, 6], html: '<div style="width:12px;height:12px;border-radius:50%;background:' + c + ';border:1.5px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.4)"></div>' });
@@ -27,7 +25,7 @@ export function initMap() {
   iconNorm = dot(GREEN);
 }
 export function invalidateMaps() {
-  setTimeout(() => { map?.invalidateSize(); grMap?.invalidateSize(); }, 60);
+  setTimeout(() => { map?.invalidateSize(); }, 60);
 }
 
 const svButtons = (i) => {
@@ -58,11 +56,11 @@ function highlightStore(i) {
     .bindPopup(`🏬 <b>Store location</b><br>${esc(B.iCust.val(B.cust[i]))}<br>` + (isNaN(B.dist[i]) ? '' : `Distance from visit: <b>${B.dist[i].toFixed(0)} m</b>`) + svButtons(i)).openPopup();
 }
 
-/** Gambar titik visit sesuai filter peta. `f` = { district, terr, week, mode, line } */
+/** Gambar titik visit sesuai filter peta. `f` = { district, terr, week, mode } */
 export function renderMap(f, fit) {
   if (!map) return;
   const { B, A } = S;
-  cluster.clearLayers(); lineLayer.clearLayers(); outletLayer.clearLayers(); highlightLayer.clearLayers();
+  cluster.clearLayers(); highlightLayer.clearLayers();
   const dfId = f.district ? B.iDist.id(f.district) : -1, tfId = f.terr ? B.iTerr.id(f.terr) : -1, wkId = f.week ? B.iWeek.id(f.week) : -1;
   const ids = geoIds();
   const match = [];
@@ -95,53 +93,9 @@ export function renderMap(f, fit) {
     mk.on('click', () => highlightStore(i));
     markers.push(mk);
     bounds.push([lat, lon]);
-    if (an && f.line && !isNaN(B.latC[i])) {
-      L.polyline([[lat, lon], [B.latC[i], B.lonC[i]]], { color: RED, weight: 1, opacity: 0.4, dashArray: '4 3' }).addTo(lineLayer);
-      L.circleMarker([B.latC[i], B.lonC[i]], { radius: 3.5, color: '#fff', weight: 1, fillColor: BLUE, fillOpacity: 0.85 }).addTo(outletLayer);
-    }
   }
   cluster.addLayers(markers);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
   stat.innerHTML = `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly`;
-}
-
-/* ---------------- peta geotag recommendation ---------------- */
-let grMap, grLayer;
-function initGrMap() {
-  if (grMap) return;
-  grMap = L.map('grMap', { preferCanvas: true }).setView([-2.5, 118], 5);
-  L.tileLayer(TILE, TILE_OPT).addTo(grMap);
-  grLayer = L.layerGroup().addTo(grMap);
-}
-export function ensureGrMap() { initGrMap(); }
-export function showGeoRecMap(item) {
-  const B = S.B;
-  initGrMap();
-  setTimeout(() => grMap.invalidateSize(), 30);
-  grLayer.clearLayers();
-  const pts = [], bounds = [];
-  for (let i = 0; i < B.n; i++) {
-    if (B.cust[i] !== item.cid) continue;
-    const lv = B.latV[i], ov = B.lonV[i];
-    if (!isNaN(lv) && !isNaN(ov) && lv !== 0 && ov !== 0) { pts.push([lv, ov, i]); bounds.push([lv, ov]); }
-  }
-  pts.forEach((p) => {
-    L.circleMarker([p[0], p[1]], { radius: 4, color: '#fff', weight: 1, fillColor: '#94a3b8', fillOpacity: 0.85 })
-      .bindPopup(`Historical visit<br>${esc(B.iDate.val(B.date[p[2]]))} · Week ${esc(B.iWeek.val(B.week[p[2]]))}<br>${p[0].toFixed(5)}, ${p[1].toFixed(5)}`).addTo(grLayer);
-  });
-  if (!isNaN(item.latC) && !isNaN(item.lonC)) {
-    L.circleMarker([item.latC, item.lonC], { radius: 9, color: '#fff', weight: 2.5, fillColor: BLUE, fillOpacity: 1 })
-      .bindPopup(`🏬 <b>Current store location</b><br>${esc(item.name)}<br>${item.latC.toFixed(5)}, ${item.lonC.toFixed(5)}`).addTo(grLayer);
-    bounds.push([item.latC, item.lonC]);
-  }
-  if (!isNaN(item.recLat) && !isNaN(item.recLon)) {
-    L.circleMarker([item.recLat, item.recLon], { radius: 10, color: '#fff', weight: 2.5, fillColor: '#14b8a6', fillOpacity: 1 })
-      .bindPopup(`📌 <b>Recommended (mode)</b><br>${esc(item.name)}<br>${item.recLat.toFixed(5)}, ${item.recLon.toFixed(5)}<br>Mode: <b>${item.modeCount || 0} visits</b>` +
-        (!isNaN(item.dist) ? `<br>Distance from current: <b>${Math.round(item.dist)} m</b>` : '')).addTo(grLayer);
-    bounds.push([item.recLat, item.recLon]);
-    if (!isNaN(item.latC) && !isNaN(item.lonC)) L.polyline([[item.latC, item.lonC], [item.recLat, item.recLon]], { color: '#14b8a6', weight: 2, opacity: 0.6, dashArray: '5 4' }).addTo(grLayer);
-  }
-  $('#grMapCap').innerHTML = `<b>${esc(item.name)}</b> · ${esc(item.terr)} · ${esc(item.district)} — ${fmt(pts.length)} visits${item.distinct ? ` · ${item.distinct} unique points` : ''}`;
-  if (bounds.length) { try { grMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 17 }); } catch { /* ignore */ } }
 }

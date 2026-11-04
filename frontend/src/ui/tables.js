@@ -1,5 +1,5 @@
-/* Tabel: drill-down wilayah (zone → region → area), territory level, geotag recommendation. */
-import { $, $$, esc, fmt, pct, streetView } from '../core/dom.js';
+/* Tabel: drill-down wilayah (zone → region → area) dan territory. */
+import { $, $$, esc, fmt, pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { barColor } from './charts.js';
 import { downloadCSV } from './exports.js';
@@ -113,88 +113,4 @@ export function initTerrSort(rerender) {
   $$('#geoTable th[data-k]').forEach((th) => th.addEventListener('click', () => {
     const k = th.dataset.k; geoSort.dir = geoSort.k === k ? -geoSort.dir : -1; geoSort.k = k; renderGeo();
   }));
-}
-
-/* ---------------- geotag recommendation ---------------- */
-const GR_META = { ok: { label: 'Reliable', cls: 'p-norm', note: 'Mode ≥ 2 points' }, need: { label: 'Not enough data', cls: 'p-high', note: 'Mode ≤ 1 point' } };
-const GR_STATUS = { ok: { label: 'Accurate', cls: 'p-norm' }, update: { label: 'Needs update', cls: 'p-mid' }, need: { label: 'Not enough data', cls: 'p-high' } };
-const grSort = { k: 'dist', dir: -1 };
-
-function grList() {
-  let arr = (S.A.geoRec || []).slice();
-  const f = $('#grFilter').value;
-  if (f !== 'all') arr = arr.filter((x) => x.status === f);
-  const q = ($('#grSearch').value || '').toLowerCase();
-  if (q) arr = arr.filter((x) => (x.name || '').toLowerCase().includes(q) || (x.terr || '').toLowerCase().includes(q) || (x.district || '').toLowerCase().includes(q));
-  const rank = { ok: 0, need: 1 }, srank = { ok: 0, update: 1, need: 2 };
-  arr.sort((a, b) => {
-    const k = grSort.k;
-    if (k === 'conf') return (rank[a.conf] - rank[b.conf]) * grSort.dir;
-    if (k === 'status') return (srank[a.status] - srank[b.status]) * grSort.dir;
-    let x = a[k], y = b[k];
-    if (k === 'existing') { x = isNaN(a.latC) ? -1 : 1; y = isNaN(b.latC) ? -1 : 1; }
-    if (k === 'rec') { x = isNaN(a.recLat) ? -1 : 1; y = isNaN(b.recLat) ? -1 : 1; }
-    if (typeof x === 'string') { x = (x || '').toLowerCase(); y = (y || '').toLowerCase(); return x < y ? -grSort.dir : x > y ? grSort.dir : 0; }
-    if (x == null || isNaN(x)) x = -1;
-    if (y == null || isNaN(y)) y = -1;
-    return (x - y) * grSort.dir;
-  });
-  return arr;
-}
-
-export function renderGeoRec(kpiFn, onPick) {
-  const arr = S.A.geoRec || [];
-  const nOK = arr.filter((x) => x.conf === 'ok').length;
-  const nNeed = arr.length - nOK;
-  const nSesuai = arr.filter((x) => x.status === 'ok').length;
-  const moved = arr.filter((x) => x.status === 'update').length;
-  $('#grKpis').innerHTML =
-    kpiFn('', '🏬', 'Customers', fmt(arr.length), 'matching filters') +
-    kpiFn('g', '✅', 'Recommendation ready', fmt(nOK), 'mode ≥ 2 points') +
-    kpiFn('r', '⛔', 'Not enough data', fmt(nNeed), 'mode ≤ 1 point') +
-    kpiFn('t', '📌', 'Location accurate', fmt(nSesuai), '≤ 100 m from current') +
-    kpiFn('p', '📍', 'Needs update', fmt(moved), '> 100 m from current');
-  markSort('grTable', grSort);
-  const list = grList();
-  const tb = $('#grTable tbody');
-  tb.innerHTML = '';
-  list.slice(0, 600).forEach((x) => {
-    const m = GR_META[x.conf], st = GR_STATUS[x.status];
-    const exist = isNaN(x.latC) ? '<span style="color:var(--muted)">—</span>'
-      : `${x.latC.toFixed(5)}, ${x.lonC.toFixed(5)} <a href="${streetView(x.latC, x.lonC)}" target="_blank" rel="noopener" title="Street View: current location" style="text-decoration:none">👁️</a>`;
-    const rec = (x.conf === 'need' || isNaN(x.recLat)) ? '<span style="color:var(--muted)">need more data</span>'
-      : `${x.recLat.toFixed(4)}, ${x.recLon.toFixed(4)} <a href="${streetView(x.recLat, x.recLon)}" target="_blank" rel="noopener" title="Street View: recommended point" style="text-decoration:none">👁️</a>`;
-    const dcell = (x.conf === 'need' || isNaN(x.recLat) || isNaN(x.dist)) ? '—' : fmt(Math.round(x.dist)) + ' m';
-    const tr = document.createElement('tr');
-    tr.className = 'grrow';
-    tr.innerHTML = `<td><b>${esc(x.name)}</b></td>
-      <td>${esc(x.terr)}<div class="sub">${esc(x.district)} · ${esc((x.zone || '').replace('Zone ', ''))}</div></td>
-      <td class="num">${fmt(x.total)}</td><td>${exist}</td><td>${rec}</td>
-      <td class="num">${x.modeCount || 0}</td><td class="num">${x.distinct}</td><td class="num">${dcell}</td>
-      <td><span class="pill ${st.cls}">${st.label}</span></td>
-      <td><span class="pill ${m.cls}">${m.label}</span><div class="sub" style="margin-top:2px">${m.note}</div></td>`;
-    tr.addEventListener('click', (e) => {
-      if (e.target.closest('a')) return;
-      $$('#grTable .grrow').forEach((r) => r.classList.remove('active'));
-      tr.classList.add('active');
-      onPick?.(x);
-    });
-    tb.appendChild(tr);
-  });
-  if (!list.length) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No customers match the filters.</td></tr>';
-  $('#grFoot').textContent = list.length > 600 ? `Showing 600 of ${fmt(list.length)} customers · CSV has all` : `${fmt(list.length)} customers`;
-}
-export function initGeoRecSort(rerender) {
-  $$('#grTable th[data-k]').forEach((th) => th.addEventListener('click', () => {
-    const k = th.dataset.k; grSort.dir = grSort.k === k ? -grSort.dir : -1; grSort.k = k; rerender();
-  }));
-}
-export function exportGeoRec() {
-  const rows = (S.A.geoRec || []).map((x) => [x.name, x.terr, x.district, x.zone, x.total,
-    isNaN(x.latC) ? '' : x.latC.toFixed(6), isNaN(x.lonC) ? '' : x.lonC.toFixed(6),
-    isNaN(x.recLat) ? '' : x.recLat.toFixed(4), isNaN(x.recLon) ? '' : x.recLon.toFixed(4),
-    x.modeCount || 0, x.distinct, (x.conf === 'need' || isNaN(x.recLat) || isNaN(x.dist)) ? '' : x.dist.toFixed(0),
-    GR_STATUS[x.status].label, x.conf, GR_META[x.conf].note]);
-  downloadCSV('trace_geotag_recommendation.csv',
-    ['customer_code', 'territory', 'district', 'zone', 'total_visit', 'lat_existing', 'lon_existing', 'lat_recommended', 'lon_recommended', 'mode_count', 'distinct_points', 'shift_distance_m', 'status', 'confidence', 'note'], rows);
 }

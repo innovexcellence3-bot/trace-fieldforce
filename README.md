@@ -2,15 +2,15 @@
 
 Aplikasi web untuk verifikasi lokasi visit field force: membandingkan titik GPS visit dengan lokasi toko
 (store master), lalu mendeteksi **Location Mismatch**, **Rapid Same Location**, dan **Visit After 7 PM**,
-lengkap dengan peta, peringkat wilayah, dan geotag recommendation.
+lengkap dengan peta dan peringkat wilayah.
 
 Aplikasi punya 2 menu:
 
 - **Data Connection**: tarik data dari Snowflake (login SSO `externalbrowser`). Setiap hasil query
   disimpan sebagai CSV di `data/cache/`, lalu pilih dataset mana yang dipakai Report.
 - **Report**: dashboard anomaly dalam 3 tab — **Executive Summary** (KPI & grafik),
-  **Regional Breakdown** (peringkat area + drill-down zone → region → area), dan **Visit Map & Geotag**
-  (peta visit, territory, geotag recommendation). Detection parameters ada di panel yang bisa
+  **Regional Breakdown** (peringkat area + drill-down zone → region → area), dan **Visit Map**
+  (peta visit + tabel territory). Detection parameters ada di panel yang bisa
   dibuka-tutup (default Location Mismatch 500 m). Dataset aktif, parameter, dan filter terakhir disimpan otomatis
   (`data/state.json`), jadi refresh atau buka ulang aplikasi langsung kembali ke Report yang sama.
 

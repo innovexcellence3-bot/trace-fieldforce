@@ -1,22 +1,22 @@
-/* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map & Geotag). Satu pipeline `recomputeAll()`. */
+/* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map). Satu pipeline `recomputeAll()`. */
 import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
 import { S, minToHHMM, hhmmToMin } from '../core/state.js';
-import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData } from '../engine/analytics.js';
+import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
 import { initChartContextMenu, renderCharts, renderHistory } from './charts.js';
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
-import { ensureGrMap, initMap, invalidateMaps, renderMap, showGeoRecMap } from './maps.js';
-import { exportGeoRec, initGeoRecSort, initTerrSort, renderGeo, renderGeoRec, renderTerr } from './tables.js';
+import { initMap, invalidateMaps, renderMap } from './maps.js';
+import { initTerrSort, renderGeo, renderTerr } from './tables.js';
 
 export const kpi = (icoCls, ico, lbl, val, foot, footCls) =>
   `<div class="kpi"><div class="ico ${icoCls}">${ico}</div><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="foot ${footCls || ''}">${foot}</div></div>`;
 
 const mapFilter = () => ({
   district: $('#mDistrict').value, terr: $('#mTerr').value, week: $('#mWeek').value,
-  mode: $('#mMode').value, line: $('#mLine').checked,
+  mode: $('#mMode').value,
 });
 
 /* ---------------- render ---------------- */
@@ -130,10 +130,8 @@ function onTerrPick(t) {
   buildTerrOptions();
   $('#mTerr').value = t.terr; refreshCombo('mTerr');
   renderMap(mapFilter(), true);
-  refreshGeoRec();
 }
 function refreshTerr() { computeTerrData(mapFilter()); renderTerr(onTerrPick); }
-function refreshGeoRec() { computeGeoRec(mapFilter()); renderGeoRec(kpi, showGeoRecMap); }
 
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
@@ -142,7 +140,6 @@ export function recomputeAll() {
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
-  refreshGeoRec();
   persist();
 }
 
@@ -175,7 +172,6 @@ export function openDashboard(saved = {}) {
   renderParamChips();
   buildAllMS(recomputeAll);
   initMap();
-  ensureGrMap();
   makeSearchable('mDistrict', 'Search district...');
   makeSearchable('mTerr', 'Search territory...');
   recomputeAll();
@@ -247,12 +243,8 @@ export function initDashboard() {
   initChartContextMenu();
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
-  initGeoRecSort(() => renderGeoRec(kpi, showGeoRecMap));
   $('#geoSearch').addEventListener('input', renderGeo);
   $('#geoExport').addEventListener('click', exportGeo);
-  $('#grSearch').addEventListener('input', () => renderGeoRec(kpi, showGeoRecMap));
-  $('#grFilter').addEventListener('change', () => renderGeoRec(kpi, showGeoRecMap));
-  $('#grExport').addEventListener('click', exportGeoRec);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   $('#pboxToggle').addEventListener('click', () => {
     const open = $('#pbox').classList.toggle('open');
@@ -264,9 +256,8 @@ export function initDashboard() {
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);
   $('#resetFilterBtn').addEventListener('click', resetFilters);
-  $('#mDistrict').addEventListener('change', () => { buildTerrOptions(); renderMap(mapFilter(), true); refreshTerr(); refreshGeoRec(); });
-  $('#mTerr').addEventListener('change', () => { renderMap(mapFilter(), true); refreshTerr(); refreshGeoRec(); });
+  $('#mDistrict').addEventListener('change', () => { buildTerrOptions(); renderMap(mapFilter(), true); refreshTerr(); });
+  $('#mTerr').addEventListener('change', () => { renderMap(mapFilter(), true); refreshTerr(); });
   $('#mMode').addEventListener('change', () => renderMap(mapFilter()));
-  $('#mLine').addEventListener('change', () => renderMap(mapFilter()));
   $('#mWeek').addEventListener('change', () => { refreshTerr(); renderMap(mapFilter(), true); });
 }

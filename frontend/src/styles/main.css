@@ -230,7 +230,6 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));gap:16px;align-items:start}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px}
-.grgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:16px;align-items:start;margin-top:16px}
 .hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
 .hctl{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .chartbox{position:relative;height:250px}
@@ -271,9 +270,7 @@ td.num,th.num{text-align:right}
 tr.parent{cursor:pointer}tr.parent .chev.open{transform:rotate(90deg)}
 tr.child td:first-child{padding-left:34px}tr.child2 td:first-child{padding-left:58px}
 tr.child,tr.child2{background:#fcfcfd;display:none}
-tr.trow,tr.grrow{cursor:pointer}
-tr.trow.active,tr.grrow.active{background:var(--redsoft)!important}
-.sub{color:var(--muted);font-size:11px}
+tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:12px}
 .legend span,.maplegend span{display:inline-flex;align-items:center;gap:6px}
 .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
@@ -339,7 +336,6 @@ tr.trow.active,tr.grrow.active{background:var(--redsoft)!important}
 .rtabs small{display:block;font-size:12px;color:var(--muted)}
 .rpanel{animation:rise .35s both}
 .rpanel>*+*{margin-top:16px}
-.kpis.sm .kpi{padding:14px 16px}.kpis.sm .kpi .val{font-size:22px}
 
 .tip{font-size:12px;color:var(--muted2);text-align:right}
 
@@ -382,8 +378,7 @@ tr.trow.active,tr.grrow.active{background:var(--redsoft)!important}
 
 @media (max-width:1100px){
   .hero{grid-template-columns:1fr;padding-top:36px}
-  .conn-grid,.mapgrid,.grgrid{grid-template-columns:minmax(0,1fr)}
-  .rhead{grid-template-columns:minmax(0,1fr)}
+  .conn-grid,.mapgrid,  .rhead{grid-template-columns:minmax(0,1fr)}
   .pgrid,.leaders{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:720px){
