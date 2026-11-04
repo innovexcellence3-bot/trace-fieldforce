@@ -335,14 +335,16 @@
   </aside>
 
   <!-- tab section -->
-  <nav class="rtabs" id="rtabs">
-    <button data-tab="summary" class="active"><i>📊</i><span><b>Executive Summary</b><small>The big picture</small></span></button>
-    <button data-tab="radar"><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
-    <button data-tab="lens"><i>🔭</i><span><b>Visit Map</b><small>Visits by territory</small></span></button>
+  <nav class="rtabs" id="rtabs" aria-label="Report sections">
+    <button data-tab="summary" class="active"><em>01</em><i>📊</i><span><b>Executive Summary</b><small>The big picture</small></span></button>
+    <button data-tab="radar"><em>02</em><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
+    <button data-tab="lens"><em>03</em><i>🔭</i><span><b>Visit Map</b><small>Visits by territory</small></span></button>
   </nav>
+  <div class="rsection" id="rsection">
 
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
+    <div class="phead"><span class="phead-ico">📊</span><div><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Coverage, anomalies and shared spots at a glance.</p></div></div>
     <div class="kpis" id="kpis"></div>
     <div class="grid3">
       <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
@@ -380,6 +382,7 @@
 
   <!-- ===== Radar Wilayah ===== -->
   <section class="rpanel" data-panel="radar" hidden>
+    <div class="phead"><span class="phead-ico">🧭</span><div><span class="phead-num">Section 02</span><h2>Regional Breakdown</h2><p>Where anomalies and shared spots concentrate — drill from zone down to territory.</p></div></div>
     <div class="leaders">
       <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
       <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
@@ -412,7 +415,7 @@
 
   <!-- ===== Lensa Lapangan ===== -->
   <section class="rpanel" data-panel="lens" hidden>
-    <div class="subhead"><h2>Visit map</h2><span>Click a point for visit details &amp; Street View · click a territory to zoom</span></div>
+    <div class="phead"><span class="phead-ico">🔭</span><div><span class="phead-num">Section 03</span><h2>Visit Map</h2><p>Click a point for visit details &amp; Street View · click a territory to zoom in.</p></div></div>
     <div class="mapgrid">
       <div class="card">
         <div class="toolbar">
@@ -449,6 +452,7 @@
       </div>
     </div>
   </section>
+  </div>
 </div>
 </section>
 
