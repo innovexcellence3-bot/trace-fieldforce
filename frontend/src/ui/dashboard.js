@@ -20,18 +20,22 @@ const mapFilter = () => ({
 });
 
 /* ---------------- render ---------------- */
+/* KPI: Total visits + 3 kartu ring (GPS coverage, anomaly, shared spot). */
 function renderKPIs() {
   const A = S.A;
-  const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
+  const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total), spotP = pct(A.spot.spotTerr, A.spot.terrN);
+  const level = rate >= 60 ? ['Critical', 'var(--bad)'] : rate >= 40 ? ['High', 'var(--mid)'] : rate >= 20 ? ['Watch', 'var(--warn)'] : ['Healthy', 'var(--ok)'];
+  const gps = cover >= 80 ? ['Strong', 'var(--ok)'] : cover >= 50 ? ['Fair', 'var(--warn)'] : ['Weak', 'var(--bad)'];
+  const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
+  const rk = (v, c, label, status, sub, extra = '') =>
+    `<div class="kpi rk">${ring(v, c)}<div class="rk-txt"><small>${label}</small><strong style="color:${c}">${status}</strong><span>${sub}</span>${extra}</div></div>`;
   const mini = (ico, v, title) => `<span class="kmini" title="${title}">${ico} ${fmt(v)}</span>`;
   $('#kpis').innerHTML =
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
-    kpi(cover >= 80 ? 'g' : cover >= 50 ? 'y' : 'r', '🛰️', 'Verifiable visits', fmt(A.checkable),
-      `<b class="kbig">${cover.toFixed(1)}%</b> GPS coverage`) +
-    kpi(rate >= 40 ? 'r' : rate >= 20 ? 'y' : 'g', '⚠️', 'Anomalous visits', fmt(A.anomaly),
-      `<b class="kbig bad">${rate.toFixed(1)}%</b> of verifiable<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}</span>`) +
-    kpi('i', '📌', 'Shared spot territories', fmt(A.spot.spotTerr),
-      `<b class="kbig spot">${pct(A.spot.spotTerr, A.spot.terrN).toFixed(1)}%</b> of ${fmt(A.spot.terrN)} territories`);
+    rk(cover, gps[1], 'GPS coverage', gps[0], `<b>${fmt(A.checkable)}</b> verifiable visits`) +
+    rk(rate, level[1], 'Anomalous visits', level[0], `<b>${fmt(A.anomaly)}</b> of verifiable visits`,
+      `<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}</span>`) +
+    rk(spotP, 'var(--spot)', 'Shared spot territories', `${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}`, `<b>${fmt(A.spot.spotN)}</b> shared spots`);
 }
 
 /* Regional Breakdown: papan peringkat area. */
@@ -95,19 +99,6 @@ function renderParamChips() {
   /* kartu aturan di atas panel parameter */
   const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', spotN: P.spotStores, spotM: P.spotM + ' m' };
   document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; }); // kartu aturan + panel kanan
-}
-
-/* Skor di kanan atas: % anomaly & GPS coverage (ikut filter). */
-function renderScores() {
-  const A = S.A;
-  const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
-  const level = rate >= 60 ? ['Critical', 'var(--bad)'] : rate >= 40 ? ['High', 'var(--mid)'] : rate >= 20 ? ['Watch', 'var(--warn)'] : ['Healthy', 'var(--ok)'];
-  const gps = cover >= 80 ? ['Strong', 'var(--ok)'] : cover >= 50 ? ['Fair', 'var(--warn)'] : ['Weak', 'var(--bad)'];
-  const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
-  $('#scores').innerHTML =
-    `<div class="score">${ring(rate, level[1])}<div><small>Anomaly</small><strong style="color:${level[1]}">${level[0]}</strong><span>${fmt(A.anomaly)} visits</span></div></div>` +
-    `<div class="score">${ring(cover, gps[1])}<div><small>GPS coverage</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} verifiable</span></div></div>` +
-    `<div class="score">${ring(pct(A.spot.spotTerr, A.spot.terrN), 'var(--spot)')}<div><small>Territories with spots</small><strong style="color:var(--spot)">${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}</strong><span>${fmt(A.spot.spotN)} shared spots</span></div></div>`;
 }
 
 function renderHeader() {
@@ -178,7 +169,7 @@ function refreshTerr() { computeTerrData(mapFilter()); renderTerr(onTerrPick); }
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderScores(); renderKPIs(); renderSpotlight(); renderCharts(); renderLeaders(); renderGeo(goToTerritory);
+  renderKPIs(); renderSpotlight(); renderCharts(); renderLeaders(); renderGeo(goToTerritory);
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
