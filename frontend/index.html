@@ -232,184 +232,188 @@
     <a class="btn primary" href="#/connection">🔌 Ke Data Connection</a>
   </div>
 <div id="reportBody" hidden>
-  <div class="dash-hero">
-    <div>
-      <span class="eyebrow">Report</span>
+  <!-- header: judul dataset + skor -->
+  <div class="rhead">
+    <div class="rhead-text">
+      <span class="eyebrow" id="dashSource">Report</span>
       <h1 id="dashTitle">—</h1>
       <div class="dash-meta" id="dashMeta"></div>
+      <div class="dash-actions">
+        <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ CSV</a>
+        <a class="btn ghost sm" href="#/connection">⇄ Ganti dataset</a>
+      </div>
     </div>
-    <div class="dash-actions">
-      <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ CSV</a>
-      <a class="btn ghost sm" href="#/connection">⇄ Ganti dataset</a>
+    <div class="scores" id="scores"></div>
+  </div>
+
+  <!-- parameter: panel buka-tutup -->
+  <div class="pbox" id="pbox">
+    <button class="pbox-head" id="pboxToggle" type="button" aria-expanded="false">
+      <span class="pbox-ico">⚙️</span>
+      <span class="pbox-title">Parameter</span>
+      <span class="pchips" id="pchips"></span>
+      <span class="recalc" id="recalc"><span class="spin"></span><span id="recalcTxt"></span></span>
+      <span class="pbox-chev">▾</span>
+    </button>
+    <div class="pbox-body">
+      <div class="pgrid">
+        <label class="pcard"><span class="pc-top"><i>📍</i><b>Location Mismatch</b></span>
+          <span class="pc-in"><input type="number" id="dMismatch" value="1000" min="1"><em>m</em></span>
+          <small>Jarak GPS visit ke toko lebih dari ini.</small></label>
+        <label class="pcard"><span class="pc-top"><i>⚡</i><b>Rapid · radius</b></span>
+          <span class="pc-in"><input type="number" id="dRadius" value="50" min="1"><em>m</em></span>
+          <small>Radius titik visit yang dianggap sama.</small></label>
+        <label class="pcard"><span class="pc-top"><i>⚡</i><b>Rapid · batas toko</b></span>
+          <span class="pc-in"><input type="number" id="dStores" value="5" min="1"><em>toko</em></span>
+          <small>Toko unik dalam radius, per hari &amp; territory.</small></label>
+        <label class="pcard"><span class="pc-top"><i>🌙</i><b>Jam malam</b></span>
+          <span class="pc-in"><input type="time" id="dNight" value="19:00"></span>
+          <small>Visit mulai setelah jam ini.</small></label>
+      </div>
     </div>
   </div>
 
-  <div class="sec">Parameter anomaly</div>
-  <div class="method" id="methodCards"></div>
+  <!-- tab section -->
+  <nav class="rtabs" id="rtabs">
+    <button data-tab="summary" class="active"><i>📊</i><span><b>Ringkasan</b><small>Gambaran besar</small></span></button>
+    <button data-tab="radar"><i>🧭</i><span><b>Radar Wilayah</b><small>Zone → region → area</small></span></button>
+    <button data-tab="lens"><i>🔭</i><span><b>Lensa Lapangan</b><small>Peta visit &amp; geotag</small></span></button>
+  </nav>
 
-  <div class="parambar" id="parambar">
-    <div class="pg"><label>📍 Location Mismatch</label><div class="row"><input type="number" id="dMismatch" value="1000" min="1"><span class="u">m</span></div></div>
-    <div class="pg"><label>⚡ Rapid Radius</label><div class="row"><input type="number" id="dRadius" value="50" min="1"><span class="u">m</span></div></div>
-    <div class="pg"><label>⚡ Rapid Batas Toko</label><div class="row"><input type="number" id="dStores" value="5" min="1"><span class="u">toko</span></div></div>
-    <div class="pg"><label>🌙 Jam Malam</label><div class="row"><input type="time" id="dNight" value="19:00"></div></div>
-    <div class="recalc"><span class="spin"></span><span id="recalcTxt">Sinkron ✓</span></div>
-  </div>
+  <!-- ===== Ringkasan ===== -->
+  <section class="rpanel" data-panel="summary">
+    <div class="kpis" id="kpis"></div>
+    <div class="insights" id="insights"></div>
+    <div class="grid3">
+      <div class="card"><h3>Anomaly per zone</h3><div class="cap">% dari visit teridentifikasi</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+      <div class="card"><h3>Cakupan GPS per zone</h3><div class="cap">% visit dengan long-lat lengkap</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+      <div class="card"><h3>Jenis anomaly</h3><div class="cap">Jumlah visit per parameter</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>Pola per hari</h3><div class="cap">% anomaly, Minggu–Sabtu</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+      <div class="card">
+        <div class="hrow">
+          <div><h3>Tren mingguan</h3><div class="cap" id="histCap"></div></div>
+          <div class="hctl">
+            <select id="histDim"><option value="zone">Per zone</option><option value="region">Per region</option></select>
+            <select id="histMetric"><option value="cover">% Cakupan GPS</option><option value="anom">% Anomaly</option></select>
+          </div>
+        </div>
+        <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
+      </div>
+    </div>
+    <div class="tip">💡 Klik kanan grafik untuk copy gambar atau export data.</div>
+  </section>
 
-  <div class="sec">Ringkasan <span class="hintx" id="tfInline"></span></div>
-  <div class="kpis" id="kpis"></div>
-  <div class="insight" id="narrative"></div>
-
-  <div class="sec">Potret anomaly <span class="hintx">klik kanan grafik untuk copy / export</span></div>
-  <div class="grid3">
-    <div class="card"><h3>Anomaly per Zone</h3><div class="cap">% visit anomaly dari visit teridentifikasi</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
-    <div class="card"><h3>Cakupan GPS per Zone</h3><div class="cap">% visit yang punya long-lat (visit &amp; toko)</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
-    <div class="card"><h3>Komposisi Parameter Anomaly</h3><div class="cap">Jumlah visit per jenis parameter</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
-  </div>
-  <div class="grid2" style="margin-top:16px">
-    <div class="card"><h3>Tren Anomaly per Hari</h3><div class="cap">% anomaly berdasarkan hari (Minggu–Sabtu)</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+  <!-- ===== Radar Wilayah ===== -->
+  <section class="rpanel" data-panel="radar" hidden>
+    <div class="leaders">
+      <div class="card lead-card hot"><h3>🔥 Area paling berisiko</h3><div class="cap">% anomaly tertinggi</div><ol id="leadHot"></ol></div>
+      <div class="card lead-card cool"><h3>🌿 Area paling sehat</h3><div class="cap">% anomaly terendah</div><ol id="leadCool"></ol></div>
+      <div class="card lead-card blind"><h3>📡 GPS paling lemah</h3><div class="cap">Cakupan GPS terendah</div><ol id="leadBlind"></ol></div>
+    </div>
     <div class="card">
-      <div class="hrow">
-        <div><h3>Historical Data</h3><div class="cap" id="histCap">% cakupan GPS per KPS week, per zone</div></div>
-        <div class="hctl">
-          <select id="histDim"><option value="zone">Legend: Zone</option><option value="region">Legend: Region</option></select>
-          <select id="histMetric"><option value="cover">% Cakupan GPS</option><option value="anom">% Anomaly</option></select>
+      <div class="toolbar">
+        <input type="search" id="geoSearch" placeholder="🔎 Cari zone / region / area">
+        <div class="legend inline">
+          <span><span class="dot" style="background:var(--ok)"></span>Sehat &lt;20%</span>
+          <span><span class="dot" style="background:var(--warn)"></span>Waspada</span>
+          <span><span class="dot" style="background:var(--mid)"></span>Tinggi</span>
+          <span><span class="dot" style="background:var(--bad)"></span>Kritis &gt;60%</span>
+        </div>
+        <button class="btn-ghost" id="geoExport">⬇ CSV</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:620px">
+        <table id="geoTable"><thead><tr>
+          <th data-k="name">Wilayah</th><th class="num" data-k="total">Visit</th>
+          <th class="num" data-k="cover">Cakupan GPS</th><th class="num" data-k="checkable">Terident.</th>
+          <th class="num" data-k="anomaly">Anomaly</th><th class="num" data-k="rate">% Anomaly</th>
+          <th class="num" data-k="lm">📍</th><th class="num" data-k="a7">🌙</th>
+          <th class="num" data-k="rsl">⚡</th><th data-k="rate">Status</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Lensa Lapangan ===== -->
+  <section class="rpanel" data-panel="lens" hidden>
+    <div class="subhead"><h2>🗺️ Peta visit</h2><span>Klik titik untuk melihat tokonya · klik territory untuk zoom</span></div>
+    <div class="mapgrid">
+      <div class="card">
+        <div class="toolbar">
+          <select id="mDistrict"><option value="">Semua District</option></select>
+          <select id="mTerr"><option value="">Semua Territory</option></select>
+          <select id="mMode">
+            <option value="all">Semua visit</option>
+            <option value="anom">Hanya anomaly</option>
+            <option value="normal">Hanya normal</option>
+            <option value="lm">📍 Location Mismatch</option>
+            <option value="rsl">⚡ Rapid Same Location</option>
+            <option value="a7">🌙 Visit After 7PM</option>
+          </select>
+          <label class="chk"><input type="checkbox" id="mLine" checked> Garis ke toko</label>
+        </div>
+        <div id="map" class="map"></div>
+        <div class="maplegend">
+          <span><span class="dot" style="background:#e3141b"></span> Anomaly</span>
+          <span><span class="dot" style="background:#16a34a"></span> Normal</span>
+          <span><span class="dot" style="background:#2563eb"></span> Toko</span>
+          <span class="mapstat" id="mapStat"></span>
         </div>
       </div>
-      <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
+      <div class="card">
+        <div class="hrow"><div><h3>Territory</h3><div class="cap">Klik baris untuk lihat di peta</div></div><select id="mWeek"></select></div>
+        <div class="tbl-wrap" style="max-height:470px">
+          <table id="tTable"><thead><tr>
+            <th data-k="terr">Territory</th><th class="num" data-k="total">Visit</th><th class="num" data-k="gps">GPS</th><th class="num" data-k="cover">Cakupan</th>
+            <th class="num" data-k="lm">📍</th><th class="num" data-k="rsl">⚡</th><th class="num" data-k="a7">🌙</th><th class="num" data-k="rate">% Anom</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+        <div class="foot-note" id="tFoot"></div>
+      </div>
     </div>
-  </div>
 
-  <div class="sec">Wilayah <span class="hintx">zone → region → area</span></div>
-  <div class="card">
-    <div class="toolbar">
-      <input type="search" id="geoSearch" placeholder="🔎 Cari zone / region / area...">
-      <button class="btn-ghost" id="geoExport">⬇️ Export CSV</button>
-      
-    </div>
-    <div class="tbl-wrap" style="max-height:520px">
-      <table id="geoTable"><thead><tr>
-        <th data-k="name">Wilayah</th><th class="num" data-k="total">Total Visit</th>
-        <th class="num" data-k="cover">Cakupan GPS</th><th class="num" data-k="checkable">Terident.</th>
-        <th class="num" data-k="anomaly">Anomaly</th><th class="num" data-k="rate">% Anomaly</th>
-        <th class="num" data-k="lm">Loc. Mismatch</th><th class="num" data-k="a7">After 7PM</th>
-        <th class="num" data-k="rsl">Rapid Loc.</th><th data-k="rate">Status</th>
-      </tr></thead><tbody></tbody></table>
-    </div>
-    <div class="legend">
-      <span><span class="dot" style="background:var(--ok)"></span> Sehat &lt;20%</span>
-      <span><span class="dot" style="background:var(--warn)"></span> Waspada 20–40%</span>
-      <span><span class="dot" style="background:var(--mid)"></span> Tinggi 40–60%</span>
-      <span><span class="dot" style="background:var(--bad)"></span> Kritis &gt;60%</span>
-      
-    </div>
-  </div>
-
-  <div class="sec">Peta visit</div>
-  <div class="mapgrid">
-    <div class="card">
-      <div class="toolbar">
-        <select id="mDistrict"><option value="">Semua District</option></select>
-        <select id="mTerr"><option value="">Semua Territory</option></select>
-        <select id="mMode">
-          <option value="all">Semua status</option>
-          <option value="anom">Hanya anomaly</option>
-          <option value="normal">Hanya normal</option>
-          <option value="lm">📍 Location Mismatch</option>
-          <option value="rsl">⚡ Rapid Same Location</option>
-          <option value="a7">🌙 Visit After 7PM</option>
-        </select>
-        <label class="chk"><input type="checkbox" id="mLine" checked> Garis ke lokasi toko</label>
+    <div class="subhead"><h2>📌 Geotag recommendation</h2><span>Titik toko yang paling sering dikunjungi (modus) vs lokasi toko saat ini</span></div>
+    <div class="kpis sm" id="grKpis"></div>
+    <div class="grgrid">
+      <div class="card">
+        <h3>Histori visit toko</h3>
+        <div class="cap" id="grMapCap">Pilih customer di tabel.</div>
+        <div id="grMap" class="map"></div>
+        <div class="maplegend">
+          <span><span class="dot" style="background:#94a3b8"></span> Visit</span>
+          <span><span class="dot" style="background:#2563eb"></span> Toko saat ini</span>
+          <span><span class="dot" style="background:#14b8a6"></span> Rekomendasi</span>
+        </div>
       </div>
-      <div id="map" class="map"></div>
-      <div class="maplegend">
-        <span><span class="dot" style="background:#e3141b"></span> Visit anomaly</span>
-        <span><span class="dot" style="background:#16a34a"></span> Visit normal</span>
-        <span><span class="dot" style="background:#2563eb"></span> Lokasi toko (profil)</span>
-        
-      </div>
-      <div class="mapstat" id="mapStat"></div>
-    </div>
-    <div class="card">
-      <h3>Territory Level</h3>
-      <div class="cap">Per KPS week · klik baris untuk lihat di peta</div>
-      <div class="toolbar"><select id="mWeek"></select></div>
-      <div class="tbl-wrap" style="max-height:430px">
-        <table id="tTable"><thead><tr>
-          <th data-k="terr">Territory</th><th class="num" data-k="total">Visit</th><th class="num" data-k="gps">Ber-GPS</th><th class="num" data-k="cover">Cakupan</th>
-          <th class="num" data-k="lm">LM</th><th class="num" data-k="rsl">RL</th><th class="num" data-k="a7">7PM</th><th class="num" data-k="rate">% Anom</th>
-        </tr></thead><tbody></tbody></table>
-      </div>
-      <div class="foot-note" id="tFoot"></div>
-    </div>
-  </div>
-
-  <div class="sec">Geotag recommendation</div>
-  <div class="kpis" id="grKpis"></div>
-  <div class="grgrid">
-    <div class="card">
-      <h3>Peta Historical Visit Toko</h3>
-      <div class="cap" id="grMapCap">Klik customer di tabel untuk melihat histori visit-nya.</div>
-      <div id="grMap" class="map"></div>
-      <div class="maplegend">
-        <span><span class="dot" style="background:#94a3b8"></span> Historical visit</span>
-        <span><span class="dot" style="background:#2563eb"></span> Lokasi toko (existing)</span>
-        <span><span class="dot" style="background:#14b8a6"></span> Rekomendasi (modus)</span>
+      <div class="card">
+        <div class="toolbar">
+          <input type="search" id="grSearch" placeholder="🔎 Cari customer / territory">
+          <select id="grFilter">
+            <option value="all">Semua status</option>
+            <option value="ok">✅ Sudah sesuai</option>
+            <option value="update">🟠 Perlu update</option>
+            <option value="need">⛔ Butuh data</option>
+          </select>
+          <button class="btn-ghost" id="grExport">⬇ CSV</button>
+        </div>
+        <div class="tbl-wrap" style="max-height:560px">
+          <table id="grTable"><thead><tr>
+            <th data-k="name">Customer</th><th data-k="terr">Territory</th>
+            <th class="num" data-k="total">Visit</th>
+            <th data-k="existing">Saat ini</th>
+            <th data-k="rec">Rekomendasi</th>
+            <th class="num" data-k="modeCount">Modus</th>
+            <th class="num" data-k="distinct">Titik</th>
+            <th class="num" data-k="dist">Geser</th>
+            <th data-k="status">Status</th>
+            <th data-k="conf">Confidence</th>
+          </tr></thead><tbody></tbody></table>
+        </div>
+        <div class="foot-note" id="grFoot"></div>
       </div>
     </div>
-    <div class="card">
-      <div class="toolbar">
-        <input type="search" id="grSearch" placeholder="🔎 Cari customer / territory / district...">
-        <select id="grFilter">
-          <option value="all">Semua status</option>
-          <option value="ok">✅ Long lat sudah sesuai</option>
-          <option value="update">🟠 Perlu update long lat</option>
-          <option value="need">⛔ Butuh data lebih</option>
-        </select>
-        <button class="btn-ghost" id="grExport">⬇️ Export CSV</button>
-      </div>
-      <div class="tbl-wrap" style="max-height:560px">
-        <table id="grTable"><thead><tr>
-          <th data-k="name">Customer</th><th data-k="terr">Territory / District</th>
-          <th class="num" data-k="total">Total Visit</th>
-          <th data-k="existing">Long-lat Existing</th>
-          <th data-k="rec">Long-lat Rekomendasi</th>
-          <th class="num" data-k="modeCount">Modus (titik)</th>
-          <th class="num" data-k="distinct">Titik Unik</th>
-          <th class="num" data-k="dist">Jarak Geser</th>
-          <th data-k="status">Status</th>
-          <th data-k="conf">Confidence</th>
-        </tr></thead><tbody></tbody></table>
-      </div>
-      <div class="legend">
-        <span><span class="dot" style="background:var(--ok)"></span> Long lat sudah sesuai — jarak ≤ 100 m</span>
-        <span><span class="dot" style="background:var(--mid)"></span> Perlu update long lat — jarak &gt; 100 m</span>
-        <span><span class="dot" style="background:var(--bad)"></span> Butuh data lebih — rekomendasi tidak tersedia</span>
-      </div>
-      <div class="foot-note" id="grFoot"></div>
-    </div>
-  </div>
-
-  <div class="sec">Export</div>
-  <div class="card export-card">
-    <div class="exp">
-      <div class="exp-ico">🗂️</div>
-      <div class="exp-body">
-        <h3>Export CSV per zone</h3>
-        <p>Semua visit + flag anomaly, 1 file per zone dalam 1 ZIP.</p>
-        <div class="foot-note" id="expFoot"></div>
-      </div>
-      <button class="btn primary" id="expZoneBtn">⬇️ Export ZIP</button>
-    </div>
-    <div class="exp">
-      <div class="exp-ico hero">🦸</div>
-      <div class="exp-body">
-        <h3>Send to My Hero Coach</h3>
-        <p>Call to action per territory untuk supervisor, diurutkan dari prioritas tertinggi.</p>
-        <div class="foot-note" id="heroFoot"></div>
-      </div>
-      <button class="btn violet" id="heroCoachBtn">🦸 Generate CSV</button>
-    </div>
-  </div>
+  </section>
 </div>
 </section>
 

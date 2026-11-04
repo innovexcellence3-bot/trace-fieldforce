@@ -1,4 +1,4 @@
-/* Dashboard Field Force: KPI, narasi, grafik, tabel, peta. Satu pipeline `recomputeAll()`. */
+/* Report Field Force: 3 tab (Ringkasan, Radar Wilayah, Lensa Lapangan). Satu pipeline `recomputeAll()`. */
 import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
 import { S, minToHHMM, hhmmToMin } from '../core/state.js';
 import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData, computeZoneProgress } from '../engine/analytics.js';
@@ -6,7 +6,7 @@ import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
 import { initChartContextMenu, renderCharts, renderHistory } from './charts.js';
-import { exportByZone, exportGeo, exportHeroCoach } from './exports.js';
+import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { ensureGrMap, initMap, invalidateMaps, renderMap, showGeoRecMap } from './maps.js';
 import { exportGeoRec, initGeoRecSort, initTerrSort, renderGeo, renderGeoRec, renderTerr } from './tables.js';
@@ -33,58 +33,88 @@ function renderKPIs() {
     kpi('y', '🌙', 'Visit After 7PM', fmt(A.a7), pct(A.a7, A.checkable).toFixed(1) + '% terident.');
 }
 
-function renderNarrative() {
-  const { A, GF } = S;
+/* Skor besar di kanan atas: % anomaly & cakupan GPS (ikut filter). */
+function renderScores() {
+  const A = S.A;
   const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total);
-  const zones = Object.entries(A.zone).map(([k, v]) => ({ k, r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), t: v.total }))
-    .filter((z) => z.t >= 30).sort((a, b) => b.r - a.r);
-  const worst = zones[0], best = zones[zones.length - 1];
-  const lowCover = zones.slice().sort((a, b) => a.c - b.c)[0];
-  const dom = A.lm >= A.a7 && A.lm >= A.rsl ? 'Location Mismatch' : (A.a7 >= A.rsl ? 'Visit After 7PM' : 'Rapid Same Location');
-  const DOWID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  let peak = -1, peakv = -1;
-  A.dow.forEach((d, i) => { const rr = pct(d.a, d.c); if (d.c > 0 && rr > peakv) { peakv = rr; peak = i; } });
-  const parts = [];
-  if (GF.zone.length) parts.push(GF.zone.length + ' zone');
-  if (GF.region.length) parts.push(GF.region.length + ' region');
-  if (GF.area.length) parts.push(GF.area.length + ' area');
-  if (GF.district.length) parts.push(GF.district.length + ' district');
-  if (GF.territory.length) parts.push(GF.territory.length + ' territory');
-  const scope = parts.length ? parts.join(', ') : 'semua wilayah';
-  const prog = computeZoneProgress();
-  $('#narrative').innerHTML =
-    `<span class="tag">Temuan utama</span> Periode <b>${A.dateMin} → ${A.dateMax}</b> · cakupan <b>${scope}</b>. Dari <b>${fmt(A.total)}</b> visit, <b>${cover.toFixed(1)}%</b> punya long-lat sehingga bisa diperiksa. ` +
-    `Dari visit teridentifikasi, <b>${rate.toFixed(1)}%</b> terindikasi anomaly. ` +
-    (worst ? `Zona paling berisiko <b>${esc(worst.k)}</b> (${worst.r.toFixed(1)}%), paling sehat <b>${esc(best.k)}</b> (${best.r.toFixed(1)}%). ` : '') +
-    (peak >= 0 ? `Anomaly cenderung memuncak di hari <b>${DOWID[peak]}</b> (${peakv.toFixed(1)}%). ` : '') +
-    (lowCover && lowCover.c < 80 ? `Perhatikan <b>${esc(lowCover.k)}</b> yang cakupan GPS-nya hanya <b>${lowCover.c.toFixed(1)}%</b> — angka anomaly di sana bisa bias. ` : '') +
-    (prog ? `Secara tren, zona paling <b>progressing</b> adalah <b>${esc(prog.zone)}</b>: cakupan GPS ${prog.dCover >= 0 ? 'naik' : 'turun'} <b>${prog.dCover >= 0 ? '+' : ''}${prog.dCover.toFixed(1)} pts</b> (${prog.coverFirst.toFixed(1)}% → ${prog.coverLast.toFixed(1)}%) dan anomaly ${prog.dAnom <= 0 ? 'turun' : 'naik'} <b>${prog.dAnom <= 0 ? '' : '+'}${prog.dAnom.toFixed(1)} pts</b> (${prog.anomFirst.toFixed(1)}% → ${prog.anomLast.toFixed(1)}%) dari ${prog.wkFirst} ke ${prog.wkLast}. ` : '') +
-    `Parameter dominan: <b>${dom}</b>.`;
+  const level = rate >= 60 ? ['Kritis', 'var(--bad)'] : rate >= 40 ? ['Tinggi', 'var(--mid)'] : rate >= 20 ? ['Waspada', 'var(--warn)'] : ['Sehat', 'var(--ok)'];
+  const gps = cover >= 80 ? ['Kuat', 'var(--ok)'] : cover >= 50 ? ['Cukup', 'var(--warn)'] : ['Lemah', 'var(--bad)'];
+  const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
+  $('#scores').innerHTML =
+    `<div class="score">${ring(rate, level[1])}<div><small>Anomaly</small><strong style="color:${level[1]}">${level[0]}</strong><span>${fmt(A.anomaly)} visit</span></div></div>` +
+    `<div class="score">${ring(cover, gps[1])}<div><small>Cakupan GPS</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} visit terbaca</span></div></div>`;
 }
 
-function renderMethod() {
+/* Temuan utama dalam bentuk kartu singkat (pengganti paragraf panjang). */
+function renderInsights() {
+  const A = S.A;
+  const zones = Object.entries(A.zone).map(([k, v]) => ({ k: k.replace('Zone ', ''), r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), t: v.total }))
+    .filter((z) => z.t >= 30).sort((a, b) => b.r - a.r);
+  const worst = zones[0], best = zones.length > 1 ? zones[zones.length - 1] : null;
+  const lowCover = zones.slice().sort((a, b) => a.c - b.c)[0];
+  const doms = [['Location Mismatch', A.lm, '📍'], ['Rapid Same Location', A.rsl, '⚡'], ['Visit After 7PM', A.a7, '🌙']].sort((a, b) => b[1] - a[1]);
+  const DOW = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  let peak = -1, peakv = -1;
+  A.dow.forEach((d, i) => { const r = pct(d.a, d.c); if (d.c > 0 && r > peakv) { peakv = r; peak = i; } });
+  const prog = computeZoneProgress();
+  const card = (cls, e, label, title, sub) => `<div class="ins ${cls}"><div class="e">${e}</div><div><small>${label}</small><b>${title}</b><span>${sub}</span></div></div>`;
+  const out = [];
+  if (worst) out.push(card('red', '🔥', 'Zona paling berisiko', esc(worst.k), `${worst.r.toFixed(1)}% anomaly`));
+  if (best) out.push(card('green', '🌿', 'Zona paling sehat', esc(best.k), `${best.r.toFixed(1)}% anomaly`));
+  if (A.anomaly) out.push(card('amber', doms[0][2], 'Anomaly terbanyak', doms[0][0], `${pct(doms[0][1], A.anomaly).toFixed(0)}% dari visit anomaly`));
+  if (peak >= 0) out.push(card('blue', '📅', 'Hari paling rawan', DOW[peak], `${peakv.toFixed(1)}% anomaly`));
+  if (prog) out.push(card('green', '📈', 'Paling membaik', esc(prog.zone.replace('Zone ', '')), `GPS ${prog.dCover >= 0 ? '+' : ''}${prog.dCover.toFixed(1)} pts · anomaly ${prog.dAnom.toFixed(1)} pts`));
+  else if (lowCover && lowCover.c < 80) out.push(card('amber', '📡', 'GPS paling lemah', esc(lowCover.k), `cakupan ${lowCover.c.toFixed(1)}%`));
+  $('#insights').innerHTML = out.join('');
+}
+
+/* Radar Wilayah: papan peringkat area. */
+function renderLeaders() {
+  const A = S.A;
+  const areas = Object.entries(A.area).map(([k, v]) => {
+    const p = k.split('||');
+    return { name: p[2], sub: p[1], r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), chk: v.checkable, t: v.total };
+  });
+  const li = (a, v, w, color) => `<li><span class="nm"><b title="${esc(a.name)} · ${esc(a.sub)}">${esc(a.name)}</b><span class="bar"><i style="width:${Math.min(100, w)}%;background:${color}"></i></span></span><span class="v">${v}</span></li>`;
+  const empty = '<li class="empty">Data belum cukup</li>';
+  const rated = areas.filter((a) => a.chk >= 30);
+  const hot = rated.slice().sort((a, b) => b.r - a.r).slice(0, 5);
+  const cool = rated.slice().sort((a, b) => a.r - b.r).slice(0, 5);
+  const blind = areas.filter((a) => a.t >= 30).sort((a, b) => a.c - b.c).slice(0, 5);
+  $('#leadHot').innerHTML = hot.map((a) => li(a, a.r.toFixed(1) + '%', a.r, 'var(--bad)')).join('') || empty;
+  $('#leadCool').innerHTML = cool.map((a) => li(a, a.r.toFixed(1) + '%', a.r, 'var(--ok)')).join('') || empty;
+  $('#leadBlind').innerHTML = blind.map((a) => li(a, a.c.toFixed(0) + '%', a.c, 'var(--warn)')).join('') || empty;
+}
+
+function renderParamChips() {
   const P = S.P;
-  const hh = minToHHMM(P.nightMin);
-  $('#methodCards').innerHTML =
-    `<div class="m"><div class="ic">📍</div><div><h4>Location Mismatch <span class="badge-th">&gt; ${fmt(P.mismatchM)} m</span></h4><p>GPS visit terlalu jauh dari lokasi toko.</p></div></div>
-     <div class="m"><div class="ic">⚡</div><div><h4>Rapid Same Location <span class="badge-th">&gt; ${P.rapidCount} toko / ${P.rapidM} m</span></h4><p>Banyak toko di-visit dari satu titik, di hari &amp; territory yang sama.</p></div></div>
-     <div class="m"><div class="ic">🌙</div><div><h4>Visit After 7 PM <span class="badge-th">${hh} – 23:59</span></h4><p>Visit dimulai di luar jam wajar.</p></div></div>`;
+  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} toko / ${P.rapidM} m</span><span>🌙 ≥ ${minToHHMM(P.nightMin)}</span>`;
 }
 
 function renderHeader() {
   const ds = S.dataset || {};
   const B = S.B;
-  $('#dashTitle').textContent = ds.name || 'Dataset';
   const p = ds.params || {};
+  $('#dashTitle').textContent = ds.name || 'Dataset';
+  $('#dashSource').textContent = ds.source === 'snowflake' ? `❄️ KPS ${p.weekFrom}–${p.weekTo} · ${p.channel}` : 'Report';
   $('#dashMeta').innerHTML = [
-    ds.source === 'snowflake' ? `<span>❄️ KPS <b>${p.weekFrom}–${p.weekTo}</b> · ${esc(p.channel)}</span>` : '<span>📄 CSV</span>',
     `<span><b>${fmt(B.n)}</b> visit</span>`,
-    `<span>Tanggal <b>${B.gMin || '—'}</b> → <b>${B.gMax || '—'}</b></span>`,
+    `<span><b>${B.gMin || '—'}</b> → <b>${B.gMax || '—'}</b></span>`,
     `<span><b>${B.iZone.size}</b> zone · <b>${fmt(B.iTerr.size)}</b> territory</span>`,
     ds.createdAt ? `<span>Diambil ${fmtDateTime(ds.createdAt)}</span>` : '',
   ].join('');
   $('#dlDatasetBtn').href = api.downloadUrl(ds.id);
-  $('#tfInline').textContent = '· Periode: ' + S.A.dateMin + ' → ' + S.A.dateMax;
+}
+
+/* ---------------- tab section ---------------- */
+const TABS = ['summary', 'radar', 'lens'];
+export function showTab(tab, save = true) {
+  if (!TABS.includes(tab)) tab = 'summary';
+  S.tab = tab;
+  document.querySelectorAll('#rtabs button').forEach((b) => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.rpanel').forEach((p) => { p.hidden = p.dataset.panel !== tab; });
+  if (tab === 'lens' && S.loaded) { invalidateMaps(); setTimeout(() => renderMap(mapFilter(), true), 80); }
+  if (save) persist();
 }
 
 /* ---------------- peta & territory ---------------- */
@@ -129,8 +159,7 @@ function refreshGeoRec() { computeGeoRec(mapFilter()); renderGeoRec(kpi, showGeo
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderKPIs(); renderNarrative(); renderCharts(); renderGeo();
-  $('#tfInline').textContent = '· Periode: ' + S.A.dateMin + ' → ' + S.A.dateMax;
+  renderScores(); renderKPIs(); renderInsights(); renderCharts(); renderLeaders(); renderGeo();
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
@@ -164,7 +193,7 @@ export function openDashboard(saved = {}) {
   $('#dateFrom').value = S.FILT.from || B.gMin; $('#dateTo').value = S.FILT.to || B.gMax;
   $('#mDistrict').value = ''; $('#mTerr').value = '';
   syncDashParams();
-  renderMethod();
+  renderParamChips();
   buildAllMS(recomputeAll);
   initMap();
   ensureGrMap();
@@ -172,8 +201,7 @@ export function openDashboard(saved = {}) {
   makeSearchable('mTerr', 'Cari territory...');
   recomputeAll();
   renderHeader();
-  renderMap(mapFilter(), true);
-  invalidateMaps();
+  showTab(saved.view?.tab || S.tab || 'summary', false);
 }
 
 /* Pulihkan filter tersimpan, hanya nilai yang memang ada di dataset ini. */
@@ -207,17 +235,17 @@ export { ensureRapid };
 /* ---------------- wiring (sekali saat start) ---------------- */
 let recalcTimer = null;
 function scheduleRecalc() {
-  $('#parambar').classList.add('busy');
-  $('#recalcTxt').textContent = 'Menghitung ulang...';
+  $('#recalc').classList.add('busy');
+  $('#recalcTxt').textContent = 'Menghitung…';
   clearTimeout(recalcTimer);
   recalcTimer = setTimeout(() => {
     readParams('d');
     setTimeout(async () => {
       await ensureRapid();
-      renderMethod();
+      renderParamChips();
       recomputeAll();
-      $('#parambar').classList.remove('busy');
-      $('#recalcTxt').textContent = 'Sinkron ✓';
+      $('#recalc').classList.remove('busy');
+      $('#recalcTxt').textContent = '';
     }, 15);
   }, 300);
 }
@@ -246,8 +274,11 @@ export function initDashboard() {
   $('#grSearch').addEventListener('input', () => renderGeoRec(kpi, showGeoRecMap));
   $('#grFilter').addEventListener('change', () => renderGeoRec(kpi, showGeoRecMap));
   $('#grExport').addEventListener('click', exportGeoRec);
-  $('#expZoneBtn').addEventListener('click', exportByZone);
-  $('#heroCoachBtn').addEventListener('click', exportHeroCoach);
+  $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
+  $('#pboxToggle').addEventListener('click', () => {
+    const open = $('#pbox').classList.toggle('open');
+    $('#pboxToggle').setAttribute('aria-expanded', String(open));
+  });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
   ['dMismatch', 'dRadius', 'dStores', 'dNight'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));

@@ -82,7 +82,7 @@ export function renderMap(f, fit) {
   const stat = $('#mapStat');
   if (match.length > CLUSTER_MAX && tfId < 0) {
     stat.className = 'mapstat warn';
-    stat.innerHTML = `⚠️ <b>${fmt(match.length)}</b> titik cocok filter — terlalu banyak untuk ditampilkan sekaligus. Pilih <b>District</b> / <b>Territory</b> (atau klik baris territory) untuk menampilkan titiknya.`;
+    stat.innerHTML = `⚠️ ${fmt(match.length)} titik — pilih district / territory dulu`;
     return;
   }
   const markers = [], bounds = [];
@@ -103,8 +103,7 @@ export function renderMap(f, fit) {
   cluster.addLayers(markers);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
-  stat.innerHTML = `Menampilkan <b>${fmt(match.length)}</b> titik visit` + (f.terr ? ` · territory <b>${esc(f.terr)}</b>` : f.district ? ` · district <b>${esc(f.district)}</b>` : '') +
-    ` · week <b>${esc(f.week)}</b> · <b style="color:${RED}">${fmt(anom)}</b> anomaly · dikelompokkan (cluster) saat zoom-out.`;
+  stat.innerHTML = `<b>${fmt(match.length)}</b> visit · <b style="color:${RED}">${fmt(anom)}</b> anomaly`;
 }
 
 /* ---------------- peta geotag recommendation ---------------- */

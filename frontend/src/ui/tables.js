@@ -104,7 +104,7 @@ export function renderTerr(onPick) {
     tb.appendChild(tr);
   });
   if (!arr.length) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Tidak ada territory sesuai filter.</td></tr>';
-  $('#tFoot').textContent = 'Menampilkan ' + Math.min(400, arr.length) + ' dari ' + fmt(arr.length) + ' territory · KPS Week ' + $('#mWeek').value + '. Klik header untuk sortir. LM/RL/7PM = jumlah visit terdampak.';
+  $('#tFoot').textContent = (arr.length > 400 ? `400 dari ${fmt(arr.length)}` : fmt(arr.length)) + ' territory · KPS week ' + $('#mWeek').value;
 }
 export function initTerrSort(rerender) {
   $$('#tTable th[data-k]').forEach((th) => th.addEventListener('click', () => {
@@ -149,7 +149,7 @@ export function renderGeoRec(kpiFn, onPick) {
   const nSesuai = arr.filter((x) => x.status === 'ok').length;
   const moved = arr.filter((x) => x.status === 'update').length;
   $('#grKpis').innerHTML =
-    kpiFn('', '🏬', 'Total Customer', fmt(arr.length), 'dari data ter-filter') +
+    kpiFn('', '🏬', 'Customer', fmt(arr.length), 'sesuai filter') +
     kpiFn('g', '✅', 'Rekomendasi Tersedia', fmt(nOK), 'modus ≥ 2 titik') +
     kpiFn('r', '⛔', 'Butuh Data Lebih', fmt(nNeed), 'modus ≤ 1 titik') +
     kpiFn('t', '📌', 'Long Lat Sudah Sesuai', fmt(nSesuai), '≤ 100 m dari existing') +
@@ -182,7 +182,7 @@ export function renderGeoRec(kpiFn, onPick) {
     tb.appendChild(tr);
   });
   if (!list.length) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">Tidak ada customer sesuai filter.</td></tr>';
-  $('#grFoot').textContent = 'Menampilkan ' + Math.min(600, list.length) + ' dari ' + fmt(list.length) + ' customer. Klik header untuk sortir · gunakan Export untuk seluruh data. Long-lat rekomendasi = modus titik visit (dibulatkan 4 desimal).';
+  $('#grFoot').textContent = list.length > 600 ? `600 dari ${fmt(list.length)} customer ditampilkan · CSV berisi semua` : `${fmt(list.length)} customer`;
 }
 export function initGeoRecSort(rerender) {
   $$('#grTable th[data-k]').forEach((th) => th.addEventListener('click', () => {
