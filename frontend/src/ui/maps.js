@@ -3,6 +3,7 @@ import L from './leaflet-setup.js';
 import 'leaflet.markercluster';
 import { $, esc, fmt, streetView } from '../core/dom.js';
 import { S } from '../core/state.js';
+import { pi } from './icons.js';
 import { geoIds, passGeo } from '../engine/analytics.js';
 
 const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -36,9 +37,9 @@ function popupHtml(i) {
   const lat = B.latV[i], lon = B.lonV[i], latC = B.latC[i], lonC = B.lonC[i];
   const hasStore = !isNaN(latC) && !isNaN(lonC);
   const tags = [];
-  if (B.lmA[i]) tags.push('<span class="vp-tag lm">📍 Location Mismatch</span>');
-  if (B.rslA[i]) tags.push('<span class="vp-tag rsl">⚡ Rapid Same Location</span>');
-  if (S.SP && S.SP.visitFlag[i]) tags.push('<span class="vp-tag spot">📌 Shared spot</span>');
+  if (B.lmA[i]) tags.push('<span class="vp-tag lm">' + pi('lm') + ' Location Mismatch</span>');
+  if (B.rslA[i]) tags.push('<span class="vp-tag rsl">' + pi('rsl') + ' Rapid Same Location</span>');
+  if (S.SP && S.SP.visitFlag[i]) tags.push('<span class="vp-tag spot">' + pi('spot') + ' Shared spot</span>');
   const status = B.anA[i] ? '<span class="vp-status bad">Anomaly</span>' : '<span class="vp-status ok">Normal</span>';
   const emp = B.iEmp.val(B.emp[i]);
   const empTxt = !emp || emp.startsWith('(') ? '—' : esc(emp);
@@ -89,11 +90,11 @@ function drawSpots(f) {
       if (drawn >= SPOT_MAX && !f.terr) break;
       drawn++;
       out.push([sp.lat, sp.lon]);
-      const pop = `📌 <b>Shared spot ${k + 1}/${t.spots}</b><br>${esc(t.terr)} · ${esc(t.district)}<br>` +
+      const pop = `${pi('spot')} <b>Shared spot ${k + 1}/${t.spots}</b><br>${esc(t.terr)} · ${esc(t.district)}<br>` +
         `<b>${sp.stores}</b> unique stores · ${fmt(sp.visits)} visits within ${SP.R} m<br>${sp.lat.toFixed(5)}, ${sp.lon.toFixed(5)}` +
         `<div class="svbtns"><a href="${streetView(sp.lat, sp.lon)}" target="_blank" rel="noopener">👁️ Street View at spot</a></div>`;
       L.circle([sp.lat, sp.lon], { radius: SP.R, color: SPOT, weight: 2, dashArray: '5 4', fillColor: SPOT, fillOpacity: 0.14 }).bindPopup(pop).addTo(spotLayer);
-      L.marker([sp.lat, sp.lon], { icon: L.divIcon({ className: '', iconSize: null, html: `<div class="spotlbl">📌 ${sp.stores}</div>` }), zIndexOffset: 1000 }).bindPopup(pop).addTo(spotLayer);
+      L.marker([sp.lat, sp.lon], { icon: L.divIcon({ className: '', iconSize: null, html: `<div class="spotlbl">${pi('spot')} ${sp.stores}</div>` }), zIndexOffset: 1000 }).bindPopup(pop).addTo(spotLayer);
     }
   }
   return out;
@@ -144,5 +145,5 @@ export function renderMap(f, fit) {
   bounds.push(...spotPts);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
-  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly` + (spotPts.length ? ` · <b style="color:${SPOT}">📌 ${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : (!f.district && !f.terr && S.A.spot?.spotN ? ' · pick a district / territory to show shared spots' : ''));
+  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly` + (spotPts.length ? ` · <b style="color:${SPOT}">${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : (!f.district && !f.terr && S.A.spot?.spotN ? ' · pick a district / territory to show shared spots' : ''));
 }

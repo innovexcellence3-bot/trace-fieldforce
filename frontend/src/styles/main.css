@@ -318,7 +318,7 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .vp-status{font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap;margin-top:2px}
 .vp-status.bad{background:var(--badsoft);color:var(--bad)}.vp-status.ok{background:#e9f8ef;color:#15803d}
 .vp-tags{display:flex;flex-wrap:wrap;gap:5px;padding:10px 16px 0}
-.vp-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid}
+.vp-tag{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid}
 .vp-tag.lm{background:#fff1f2;color:#be123c;border-color:#fecdd3}
 .vp-tag.rsl{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe}
 .vp-tag.spot{background:var(--spotsoft);color:#4338ca;border-color:var(--spotline)}
@@ -362,7 +362,8 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .rk-txt span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
 .rk-txt span b{color:var(--ink2)}
 .rk-txt .kminis{display:flex;margin-top:8px}
-.rk-txt .kmini{display:inline-flex;margin-top:0;font-size:11.5px;color:var(--ink2)}
+.rk-txt .kmini .pi{margin-right:2px}
+.kmini{display:inline-flex!important;align-items:center;gap:4px;margin-top:0;font-size:11.5px;color:var(--ink2)}
 
 .recalc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
 .recalc .spin{width:13px;height:13px;border:2px solid #e5e7eb;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;display:none}
@@ -382,7 +383,19 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .rtabs b{display:block;font:800 15px var(--display)}
 .rtabs small{display:block;font-size:12px;color:var(--muted)}
 .rsection{--pad:22px;background:var(--sectbg);border:1px solid var(--line);border-radius:0 0 24px 24px;padding:var(--pad);box-shadow:var(--shadow)}
-.lens-hint{font-size:12.5px;color:var(--muted)}
+/* header section (tanpa ikon) */
+.phead{padding:2px 2px 14px;margin-bottom:4px;border-bottom:1px dashed var(--line2)}
+.phead-num{font:800 10.5px var(--display);letter-spacing:1.2px;text-transform:uppercase;color:var(--acc)}
+.phead h2{margin:2px 0 2px;font:800 22px var(--display);letter-spacing:-.4px}
+.phead p{margin:0;color:var(--muted);font-size:13px}
+/* ikon parameter (mini ilustrasi kartu Detection Parameter) */
+.pi{display:inline-grid;place-items:center;vertical-align:middle;border-radius:6px;flex:0 0 auto}
+.pi svg{display:block;width:100%;height:100%}
+.pi-sm{width:22px;height:15px;border-radius:5px}
+.pi-md{width:30px;height:20px}
+.pi-lg{width:42px;height:28px;border-radius:8px}
+.pi-lm{background:#fff1f2}.pi-rsl{background:#f5f3ff}.pi-spot{background:#eef0ff}
+th .pi{margin-right:3px;vertical-align:-3px}
 .rpanel{animation:rise .35s both}
 .rpanel>*+*{margin-top:16px}
 
@@ -472,7 +485,7 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .spotlight{border-color:var(--spotline);background:linear-gradient(135deg,#fbfbff 0%,#ffffff 60%)}
 .spot-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .spot-head h3{margin:0}.spot-head .cap{margin:2px 0 0}
-.spot-badge{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:grid;place-items:center;font-size:20px;background:var(--spotsoft);border:1px solid var(--spotline)}
+.spot-badge{width:56px;height:44px;flex:0 0 56px;border-radius:13px;display:grid;place-items:center;background:var(--spotsoft);border:1px solid var(--spotline)}
 .spot-big{margin-left:auto;text-align:right;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 .spot-big b{font:800 30px var(--display);color:var(--spot);letter-spacing:-.5px}
 .spot-big span{color:var(--muted);font-size:13px}
@@ -497,6 +510,7 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .spotlist li .max{font-size:12px;color:var(--muted);white-space:nowrap}
 .spotlist li .go{color:var(--spot);font-weight:800}
 .spotlist li.empty{cursor:default;display:block;color:var(--muted);text-align:center}
+.spotpill .pi{background:transparent}.spotpill.multi .pi{background:#fff}
 .spotpill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--spotsoft);color:#4338ca;border:1px solid var(--spotline);white-space:nowrap}
 .spotpill.multi{background:var(--spot);color:#fff;border-color:var(--spot)}
 .spotfrac{font-size:11.5px;color:#4338ca;margin-right:2px}
@@ -508,8 +522,8 @@ tr.child3{background:#fbfcff;display:none;cursor:pointer}
 tr.terr-row .tname{font-weight:600}
 tr.terr-row .open-map{margin-left:10px;font-size:11.5px;font-weight:700;color:var(--spot);opacity:0;transition:.15s}
 tr.terr-row:hover .open-map{opacity:1}
-.ring-dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:2px dashed var(--spot);background:rgba(99,102,241,.15)}
-.spotlbl{display:inline-block;transform:translate(-50%,-50%);background:var(--spot);color:#fff;font:700 11.5px var(--font);padding:3px 8px;border-radius:99px;box-shadow:0 3px 10px rgba(67,56,202,.35);white-space:nowrap;border:2px solid #fff}
+.spotlbl .pi{background:#fff;margin-right:2px}
+.spotlbl{display:inline-flex;align-items:center;gap:3px;transform:translate(-50%,-50%);background:var(--spot);color:#fff;font:700 11.5px var(--font);padding:3px 8px;border-radius:99px;box-shadow:0 3px 10px rgba(67,56,202,.35);white-space:nowrap;border:2px solid #fff}
 
 /* context menu, toast, loader */
 .ctxmenu{position:fixed;z-index:3000;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2);padding:6px;min-width:220px;display:none}
@@ -548,6 +562,7 @@ tr.terr-row:hover .open-map{opacity:1}
   .fb-inner{padding:10px 16px}
   .frow3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.frow3 label:last-child{grid-column:1/-1}
   .rtabs small,.rtabs em{display:none}
+  .phead h2{font-size:18px}.phead p{font-size:12px}
   .rsection{--pad:12px;border-radius:0 0 18px 18px}
 .rtabs button{flex-direction:column;gap:4px;padding:10px 6px;text-align:center}  .filterbar{position:static}
     .activecard{flex-wrap:wrap}.activecard .btn{width:100%}

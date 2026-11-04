@@ -15,6 +15,7 @@ import { loadSnapshot, saveSnapshot } from './engine/snapshot.js';
 import { ensureRapid, initDashboard, openDashboard } from './ui/dashboard.js';
 import { getDatasets, initDataSource, refreshLibrary } from './ui/datasource.js';
 import { invalidateMaps } from './ui/maps.js';
+import { fillIcons } from './ui/icons.js';
 
 const loader = {
   show(title) { $('#loaderTitle').textContent = title; $('#loaderBar').style.width = '0'; $('#loaderPhase').textContent = ''; $('#loader').hidden = false; },
@@ -100,6 +101,7 @@ async function route() {
 
 /* ---------------- start ---------------- */
 async function start() {
+  fillIcons(); // ikon parameter di HTML statis
   initDashboard();
   saved = await api.state().catch(() => ({}));
   S.activeId = saved.activeDatasetId || null;

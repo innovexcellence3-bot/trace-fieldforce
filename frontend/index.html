@@ -154,10 +154,10 @@
         <b>Signal to evidence</b>
         <div class="ticker">
           <div class="tk">
-            <span>📍 Location mismatch · 1.2 km from store</span>
-            <span>⚡ Rapid same location · 6 stores / 50 m</span>
-            <span>📌 Shared spot · 23 stores within 20 m</span>
-            <span>📍 Location mismatch · 1.2 km from store</span>
+            <span><i data-pi="lm"></i> Location mismatch · 1.2 km from store</span>
+            <span><i data-pi="rsl"></i> Rapid same location · 6 stores / 20 m</span>
+            <span><i data-pi="spot"></i> Shared spot · 23 stores within 20 m</span>
+            <span><i data-pi="lm"></i> Location mismatch · 1.2 km from store</span>
           </div>
         </div>
         <small>Store master · visit GPS · shared location</small>
@@ -344,6 +344,7 @@
 
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
+    <div class="phead"><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Coverage, anomalies and shared spots at a glance.</p></div>
     <div class="kpis" id="kpis"></div>
     <div class="grid3">
       <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
@@ -365,7 +366,7 @@
     </div>
     <div class="card spotlight">
       <div class="spot-head">
-        <div class="spot-badge">📌</div>
+        <div class="spot-badge"><i data-pi="spot" data-size="lg"></i></div>
         <div><h3>Shared spot territories</h3><div class="cap" id="spotCap"></div></div>
         <div class="spot-big" id="spotBig"></div>
       </div>
@@ -381,6 +382,7 @@
 
   <!-- ===== Radar Wilayah ===== -->
   <section class="rpanel" data-panel="radar" hidden>
+    <div class="phead"><span class="phead-num">Section 02</span><h2>Regional Breakdown</h2><p>Where anomalies and shared spots concentrate — drill from zone down to territory.</p></div>
     <div class="leaders">
       <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
       <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
@@ -403,9 +405,9 @@
           <th data-k="name">Region</th><th class="num" data-k="total">Visits</th>
           <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable">Verifiable</th>
           <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
-          <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store">📍 Location Mismatch</th>
-          <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot">⚡ Rapid Same Location</th><th data-k="rate">Status</th>
-          <th class="num" data-k="spotPct" title="Territories with at least one shared spot (whole period)">📌 Shared spot territories</th>
+          <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store"><i data-pi="lm"></i> Location Mismatch</th>
+          <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot"><i data-pi="rsl"></i> Rapid Same Location</th><th data-k="rate">Status</th>
+          <th class="num" data-k="spotPct" title="Territories with at least one shared spot (whole period)"><i data-pi="spot"></i> Shared spot territories</th>
         </tr></thead><tbody></tbody></table>
       </div>
     </div>
@@ -413,7 +415,7 @@
 
   <!-- ===== Lensa Lapangan ===== -->
   <section class="rpanel" data-panel="lens" hidden>
-    <div class="lens-hint">💡 Click a point for visit details &amp; Street View · click a territory to zoom in.</div>
+    <div class="phead"><span class="phead-num">Section 03</span><h2>Visit Map</h2><p>Click a point for visit details &amp; Street View · click a territory to zoom in.</p></div>
     <div class="mapgrid">
       <div class="card">
         <div class="toolbar">
@@ -423,27 +425,27 @@
             <option value="all">All visits</option>
             <option value="anom">Anomalies only</option>
             <option value="normal">Normal only</option>
-            <option value="lm">📍 Location Mismatch</option>
-            <option value="rsl">⚡ Rapid Same Location</option>
-            <option value="spot">📌 Shared spot visits (all weeks)</option>
+            <option value="lm">Location Mismatch</option>
+            <option value="rsl">Rapid Same Location</option>
+            <option value="spot">Shared spot visits (all weeks)</option>
           </select>
                   </div>
         <div id="map" class="map"></div>
         <div class="maplegend">
           <span><span class="dot" style="background:#e5484d"></span> Anomaly</span>
           <span><span class="dot" style="background:#16a34a"></span> Normal</span>
-          <span><span class="ring-dot"></span> Shared spot</span>
+          <span><i data-pi="spot"></i> Shared spot</span>
           <span class="mapstat" id="mapStat"></span>
         </div>
       </div>
       <div class="card">
         <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div>
-          <div class="hctl"><select id="tSpotOnly"><option value="">All territories</option><option value="1">📌 With shared spot</option></select><select id="mWeek"></select></div></div>
+          <div class="hctl"><select id="tSpotOnly"><option value="">All territories</option><option value="1">With shared spot</option></select><select id="mWeek"></select></div></div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
             <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>
-            <th class="num" data-k="spots" title="Shared spots in this territory (whole period)">📌 Spots</th>
-            <th class="num" data-k="lm" title="Location Mismatch">📍 Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location">⚡ Rapid Loc.</th><th class="num" data-k="rate">Anom. %</th>
+            <th class="num" data-k="spots" title="Shared spots in this territory (whole period)"><i data-pi="spot"></i> Spots</th>
+            <th class="num" data-k="lm" title="Location Mismatch"><i data-pi="lm"></i> Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location"><i data-pi="rsl"></i> Rapid Loc.</th><th class="num" data-k="rate">Anom. %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>

@@ -1,6 +1,7 @@
 /* Tabel: drill-down wilayah (zone → region → area → territory) dan territory per week. */
 import { $, $$, esc, fmt, pct } from '../core/dom.js';
 import { S } from '../core/state.js';
+import { pi } from './icons.js';
 import { barColor } from './charts.js';
 import { downloadCSV } from './exports.js';
 
@@ -33,7 +34,7 @@ let geoPick = null;
 export const spotCell = (o, isTerr) => {
   if (isTerr) {
     return o.spots
-      ? `<span class="spotpill${o.spots > 1 ? ' multi' : ''}" title="Most crowded spot: ${o.spotStores} stores">📌 ${o.spots} spot${o.spots > 1 ? 's' : ''}</span>`
+      ? `<span class="spotpill${o.spots > 1 ? ' multi' : ''}" title="Most crowded spot: ${o.spotStores} stores">${pi('spot')} ${o.spots} spot${o.spots > 1 ? 's' : ''}</span>`
       : '<span class="dim">—</span>';
   }
   return `<span class="inbar" title="${o.spotTerr} of ${o.terrN} territories">${o.spotTerr ? `<b class="spotfrac">${o.spotTerr}/${o.terrN}</b>` : ''}` +
@@ -127,7 +128,7 @@ export function renderTerr(onPick) {
     tr.innerHTML = `<td><b>${esc(t.terr)}</b><div class="sub">${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</div></td>
       <td class="num">${fmt(t.total)}</td>
       <td class="num">${inbar(t.cover, coverColor(t.cover), t.cover.toFixed(0) + '%')}</td>
-      <td class="num">${t.spots ? `<span class="spotpill${t.spots > 1 ? ' multi' : ''}" title="${t.spots} shared spot(s) · most crowded: ${t.spotStores} stores">📌 ${t.spots}</span>` : '<span class="dim">—</span>'}</td>
+      <td class="num">${t.spots ? `<span class="spotpill${t.spots > 1 ? ' multi' : ''}" title="${t.spots} shared spot(s) · most crowded: ${t.spotStores} stores">${pi('spot')} ${t.spots}</span>` : '<span class="dim">—</span>'}</td>
       <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td>
       <td class="num">${t.gps ? t.rate.toFixed(0) + '%' : '—'}</td>`;
     tr.addEventListener('click', () => {

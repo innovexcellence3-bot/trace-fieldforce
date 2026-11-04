@@ -1,5 +1,6 @@
 /* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map). Satu pipeline `recomputeAll()`. */
 import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
+import { pi } from './icons.js';
 import { S, DEFAULT_PARAMS, minToHHMM } from '../core/state.js';
 import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engine/analytics.js';
 import { api } from '../api.js';
@@ -34,7 +35,7 @@ function renderKPIs() {
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
     rk(cover, gps[1], 'GPS coverage', gps[0], `<b>${fmt(A.checkable)}</b> verifiable visits`) +
     rk(rate, level[1], 'Anomalous visits', level[0], `<b>${fmt(A.anomaly)}</b> of verifiable visits`,
-      `<span class="kminis">${mini('📍', A.lm, 'Location Mismatch')}${mini('⚡', A.rsl, 'Rapid Same Location')}</span>`) +
+      `<span class="kminis">${mini(pi('lm'), A.lm, 'Location Mismatch')}${mini(pi('rsl'), A.rsl, 'Rapid Same Location')}</span>`) +
     rk(spotP, 'var(--spot)', 'Shared spot territories', `${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}`, `<b>${fmt(A.spot.spotN)}</b> shared spots`);
 }
 
@@ -79,7 +80,7 @@ function renderSpotList() {
   $('#spotListN').textContent = top.length ? `(${fmt(top.length)})` : '';
   const list = $('#spotList');
   list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
-      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max${bySpots ? '' : ' hl'}">biggest: <b>${t.spotStores}</b> stores</span><span class="go">→</span></li>`).join('')
+      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">${pi('spot')} ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max${bySpots ? '' : ' hl'}">biggest: <b>${t.spotStores}</b> stores</span><span class="go">→</span></li>`).join('')
     : '<li class="empty">No territory has a shared spot in this selection 🎉</li>';
 }
 
