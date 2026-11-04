@@ -448,6 +448,7 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .mini-t{font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:10px}
 .mini-t span{font-weight:500;color:var(--muted)}
 .mini-t.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mini-t .spot-n{color:var(--spot)}
 .mini-t.row select{margin-left:auto;padding:6px 10px;font-size:12.5px}
 .spotlist li .max b{color:var(--ink2)}
 .spotlist li .max.hl b{color:var(--spot)}

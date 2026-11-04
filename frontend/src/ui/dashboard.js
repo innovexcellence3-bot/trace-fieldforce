@@ -72,11 +72,11 @@ function renderSpotlight() {
 /* daftar territory di kartu Shared spot (urutan dari pilihan #spotSort) */
 function renderSpotList() {
   const A = S.A;
-  /* default: spot terbesar (toko terbanyak dalam 1 spot); opsi: spot terbanyak per territory */
+  /* semua territory ber-spot. default: spot terbesar (toko terbanyak dalam 1 spot); opsi: spot terbanyak */
   const bySpots = $('#spotSort').value === 'count';
   const top = Object.values(A.terr).filter((t) => t.spots)
-    .sort(bySpots ? (a, b) => b.spots - a.spots || b.spotStores - a.spotStores : (a, b) => b.spotStores - a.spotStores || b.spots - a.spots)
-    .slice(0, 15);
+    .sort(bySpots ? (a, b) => b.spots - a.spots || b.spotStores - a.spotStores : (a, b) => b.spotStores - a.spotStores || b.spots - a.spots);
+  $('#spotListN').textContent = top.length ? `(${fmt(top.length)})` : '';
   const list = $('#spotList');
   list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
       <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max${bySpots ? '' : ' hl'}">biggest: <b>${t.spotStores}</b> stores</span><span class="go">→</span></li>`).join('')
