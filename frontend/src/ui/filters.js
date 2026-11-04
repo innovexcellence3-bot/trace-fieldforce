@@ -49,25 +49,6 @@ function availTerritories() {
   return [...s].sort();
 }
 
-/* Induk dari pilihan level bawah (nama bisa muncul di beberapa induk → semua induknya diambil). */
-function parentsOfRegions(regions) {
-  const want = new Set(regions), zones = new Set();
-  Object.entries(S.GEOALL.z2r).forEach(([z, set]) => { for (const r of set) if (want.has(r)) { zones.add(z); break; } });
-  return [...zones].sort();
-}
-function parentsOfAreas(areas) {
-  const want = new Set(areas), zones = new Set(), regions = new Set();
-  Object.entries(S.GEOALL.zr2a).forEach(([k, set]) => {
-    for (const a of set) if (want.has(a)) { const [z, r] = k.split('||'); zones.add(z); regions.add(r); break; }
-  });
-  return { zones: [...zones].sort(), regions: [...regions].sort() };
-}
-function parentsOfTerritories(terrs) {
-  const want = new Set(terrs), districts = new Set();
-  Object.entries(S.GEOALL.d2t).forEach(([d, set]) => { for (const t of set) if (want.has(t)) { districts.add(d); break; } });
-  return [...districts].sort();
-}
-
 /** Bangun ulang semua multi-select. `onChange` dipanggil setelah filter berubah. */
 export function buildAllMS(onChange) {
   const GF = S.GF;
@@ -82,21 +63,11 @@ export function buildAllMS(onChange) {
     reopen(id);
     onChange();
   };
-  /* Memilih level bawah ikut mengisi induknya: Area → Region + Zone, Region → Zone, Territory → District. */
   fillMS('msZone', S.GEOALL.zones, GF.zone, changed('msZone', (v) => { GF.zone = v; }));
-  fillMS('msRegion', availRegions(), GF.region, changed('msRegion', (v) => {
-    GF.region = v;
-    if (v.length) GF.zone = parentsOfRegions(v);
-  }));
-  fillMS('msArea', availAreas(), GF.area, changed('msArea', (v) => {
-    GF.area = v;
-    if (v.length) { const p = parentsOfAreas(v); GF.zone = p.zones; GF.region = p.regions; }
-  }));
+  fillMS('msRegion', availRegions(), GF.region, changed('msRegion', (v) => { GF.region = v; }));
+  fillMS('msArea', availAreas(), GF.area, changed('msArea', (v) => { GF.area = v; }));
   fillMS('msDistrict', S.GEOALL.districts, GF.district, changed('msDistrict', (v) => { GF.district = v; }));
-  fillMS('msTerritory', availTerritories(), GF.territory, changed('msTerritory', (v) => {
-    GF.territory = v;
-    if (v.length) GF.district = parentsOfTerritories(v);
-  }));
+  fillMS('msTerritory', availTerritories(), GF.territory, changed('msTerritory', (v) => { GF.territory = v; }));
   msLabel('msZone', GF.zone, 'Zone'); msLabel('msRegion', GF.region, 'Region'); msLabel('msArea', GF.area, 'Area');
   msLabel('msDistrict', GF.district, 'District'); msLabel('msTerritory', GF.territory, 'Territory');
 }
