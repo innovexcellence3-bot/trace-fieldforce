@@ -315,7 +315,9 @@
       </div>
       <div class="spot-grid">
         <div class="spot-pane"><div class="mini-t">% of territories flagged, by zone</div><div class="chartbox" id="boxSpot" data-exp="chSpot"><canvas id="chSpot"></canvas></div></div>
-        <div class="spot-pane"><div class="mini-t">Territories with the most spots <span>· click to open on the map</span></div><ol class="spotlist" id="spotList"></ol></div>
+        <div class="spot-pane"><div class="mini-t row">Top territories <span>· click to open on the map</span>
+          <select id="spotSort"><option value="size">Biggest spot (most stores)</option><option value="count">Most spots</option></select></div>
+          <ol class="spotlist" id="spotList"></ol></div>
       </div>
     </div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>

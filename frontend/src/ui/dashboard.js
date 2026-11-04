@@ -62,10 +62,20 @@ function renderSpotlight() {
   $('#spotCap').innerHTML = `A spot = more than <b>${sp.K}</b> unique stores visited within <b>${sp.R} m</b> of one point, by the same territory, in the selected period.`;
   $('#spotBig').innerHTML = `<b>${fmt(sp.spotTerr)}</b><span>/ ${fmt(sp.terrN)} territories</span><em>${rate.toFixed(1)}% · ${fmt(sp.spotN)} spots</em>`;
   renderSpotChart();
-  const top = Object.values(A.terr).filter((t) => t.spots).sort((a, b) => b.spots - a.spots || b.spotStores - a.spotStores).slice(0, 15);
+  renderSpotList();
+}
+
+/* daftar territory di kartu Shared spot (urutan dari pilihan #spotSort) */
+function renderSpotList() {
+  const A = S.A;
+  /* default: spot terbesar (toko terbanyak dalam 1 spot); opsi: spot terbanyak per territory */
+  const bySpots = $('#spotSort').value === 'count';
+  const top = Object.values(A.terr).filter((t) => t.spots)
+    .sort(bySpots ? (a, b) => b.spots - a.spots || b.spotStores - a.spotStores : (a, b) => b.spotStores - a.spotStores || b.spots - a.spots)
+    .slice(0, 15);
   const list = $('#spotList');
   list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
-      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max">max ${t.spotStores} stores</span><span class="go">→</span></li>`).join('')
+      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">📌 ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max${bySpots ? '' : ' hl'}">biggest: <b>${t.spotStores}</b> stores</span><span class="go">→</span></li>`).join('')
     : '<li class="empty">No territory has a shared spot in this selection 🎉</li>';
 }
 
@@ -94,7 +104,8 @@ function renderScores() {
   const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
   $('#scores').innerHTML =
     `<div class="score">${ring(rate, level[1])}<div><small>Anomaly</small><strong style="color:${level[1]}">${level[0]}</strong><span>${fmt(A.anomaly)} visits</span></div></div>` +
-    `<div class="score">${ring(cover, gps[1])}<div><small>GPS coverage</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} verifiable</span></div></div>`;
+    `<div class="score">${ring(cover, gps[1])}<div><small>GPS coverage</small><strong style="color:${gps[1]}">${gps[0]}</strong><span>${fmt(A.checkable)} verifiable</span></div></div>` +
+    `<div class="score">${ring(pct(A.spot.spotTerr, A.spot.terrN), 'var(--spot)')}<div><small>Territories with spots</small><strong style="color:var(--spot)">${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}</strong><span>${fmt(A.spot.spotN)} shared spots</span></div></div>`;
 }
 
 function renderHeader() {
@@ -226,6 +237,7 @@ function restoreFilters(saved) {
   const v = saved.view || {};
   if (['zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
+  if (['size', 'count'].includes(v.spotSort)) $('#spotSort').value = v.spotSort;
 }
 
 /* Rapid Same Location per radius: ambil dari cache server, hitung hanya bila belum ada. */
@@ -278,6 +290,7 @@ export function initDashboard() {
   $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
   $('#spotList').addEventListener('click', (e) => { const li = e.target.closest('li[data-tid]'); if (li) goToTerritory(S.A.terr[li.dataset.tid]); });
   $('#tSpotOnly').addEventListener('change', () => renderTerr(onTerrPick));
+  $('#spotSort').addEventListener('change', () => { renderSpotList(); persist(); });
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   $('#pboxToggle').addEventListener('click', () => {

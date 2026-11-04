@@ -88,7 +88,7 @@ export function renderMap(f, fit) {
   if (!map) return;
   const { B, A } = S;
   cluster.clearLayers(); highlightLayer.clearLayers();
-  const spotPts = drawSpots(f);
+  spotLayer.clearLayers();
   const dfId = f.district ? B.iDist.id(f.district) : -1, tfId = f.terr ? B.iTerr.id(f.terr) : -1, wkId = f.week ? B.iWeek.id(f.week) : -1;
   const ids = geoIds();
   const match = [];
@@ -124,8 +124,10 @@ export function renderMap(f, fit) {
     bounds.push([lat, lon]);
   }
   cluster.addLayers(markers);
+  /* spot hanya digambar bila district / territory dipilih (seperti titik visit, supaya ringan) */
+  const spotPts = f.district || f.terr ? drawSpots(f) : [];
   bounds.push(...spotPts);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
-  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly` + (spotPts.length ? ` · <b style="color:${SPOT}">📌 ${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : '');
+  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly` + (spotPts.length ? ` · <b style="color:${SPOT}">📌 ${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : (!f.district && !f.terr && S.A.spot?.spotN ? ' · pick a district / territory to show shared spots' : ''));
 }
