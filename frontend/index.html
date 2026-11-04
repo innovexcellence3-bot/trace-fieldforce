@@ -344,7 +344,6 @@
 
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
-    <div class="phead"><span class="phead-ico">📊</span><div><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Coverage, anomalies and shared spots at a glance.</p></div></div>
     <div class="kpis" id="kpis"></div>
     <div class="grid3">
       <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
@@ -358,7 +357,7 @@
           <div><h3>Weekly trend</h3><div class="cap" id="histCap"></div></div>
           <div class="hctl">
             <select id="histDim"><option value="zone">By zone</option><option value="region">By region</option></select>
-            <select id="histMetric"><option value="cover">GPS coverage %</option><option value="anom">Anomaly %</option></select>
+            <select id="histMetric"><option value="cover">GPS coverage %</option><option value="anom">Anomaly %</option><option value="spot">Shared spot territories %</option></select>
           </div>
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
@@ -382,7 +381,6 @@
 
   <!-- ===== Radar Wilayah ===== -->
   <section class="rpanel" data-panel="radar" hidden>
-    <div class="phead"><span class="phead-ico">🧭</span><div><span class="phead-num">Section 02</span><h2>Regional Breakdown</h2><p>Where anomalies and shared spots concentrate — drill from zone down to territory.</p></div></div>
     <div class="leaders">
       <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
       <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
@@ -415,7 +413,7 @@
 
   <!-- ===== Lensa Lapangan ===== -->
   <section class="rpanel" data-panel="lens" hidden>
-    <div class="phead"><span class="phead-ico">🔭</span><div><span class="phead-num">Section 03</span><h2>Visit Map</h2><p>Click a point for visit details &amp; Street View · click a territory to zoom in.</p></div></div>
+    <div class="lens-hint">💡 Click a point for visit details &amp; Street View · click a territory to zoom in.</div>
     <div class="mapgrid">
       <div class="card">
         <div class="toolbar">

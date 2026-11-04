@@ -30,20 +30,36 @@ export function invalidateMaps() {
   setTimeout(() => { map?.invalidateSize(); }, 60);
 }
 
-/* Popup titik visit: detail visit + Street View di lokasi visit itu sendiri. */
+/* Popup titik visit: kartu ringkas + 2 tombol Street View (titik visit & lokasi toko). */
 function popupHtml(i) {
   const B = S.B;
-  const reason = [];
-  if (B.lmA[i]) reason.push('Location Mismatch'); if (B.rslA[i]) reason.push('Rapid Same Location');
-  const lat = B.latV[i], lon = B.lonV[i];
-  return `<b>${esc(B.iCust.val(B.cust[i]))}</b><br>${esc(B.iEmp.val(B.emp[i]))}<br>` +
-    `${esc(B.iTerr.val(B.terr[i]))} · ${esc(B.iDist.val(B.district[i]))}<br>` +
-    `${esc(B.iArea.val(B.area[i]))} · ${esc(B.iZone.val(B.zone[i]))}<br>` +
-    `Date: ${esc(B.iDate.val(B.date[i]))} · Week ${esc(B.iWeek.val(B.week[i]))}<br>` +
-    `Visit point: ${lat.toFixed(5)}, ${lon.toFixed(5)}<br>` +
-    (isNaN(B.dist[i]) ? '' : `Distance to store: <b>${B.dist[i].toFixed(0)} m</b><br>`) +
-    `Status: <b style="color:${B.anA[i] ? RED : GREEN}">${B.anA[i] ? reason.join(' | ') : 'Normal'}</b>` +
-    `<div class="svbtns"><a href="${streetView(lat, lon)}" target="_blank" rel="noopener">👁️ Street View at visit point</a></div>`;
+  const lat = B.latV[i], lon = B.lonV[i], latC = B.latC[i], lonC = B.lonC[i];
+  const hasStore = !isNaN(latC) && !isNaN(lonC);
+  const tags = [];
+  if (B.lmA[i]) tags.push('<span class="vp-tag lm">📍 Location Mismatch</span>');
+  if (B.rslA[i]) tags.push('<span class="vp-tag rsl">⚡ Rapid Same Location</span>');
+  if (S.SP && S.SP.visitFlag[i]) tags.push('<span class="vp-tag spot">📌 Shared spot</span>');
+  const status = B.anA[i] ? '<span class="vp-status bad">Anomaly</span>' : '<span class="vp-status ok">Normal</span>';
+  const emp = B.iEmp.val(B.emp[i]);
+  const empTxt = !emp || emp.startsWith('(') ? '—' : esc(emp);
+  const row = (ico, label, val) => `<div class="vp-row"><span>${ico} ${label}</span><b>${val}</b></div>`;
+  const dist = isNaN(B.dist[i]) ? '' : row('📏', 'Distance to store', `<em class="${B.lmA[i] ? 'far' : ''}">${fmt(Math.round(B.dist[i]))} m</em>`);
+  return `<div class="vp">
+    <div class="vp-head"><div><small>Customer</small><b>${esc(B.iCust.val(B.cust[i]))}</b></div>${status}</div>
+    ${tags.length ? `<div class="vp-tags">${tags.join('')}</div>` : ''}
+    <div class="vp-rows">
+      ${row('👤', 'Sales', empTxt)}
+      ${row('🗺️', 'Territory', `${esc(B.iTerr.val(B.terr[i]))} · ${esc(B.iDist.val(B.district[i]))}`)}
+      ${row('🏙️', 'Area', `${esc(B.iArea.val(B.area[i]))} · ${esc(B.iZone.val(B.zone[i]).replace('Zone ', ''))}`)}
+      ${row('📅', 'Visit date', `${esc(B.iDate.val(B.date[i]))} · W${esc(B.iWeek.val(B.week[i]))}`)}
+      ${dist}
+    </div>
+    <div class="vp-coords"><span>Visit ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>${hasStore ? `<span>Store ${latC.toFixed(5)}, ${lonC.toFixed(5)}</span>` : ''}</div>
+    <div class="vp-btns"><small>Open Street View</small>
+      <a class="sv-visit" href="${streetView(lat, lon)}" target="_blank" rel="noopener">👁️ Visit point</a>
+      ${hasStore ? `<a class="sv-store" href="${streetView(latC, lonC)}" target="_blank" rel="noopener">🏬 Store</a>` : '<span class="sv-none">No store coordinates</span>'}
+    </div>
+  </div>`;
 }
 /* Klik titik visit: cincin di titik visit + garis ke lokasi toko + marker toko.
    Popup yang terbuka tetap popup visit (Street View titik visit). */
@@ -117,7 +133,7 @@ export function renderMap(f, fit) {
     const an = B.anA[i], lat = B.latV[i], lon = B.lonV[i];
     if (an) anom++;
     const mk = L.marker([lat, lon], { icon: an ? iconAnom : iconNorm });
-    mk.bindPopup(() => popupHtml(i));
+    mk.bindPopup(() => popupHtml(i), { className: 'vpop', minWidth: 320, maxWidth: 340, autoPanPadding: [24, 24] });
     mk.on('click', () => markVisit(i));
     markers.push(mk);
     bounds.push([lat, lon]);

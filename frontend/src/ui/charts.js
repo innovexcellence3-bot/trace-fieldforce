@@ -2,6 +2,7 @@
 import Chart from 'chart.js/auto';
 import { $, fmt, pct, esc } from '../core/dom.js';
 import { S } from '../core/state.js';
+import { weeklySpotTrend } from '../engine/analytics.js';
 import { downloadCSV } from './exports.js';
 
 export const barColor = (r) => (r >= 60 ? '#e5484d' : r >= 40 ? '#f97316' : r >= 20 ? '#f59e0b' : '#16a34a');
@@ -102,20 +103,22 @@ export function renderHistory() {
   const A = S.A;
   const metric = $('#histMetric').value;
   const dim = $('#histDim').value;
-  const src = dim === 'region' ? A.wkRegion : A.wkZone;
+  const isSpot = metric === 'spot';
+  const src = isSpot ? weeklySpotTrend(dim) : (dim === 'region' ? A.wkRegion : A.wkZone);
   const weeks = Object.keys(src).sort();
   const tot = {};
   weeks.forEach((w) => Object.entries(src[w]).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + v.t; }));
   let keys = Object.keys(tot).sort();
   const nAll = keys.length;
   if (nAll > HIST_MAX_SERIES) keys = keys.slice().sort((a, b) => tot[b] - tot[a]).slice(0, HIST_MAX_SERIES).sort();
-  $('#histCap').textContent = (metric === 'cover' ? 'GPS coverage %' : 'Anomaly %') + ' per KPS week, by ' + (dim === 'region' ? 'region' : 'zone') +
+  $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'GPS coverage %' : 'Anomaly %') + ' per KPS week, by ' + (dim === 'region' ? 'region' : 'zone') +
     (nAll > keys.length ? ` · top ${keys.length} of ${nAll} by volume` : '');
   const ds = keys.map((kn, idx) => ({
     label: kn.replace('Zone ', ''),
     data: weeks.map((w) => {
       const o = src[w][kn];
       if (!o) return null;
+      if (isSpot) return o.n ? +pct(o.f, o.n).toFixed(1) : null;
       return metric === 'cover' ? (o.t ? +pct(o.c, o.t).toFixed(1) : null) : (o.c ? +pct(o.a, o.c).toFixed(1) : null);
     }),
     borderColor: HPAL[idx % HPAL.length], backgroundColor: HPAL[idx % HPAL.length], borderDash: HDASH[idx % HDASH.length],
@@ -140,17 +143,23 @@ export function renderHistory() {
     data: { labels: weeks, datasets: ds },
     options: { maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
-        tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => c.dataset.label + ': ' + (c.parsed.y == null ? '—' : c.parsed.y + '%') } } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => {
+          if (c.parsed.y == null) return c.dataset.label + ': —';
+          const o = isSpot ? src[weeks[c.dataIndex]]?.[keys[c.datasetIndex]] : null;
+          return c.dataset.label + ': ' + c.parsed.y + '%' + (o ? ` (${o.f} of ${o.n} territories)` : '');
+        } } } },
       scales: { x: { grid: { display: false }, title: { display: true, text: 'KPS Week' } }, y: { min: yMin, max: yMax, ticks: { stepSize: yStep, callback: (v) => +v.toFixed(1) + '%' }, grid } } },
   });
   const rows = [];
   Object.keys(tot).sort().forEach((kn) => weeks.forEach((w) => {
     const o = src[w][kn];
     if (!o) return;
-    rows.push([w, dim === 'region' ? 'region_name' : 'zone_name', kn, o.t, o.c, o.a, pct(o.c, o.t).toFixed(1), o.c ? pct(o.a, o.c).toFixed(1) : '']);
+    const dn = dim === 'region' ? 'region_name' : 'zone_name';
+    rows.push(isSpot ? [w, dn, kn, o.n, o.f, pct(o.f, o.n).toFixed(1)] : [w, dn, kn, o.t, o.c, o.a, pct(o.c, o.t).toFixed(1), o.c ? pct(o.a, o.c).toFixed(1) : '']);
   }));
-  regExp('chHist', 'Weekly trend', 'trace_chart_historical_' + dim + '.csv',
-    ['kps_week', 'dimension', 'name', 'total_visit', 'identified', 'anomaly', 'gps_coverage_pct', 'anomaly_pct_of_identified'], rows);
+  regExp('chHist', 'Weekly trend', 'trace_chart_historical_' + metric + '_' + dim + '.csv',
+    isSpot ? ['kps_week', 'dimension', 'name', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged']
+      : ['kps_week', 'dimension', 'name', 'total_visit', 'identified', 'anomaly', 'gps_coverage_pct', 'anomaly_pct_of_identified'], rows);
 }
 
 /* ---------- klik kanan pada grafik ---------- */

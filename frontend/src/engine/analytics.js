@@ -6,7 +6,7 @@
 import { pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { haversine, weekdayOf } from './loader.js';
-import { computeSpots } from './spots.js';
+import { computeSpots, computeWeeklySpots } from './spots.js';
 
 const K20 = 1048576; // 2^20, untuk menggabungkan beberapa id menjadi 1 kunci angka
 
@@ -265,4 +265,20 @@ export function datasetStats() {
   for (let k = 0; k < B.iWeek.size; k++) { const v = B.iWeek.val(k); if (v && v !== '(?)') weeks.push(v); }
   weeks.sort();
   return { rows: B.n, dateMin: B.gMin, dateMax: B.gMax, weekMin: weeks[0] || '', weekMax: weeks[weeks.length - 1] || '', zones: B.iZone.size, territories: B.iTerr.size };
+}
+
+/* Weekly trend "Shared spot": per week × zone/region → { n: territory aktif, f: territory ter-flag } (ikut filter). */
+export function weeklySpotTrend(dim) {
+  const B = S.B;
+  const { rows } = computeWeeklySpots();
+  const ids = geoIds();
+  const out = {};
+  for (const r of rows) {
+    if (!passGeo(r.i, ids)) continue;
+    const wk = B.iWeek.val(r.w);
+    const name = dim === 'region' ? B.iReg.val(B.region[r.i]) : B.iZone.val(B.zone[r.i]);
+    const o = ((out[wk] = out[wk] || {})[name] = out[wk][name] || { t: 0, n: 0, f: 0 });
+    o.n++; o.t++; if (r.f) o.f++;
+  }
+  return out;
 }
