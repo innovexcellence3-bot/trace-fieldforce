@@ -41,5 +41,7 @@ export const config = {
     database: env('SNOWFLAKE_DATABASE', 'DB_ID_PRD'),
     warehouse: env('SNOWFLAKE_WAREHOUSE'),
     role: env('SNOWFLAKE_ROLE'),
+    cacheToken: /^(1|true|yes)$/i.test(env('SNOWFLAKE_CACHE_TOKEN', 'false')),
+    logLevel: env('SNOWFLAKE_LOG_LEVEL', 'ERROR').toUpperCase(),
   },
 };

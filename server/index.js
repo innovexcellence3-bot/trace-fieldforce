@@ -156,9 +156,10 @@ app.post('/api/snowflake/query', wrap(async (req, res) => {
     job.message = `Selesai — ${job.rows.toLocaleString('id-ID')} baris tersimpan di Data Library.`;
   } catch (err) {
     job.status = job.status === 'cancelled' ? 'cancelled' : 'error';
-    job.error = String(err?.message || err);
+    const detail = [err?.code && `code ${err.code}`, err?.sqlState && `sqlState ${err.sqlState}`].filter(Boolean).join(', ');
+    job.error = String(err?.message || err) + (detail ? ` (${detail})` : '');
     job.message = job.status === 'cancelled' ? 'Query dibatalkan.' : 'Query gagal.';
-    console.error('[snowflake]', job.error);
+    console.error('[snowflake]', job.error, err?.data ? JSON.stringify(err.data) : '');
   } finally {
     job.finishedAt = new Date().toISOString();
   }

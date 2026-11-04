@@ -1,8 +1,8 @@
 /* Koneksi Snowflake (SSO externalbrowser) + eksekusi query visit → streaming langsung ke CSV.
 
    - Login SSO membuka browser default laptop sekali; koneksi lalu dipakai ulang selama server
-     hidup (dan token SSO di-cache oleh driver bila akun Snowflake mengizinkan), jadi query
-     berikutnya tidak perlu login lagi.
+     hidup, jadi query berikutnya tidak perlu login lagi. Cache token SSO ke disk (agar tidak
+     login lagi setelah aplikasi ditutup) opsional: SNOWFLAKE_CACHE_TOKEN=true di .env.
    - Hasil query di-stream baris per baris ke data/cache/<id>.csv.part sehingga jutaan baris
      tidak memenuhi memori. Setelah selesai file di-rename menjadi .csv + meta. */
 import { createWriteStream } from 'node:fs';
@@ -13,7 +13,8 @@ import snowflake from 'snowflake-sdk';
 import { config, SQL_FILE } from './config.js';
 import { csvPath, finalize, newId } from './datasets.js';
 
-snowflake.configure({ logLevel: 'ERROR' });
+/* Log driver tampil di jendela start.bat. SNOWFLAKE_LOG_LEVEL=DEBUG di .env untuk diagnosis login. */
+snowflake.configure({ logLevel: config.snowflake.logLevel });
 
 let conn = null;        // koneksi aktif
 let connUser = '';      // username koneksi aktif
@@ -31,11 +32,11 @@ function connectionOptions(user) {
     authenticator: (sf.authenticator || 'externalbrowser').toUpperCase(),
     database: sf.database,
     warehouse: sf.warehouse,
-    application: 'TRACE_FieldForce',
-    clientStoreTemporaryCredential: true,  // cache token SSO (bila diizinkan akun)
-    clientSessionKeepAlive: true,
-    browserActionTimeout: 180000,          // 3 menit untuk menyelesaikan login di browser
+    browserActionTimeout: 180000,  // 3 menit untuk menyelesaikan login SSO + Duo di browser
   };
+  /* Default MATI: login request yang meminta penyimpanan token (CLIENT_STORE_TEMPORARY_CREDENTIAL)
+     bisa ditolak server dengan "Internal error" bila akun tidak mengizinkan ID token. */
+  if (sf.cacheToken) opts.clientStoreTemporaryCredential = true;
   if (sf.host) opts.accessUrl = sf.host.startsWith('http') ? sf.host : `https://${sf.host}`;
   if (sf.role) opts.role = sf.role;
   return opts;
