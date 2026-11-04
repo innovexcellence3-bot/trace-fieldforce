@@ -61,7 +61,8 @@ function newBuffer() {
     iCust: Interner(), iDate: Interner(), iWeek: Interner(), iChannel: Interner(), iSeg: Interner(), iSales: Interner(), iSup: Interner(),
     zone: [], region: [], area: [], terr: [], district: [], emp: [], cust: [], date: [], week: [],
     latV: [], lonV: [], latC: [], lonC: [], chk: [], dist: [], tm: [],
-    visitId: [], ts: [], channel: [], seg: [], sales: [], sup: [],
+    visitId: new Map(), // hanya visit_id yang TIDAK sama dengan customer_code + '_' + timestamp
+    ts: [], channel: [], seg: [], sales: [], sup: [],
     uniq: null, lmA: null, rslA: null, a7A: null, anA: null,
   };
 }
@@ -87,7 +88,8 @@ function makeIngest(B, COL) {
     B.terr.push(B.iTerr.id(g(f, I.terr) || '(?)'));
     B.district.push(B.iDist.id(g(f, I.dist) || '(?)'));
     B.emp.push(B.iEmp.id(g(f, I.emp) || '(tanpa nama)'));
-    B.cust.push(B.iCust.id(g(f, I.cust) || ('#' + B.n)));
+    const cust = g(f, I.cust) || ('#' + B.n);
+    B.cust.push(B.iCust.id(cust));
     B.week.push(B.iWeek.id(g(f, I.week) || '(?)'));
     const rawTs = g(f, I.ts);
     const [ds, time] = splitTs(rawTs);
@@ -96,7 +98,10 @@ function makeIngest(B, COL) {
     B.latV.push(latV == null ? NaN : latV); B.lonV.push(lonV == null ? NaN : lonV);
     B.latC.push(latC == null ? NaN : latC); B.lonC.push(lonC == null ? NaN : lonC);
     B.chk.push(chk); B.dist.push(dist); B.tm.push(tmin(time));
-    B.visitId.push(g(f, I.vid));
+    /* visit_id dari query = customer_code + '_' + visit_start_timestamp → tidak perlu disimpan per baris
+       (hemat ratusan MB untuk jutaan baris). Simpan hanya bila berbeda (mis. file upload format lain). */
+    const vid = g(f, I.vid);
+    if (vid && vid !== cust + '_' + rawTs) B.visitId.set(B.n, vid);
     B.ts.push(rawTs);
     B.channel.push(B.iChannel.id(g(f, I.ch)));
     B.seg.push(B.iSeg.id(g(f, I.seg)));
