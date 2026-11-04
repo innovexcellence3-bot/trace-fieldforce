@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRACE · Field Force Location Intelligence</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="traceLogo" viewBox="0 0 120 140">
+    <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff4b4b"/><stop offset="1" stop-color="#c8101a"/></linearGradient></defs>
+    <path d="M60 4 L110 24 V70 C110 104 88 126 60 136 C32 126 10 104 10 70 V24 Z" fill="url(#tg)"/>
+    <path d="M60 16 L98 31 V70 C98 97 81 115 60 124 C39 115 22 97 22 70 V31 Z" fill="#ffffff" opacity=".12"/>
+    <circle cx="52" cy="60" r="20" fill="none" stroke="#ffffff" stroke-width="7"/>
+    <line x1="66" y1="74" x2="86" y2="96" stroke="#ffffff" stroke-width="9" stroke-linecap="round"/>
+    <circle cx="52" cy="60" r="6" fill="#ffffff"/>
+  </symbol>
+</svg>
+
+<!-- ============ TOP NAV ============ -->
+<header class="topnav">
+  <a class="brand" data-go="home" href="#">
+    <svg class="logo"><use href="#traceLogo"/></svg>
+    <span class="wm"><b>TRACE</b><small>Credible Evidence</small></span>
+  </a>
+  <nav class="tabs" id="nav">
+    <a class="active" data-menu="field"><span>Field Force</span></a>
+    <a data-menu="retailer"><span>Retailer</span><i class="soon">Soon</i></a>
+    <a data-menu="pasgar"><span>Pasgar</span><i class="soon">Soon</i></a>
+  </nav>
+  <div class="nav-right">
+    <div class="dschip" id="dsChip" hidden>
+      <span class="dot"></span><span id="dsChipName">—</span>
+      <button class="link" id="changeDataBtn">Ganti data</button>
+    </div>
+    <div class="sfstat" id="sfStat" title="Status koneksi Snowflake"><span class="d"></span><span id="sfStatTxt">Snowflake</span></div>
+  </div>
+</header>
+
+<!-- ============ FILTER BAR (dashboard) ============ -->
+<div class="filterbar" id="filterbar" hidden>
+  <div class="fb-inner">
+    <div class="datefilter">📅 <input type="date" id="dateFrom"> <span>–</span> <input type="date" id="dateTo"></div>
+    <div class="ms" id="msZone"><button class="ms-btn" id="msZoneBtn">Zone: <b>Semua</b> ▾</button><div class="ms-panel" id="msZonePanel"></div></div>
+    <div class="ms" id="msRegion"><button class="ms-btn" id="msRegionBtn">Region: <b>Semua</b> ▾</button><div class="ms-panel" id="msRegionPanel"></div></div>
+    <div class="ms" id="msArea"><button class="ms-btn" id="msAreaBtn">Area: <b>Semua</b> ▾</button><div class="ms-panel" id="msAreaPanel"></div></div>
+    <div class="ms" id="msDistrict"><button class="ms-btn" id="msDistrictBtn">District: <b>Semua</b> ▾</button><div class="ms-panel" id="msDistrictPanel"></div></div>
+    <div class="ms" id="msTerritory"><button class="ms-btn" id="msTerritoryBtn">Territory: <b>Semua</b> ▾</button><div class="ms-panel" id="msTerritoryPanel"></div></div>
+    <button class="btn-ghost sm" id="resetFilterBtn">↺ Reset filter</button>
+  </div>
+</div>
+
+<main class="content">
+<!-- ================================================================ HOME -->
+<section id="view-home">
+  <div class="hero">
+    <div class="hero-text">
+      <span class="eyebrow">Location Verification Report</span>
+      <h1>Field Force <em>Location Intelligence.</em></h1>
+      <p class="lead">Understand what can be assessed, which visit-location behaviors are most prevalent, where they concentrate, and what representative cases look like on a map.</p>
+      <div class="cta">
+        <button class="btn primary lg" data-src-go="snowflake">❄️ Tarik data dari Snowflake</button>
+        <button class="btn ghost lg" data-src-go="library">📚 Buka data tersimpan</button>
+      </div>
+      <div class="hero-facts">
+        <div><b>3</b><span>parameter anomaly</span></div>
+        <div><b>GPS</b><span>visit vs lokasi toko</span></div>
+        <div><b>Lokal</b><span>data tersimpan di laptop</span></div>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <svg class="mapart" viewBox="0 0 800 440" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#e9edf2" stroke-width="1"/></pattern>
+          <radialGradient id="sweep" cx="0" cy="0" r="1"><stop offset="0" stop-color="#e3141b" stop-opacity=".22"/><stop offset="1" stop-color="#e3141b" stop-opacity="0"/></radialGradient>
+          <filter id="sh" x="-50%" y="-50%" width="200%" height="200%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0b1220" flood-opacity=".18"/></filter>
+        </defs>
+        <rect width="800" height="440" fill="#f6f8fb"/>
+        <rect width="800" height="440" fill="url(#grid)"/>
+        <!-- blok bangunan samar -->
+        <g fill="#eef1f5">
+          <rect x="60" y="40" width="120" height="70" rx="8"/><rect x="420" y="30" width="150" height="60" rx="8"/>
+          <rect x="70" y="320" width="140" height="80" rx="8"/><rect x="640" y="330" width="120" height="80" rx="8"/>
+          <rect x="300" y="200" width="110" height="80" rx="8"/>
+        </g>
+        <!-- jalan -->
+        <g fill="none" stroke="#dde2e9" stroke-width="20" stroke-linecap="round">
+          <path id="road1" d="M-20 150 C120 100 220 180 330 150 S560 80 820 130"/>
+          <path id="road2" d="M-20 330 C160 300 330 330 480 320 S700 270 820 290"/>
+          <path d="M250 -20 C270 120 260 260 300 460"/>
+          <path d="M610 -20 C590 120 600 300 640 460"/>
+        </g>
+        <g fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="10 12" opacity=".9">
+          <path d="M-20 150 C120 100 220 180 330 150 S560 80 820 130"/>
+          <path d="M-20 330 C160 300 330 330 480 320 S700 270 820 290"/>
+        </g>
+
+        <!-- kendaraan field force bergerak di jalan -->
+        <g class="mover">
+          <circle r="7" fill="#111827" filter="url(#sh)"/><circle r="3" fill="#fff"/>
+          <animateMotion dur="11s" repeatCount="indefinite" rotate="auto"><mpath href="#road1"/></animateMotion>
+        </g>
+        <g class="mover">
+          <circle r="6" fill="#64748b"/><circle r="2.5" fill="#fff"/>
+          <animateMotion dur="14s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#road2"/></animateMotion>
+        </g>
+
+        <!-- radar sweep di sekitar toko -->
+        <g transform="translate(600 245)">
+          <path d="M0 0 L120 0 A120 120 0 0 0 85 -85 Z" fill="url(#sweep)">
+            <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite"/>
+          </path>
+          <circle r="120" fill="none" stroke="#e3141b" stroke-opacity=".08" stroke-dasharray="3 6"/>
+          <circle r="70" fill="none" stroke="#e3141b" stroke-opacity=".1" stroke-dasharray="3 6"/>
+        </g>
+
+        <!-- garis bukti: titik visit → toko -->
+        <path class="flow" d="M372 118 L585 238" stroke="#e3141b" stroke-width="3" stroke-dasharray="8 8" fill="none" opacity=".75"/>
+        <path class="flow" d="M262 292 L582 252" stroke="#e3141b" stroke-width="3" stroke-dasharray="8 8" fill="none" opacity=".75"/>
+
+        <!-- chip jarak -->
+        <g transform="translate(455 150)"><g class="chip c1">
+          <rect x="-44" y="-15" width="88" height="30" rx="15" fill="#fff" filter="url(#sh)"/>
+          <text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#e3141b">1.240 m</text>
+        </g></g>
+        <g transform="translate(410 300)"><g class="chip c2">
+          <rect x="-36" y="-15" width="72" height="30" rx="15" fill="#fff" filter="url(#sh)"/>
+          <text x="0" y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#111827">21:14</text>
+        </g></g>
+
+        <!-- pin visit teal & oranye -->
+        <g transform="translate(372 118)"><g class="pin p1">
+          <circle r="22" fill="#14b8a6" opacity=".18"><animate attributeName="r" values="14;26;14" dur="2.6s" repeatCount="indefinite"/></circle>
+          <circle r="14" fill="#14b8a6" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+        </g></g>
+        <g transform="translate(262 292)"><g class="pin p2">
+          <circle r="22" fill="#f59e0b" opacity=".18"><animate attributeName="r" values="14;26;14" dur="2.6s" begin=".8s" repeatCount="indefinite"/></circle>
+          <circle r="14" fill="#f59e0b" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+        </g></g>
+
+        <!-- toko (merah) + pulse -->
+        <g transform="translate(600 245)">
+          <circle r="20" fill="none" stroke="#e3141b" stroke-width="3">
+            <animate attributeName="r" values="20;60" dur="2.2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values=".7;0" dur="2.2s" repeatCount="indefinite"/>
+          </circle>
+          <circle r="20" fill="none" stroke="#e3141b" stroke-width="3">
+            <animate attributeName="r" values="20;60" dur="2.2s" begin="1.1s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values=".7;0" dur="2.2s" begin="1.1s" repeatCount="indefinite"/>
+          </circle>
+          <circle r="22" fill="#e3141b" stroke="#fff" stroke-width="5" filter="url(#sh)"/>
+          <path d="M-8 -3 h16 v11 h-16 z M-10 -3 l3 -6 h14 l3 6" fill="#fff"/>
+        </g>
+        <!-- visit menumpuk (rapid same location) -->
+        <g class="cluster">
+          <circle class="b b1" cx="580" cy="212" r="11" fill="#2563eb" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+          <circle class="b b2" cx="634" cy="208" r="11" fill="#2563eb" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+          <circle class="b b3" cx="648" cy="262" r="11" fill="#2563eb" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+          <circle class="b b4" cx="566" cy="272" r="11" fill="#2563eb" stroke="#fff" stroke-width="4" filter="url(#sh)"/>
+        </g>
+      </svg>
+
+      <div class="live"><span class="blink"></span> Live GPS check</div>
+      <div class="sig">
+        <b>Signal to evidence</b>
+        <div class="ticker">
+          <div class="tk">
+            <span>📍 Location mismatch · 1,2 km dari toko</span>
+            <span>⚡ Rapid same location · 6 toko / 50 m</span>
+            <span>🌙 Visit after 7 PM · mulai 21:14</span>
+            <span>📍 Location mismatch · 1,2 km dari toko</span>
+          </div>
+        </div>
+        <small>Store master · visit GPS · shared location</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Sumber data ===== -->
+  <div class="step-head" id="sourceSection">
+    <span class="num">01</span>
+    <div><h2>Pilih sumber data</h2><p>Query langsung dari Snowflake, buka hasil query yang sudah tersimpan, atau upload CSV.</p></div>
+  </div>
+  <div class="srcpick" id="srcPick">
+    <button class="srcopt" data-src="snowflake">
+      <span class="ico sf">❄️</span>
+      <span class="t"><b>Query Snowflake</b><small>Tarik data terbaru dari DB_ID_PRD · login SSO</small></span>
+    </button>
+    <button class="srcopt" data-src="library">
+      <span class="ico lib">📚</span>
+      <span class="t"><b>Data Tersimpan</b><small id="libCount">Cache CSV di laptop, tanpa query ulang</small></span>
+    </button>
+    <button class="srcopt" data-src="upload">
+      <span class="ico up">⬆️</span>
+      <span class="t"><b>Upload CSV</b><small>File hasil export manual</small></span>
+    </button>
+  </div>
+
+  <!-- Snowflake -->
+  <div class="srcpanel card" id="src-snowflake" hidden>
+    <div class="sf-grid">
+      <form class="sf-form" id="sfForm" autocomplete="off">
+        <div class="sf-conn" id="sfConn"></div>
+        <div class="frow">
+          <label>KPS Week awal<input type="number" id="sfWeekFrom" value="202630" min="200001" max="209952" required></label>
+          <label>KPS Week akhir<input type="number" id="sfWeekTo" value="202644" min="200001" max="209952" required></label>
+        </div>
+        <div class="weekchips" id="weekChips">
+          <span>Cepat:</span>
+          <button type="button" data-weeks="4">4 week terakhir</button>
+          <button type="button" data-weeks="8">8 week</button>
+          <button type="button" data-weeks="15">15 week</button>
+        </div>
+        <label>Channel
+          <input type="text" id="sfChannel" value="General Trade" list="channelList" required>
+          <datalist id="channelList"><option>General Trade</option><option>Modern Trade</option></datalist>
+        </label>
+        <label>Nama dataset <small>(opsional)</small><input type="text" id="sfName" placeholder="mis. HoZ review KPS 30–44"></label>
+        <details class="adv">
+          <summary>Pengaturan login</summary>
+          <label>Username Snowflake<input type="text" id="sfUser"></label>
+          <div class="hint" id="sfInfo"></div>
+        </details>
+        <div class="sf-actions">
+          <button class="btn primary" type="submit" id="sfRunBtn">▶ Jalankan query</button>
+          <button class="btn ghost" type="button" id="sfSqlBtn">{ } Lihat SQL</button>
+        </div>
+        <p class="hint">Saat pertama kali, tab baru di browser akan terbuka untuk login SSO (PMI). Setelah login, kembali ke tab ini. Hasil query otomatis disimpan sebagai CSV di <code>data/cache</code>, jadi lain kali cukup buka dari <b>Data Tersimpan</b>.</p>
+      </form>
+
+      <div class="sf-run" id="sfRun">
+        <div class="sf-idle" id="sfIdle">
+          <div class="radar"><i></i><i></i><i></i><span></span></div>
+          <h3>Siap menarik data visit</h3>
+          <p>Query mengambil visit berstatus <b>E</b> untuk channel &amp; rentang KPS week yang dipilih, lengkap dengan long-lat visit, long-lat toko (store master), dan hierarki zone → territory.</p>
+        </div>
+        <div class="sf-job" id="sfJob" hidden>
+          <ol class="stepper" id="sfSteps">
+            <li data-step="auth"><span class="b"></span><div><b>Login SSO</b><small>Selesaikan login di browser</small></div></li>
+            <li data-step="query"><span class="b"></span><div><b>Query berjalan</b><small>Snowflake memproses data</small></div></li>
+            <li data-step="fetch"><span class="b"></span><div><b>Mengunduh &amp; menyimpan CSV</b><small id="sfRows">0 baris</small></div></li>
+            <li data-step="done"><span class="b"></span><div><b>Selesai</b><small>Tersimpan di Data Tersimpan</small></div></li>
+          </ol>
+          <div class="sf-msg" id="sfMsg"></div>
+          <div class="sf-jobactions">
+            <span class="elapsed" id="sfElapsed"></span>
+            <button class="btn ghost sm" id="sfCancelBtn">Batalkan</button>
+            <button class="btn primary" id="sfOpenBtn" hidden>Buka dashboard →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <pre class="sqlbox" id="sqlBox" hidden></pre>
+  </div>
+
+  <!-- Library -->
+  <div class="srcpanel card" id="src-library" hidden>
+    <div class="lib-head">
+      <div><h3>Data Tersimpan</h3><div class="cap">Hasil query Snowflake &amp; upload disimpan sebagai CSV di folder <code>data/cache</code>. Buka kapan saja tanpa query ulang.</div></div>
+      <button class="btn ghost sm" id="libRefresh">↻ Muat ulang</button>
+    </div>
+    <div class="liblist" id="libList"></div>
+  </div>
+
+  <!-- Upload -->
+  <div class="srcpanel card" id="src-upload" hidden>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".csv,text/csv" hidden>
+      <div class="drop-ico">📥</div>
+      <h3>Tarik &amp; lepas file CSV di sini</h3>
+      <div class="muted">atau <u>klik untuk memilih file</u> · mendukung jutaan baris · file ikut disimpan ke Data Tersimpan</div>
+      <div class="cols">Kolom wajib: customer_code, kps_week, visit_start_timestamp, isms_lat_visit, isms_lon_visit, isms_lat_customer, isms_lon_customer, zone_name, territory_code</div>
+    </label>
+  </div>
+
+  <!-- ===== Parameter ===== -->
+  <div class="step-head">
+    <span class="num">02</span>
+    <div><h2>Atur parameter deteksi</h2><p>Bisa diubah lagi kapan saja di dashboard, hasil langsung dihitung ulang.</p></div>
+  </div>
+  <div class="params">
+    <div class="param"><label>📍 Location Mismatch</label><div class="row"><input type="number" id="pMismatch" value="1000" min="1"><span class="u">meter</span></div><div class="d">Jarak titik visit ke lokasi toko melebihi nilai ini.</div></div>
+    <div class="param"><label>⚡ Rapid — Radius</label><div class="row"><input type="number" id="pRadius" value="50" min="1"><span class="u">meter</span></div><div class="d">Radius pengelompokan titik visit berdekatan.</div></div>
+    <div class="param"><label>⚡ Rapid — Batas Toko</label><div class="row"><input type="number" id="pStores" value="5" min="1"><span class="u">toko</span></div><div class="d">Flag bila toko unik dalam radius melebihi nilai ini.</div></div>
+    <div class="param"><label>🌙 Jam Malam</label><div class="row"><input type="time" id="pNight" value="19:00"></div><div class="d">Visit yang mulai antara jam ini hingga 23:59 ditandai.</div></div>
+  </div>
+</section>
+
+<!-- ================================================================ DASHBOARD -->
+<section id="view-dash" hidden>
+  <div class="dash-hero">
+    <div>
+      <span class="eyebrow">Field Force Visit Verification</span>
+      <h1 id="dashTitle">—</h1>
+      <div class="dash-meta" id="dashMeta"></div>
+    </div>
+    <div class="dash-actions">
+      <a class="btn ghost sm" id="dlDatasetBtn" href="#">⬇ CSV mentah</a>
+      <button class="btn ghost sm" id="backHomeBtn">↺ Ganti data</button>
+    </div>
+  </div>
+
+  <div class="sec">Cara Membaca Parameter</div>
+  <div class="method" id="methodCards"></div>
+
+  <div class="sec">Parameter Deteksi</div>
+  <div class="parambar" id="parambar">
+    <div class="pg"><label>📍 Location Mismatch</label><div class="row"><input type="number" id="dMismatch" value="1000" min="1"><span class="u">m</span></div></div>
+    <div class="pg"><label>⚡ Rapid Radius</label><div class="row"><input type="number" id="dRadius" value="50" min="1"><span class="u">m</span></div></div>
+    <div class="pg"><label>⚡ Rapid Batas Toko</label><div class="row"><input type="number" id="dStores" value="5" min="1"><span class="u">toko</span></div></div>
+    <div class="pg"><label>🌙 Jam Malam</label><div class="row"><input type="time" id="dNight" value="19:00"></div></div>
+    <div class="recalc"><span class="spin"></span><span id="recalcTxt">Sinkron ✓</span></div>
+  </div>
+
+  <div class="sec">Ringkasan Eksekutif <span class="hintx" id="tfInline"></span></div>
+  <div class="kpis" id="kpis"></div>
+  <div class="insight" id="narrative"></div>
+
+  <div class="sec">Potret Anomaly <span class="hintx">— klik kanan pada grafik untuk copy as image atau export datanya</span></div>
+  <div class="grid3">
+    <div class="card"><h3>Anomaly per Zone</h3><div class="cap">% visit anomaly dari visit teridentifikasi</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+    <div class="card"><h3>Cakupan GPS per Zone</h3><div class="cap">% visit yang punya long-lat (visit &amp; toko)</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+    <div class="card"><h3>Komposisi Parameter Anomaly</h3><div class="cap">Jumlah visit per jenis parameter</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
+  </div>
+  <div class="grid2" style="margin-top:16px">
+    <div class="card"><h3>Tren Anomaly per Hari</h3><div class="cap">% anomaly berdasarkan hari (Minggu–Sabtu)</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+    <div class="card">
+      <div class="hrow">
+        <div><h3>Historical Data</h3><div class="cap" id="histCap">% cakupan GPS per KPS week, per zone</div></div>
+        <div class="hctl">
+          <select id="histDim"><option value="zone">Legend: Zone</option><option value="region">Legend: Region</option></select>
+          <select id="histMetric"><option value="cover">% Cakupan GPS</option><option value="anom">% Anomaly</option></select>
+        </div>
+      </div>
+      <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
+    </div>
+  </div>
+
+  <div class="sec">Drill-down Wilayah · Zone → Region → Area</div>
+  <div class="card">
+    <div class="toolbar">
+      <input type="search" id="geoSearch" placeholder="🔎 Cari zone / region / area...">
+      <button class="btn-ghost" id="geoExport">⬇️ Export CSV</button>
+      <span class="foot-note" style="margin:0">Klik baris untuk buka detail. Header bisa diklik untuk sortir.</span>
+    </div>
+    <div class="tbl-wrap" style="max-height:520px">
+      <table id="geoTable"><thead><tr>
+        <th data-k="name">Wilayah</th><th class="num" data-k="total">Total Visit</th>
+        <th class="num" data-k="cover">Cakupan GPS</th><th class="num" data-k="checkable">Terident.</th>
+        <th class="num" data-k="anomaly">Anomaly</th><th class="num" data-k="rate">% Anomaly</th>
+        <th class="num" data-k="lm">Loc. Mismatch</th><th class="num" data-k="a7">After 7PM</th>
+        <th class="num" data-k="rsl">Rapid Loc.</th><th data-k="rate">Status</th>
+      </tr></thead><tbody></tbody></table>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:var(--ok)"></span> Sehat &lt;20%</span>
+      <span><span class="dot" style="background:var(--warn)"></span> Waspada 20–40%</span>
+      <span><span class="dot" style="background:var(--mid)"></span> Tinggi 40–60%</span>
+      <span><span class="dot" style="background:var(--bad)"></span> Kritis &gt;60%</span>
+      <span style="margin-left:auto">% Anomaly = anomaly ÷ visit teridentifikasi</span>
+    </div>
+  </div>
+
+  <div class="sec">Peta Sebaran Visit <span class="hintx">— pilih Territory / District, titik dikelompokkan (cluster) saat zoom-out</span></div>
+  <div class="mapgrid">
+    <div class="card">
+      <div class="toolbar">
+        <select id="mDistrict"><option value="">Semua District</option></select>
+        <select id="mTerr"><option value="">Semua Territory</option></select>
+        <select id="mMode">
+          <option value="all">Semua status</option>
+          <option value="anom">Hanya anomaly</option>
+          <option value="normal">Hanya normal</option>
+          <option value="lm">📍 Location Mismatch</option>
+          <option value="rsl">⚡ Rapid Same Location</option>
+          <option value="a7">🌙 Visit After 7PM</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="mLine" checked> Garis ke lokasi toko</label>
+      </div>
+      <div id="map" class="map"></div>
+      <div class="maplegend">
+        <span><span class="dot" style="background:#e3141b"></span> Visit anomaly</span>
+        <span><span class="dot" style="background:#16a34a"></span> Visit normal</span>
+        <span><span class="dot" style="background:#2563eb"></span> Lokasi toko (profil)</span>
+        <span style="margin-left:auto">💡 Klik titik untuk highlight lokasi tokonya</span>
+      </div>
+      <div class="mapstat" id="mapStat"></div>
+    </div>
+    <div class="card">
+      <h3>Territory Level</h3>
+      <div class="cap">Achievement per territory pada 1 KPS week — klik baris untuk lihat titiknya di peta</div>
+      <div class="toolbar"><select id="mWeek"></select></div>
+      <div class="tbl-wrap" style="max-height:430px">
+        <table id="tTable"><thead><tr>
+          <th data-k="terr">Territory</th><th class="num" data-k="total">Visit</th><th class="num" data-k="gps">Ber-GPS</th><th class="num" data-k="cover">Cakupan</th>
+          <th class="num" data-k="lm">LM</th><th class="num" data-k="rsl">RL</th><th class="num" data-k="a7">7PM</th><th class="num" data-k="rate">% Anom</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="foot-note" id="tFoot"></div>
+    </div>
+  </div>
+
+  <div class="sec">Geotag Recommendation</div>
+  <div class="kpis" id="grKpis"></div>
+  <div class="grgrid">
+    <div class="card">
+      <h3>Peta Historical Visit Toko</h3>
+      <div class="cap" id="grMapCap">Klik salah satu customer di tabel untuk melihat sebaran seluruh historical visit-nya (mengabaikan filter week), lokasi toko existing, dan titik rekomendasi modus.</div>
+      <div id="grMap" class="map"></div>
+      <div class="maplegend">
+        <span><span class="dot" style="background:#94a3b8"></span> Historical visit</span>
+        <span><span class="dot" style="background:#2563eb"></span> Lokasi toko (existing)</span>
+        <span><span class="dot" style="background:#14b8a6"></span> Rekomendasi (modus)</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="toolbar">
+        <input type="search" id="grSearch" placeholder="🔎 Cari customer / territory / district...">
+        <select id="grFilter">
+          <option value="all">Semua status</option>
+          <option value="ok">✅ Long lat sudah sesuai</option>
+          <option value="update">🟠 Perlu update long lat</option>
+          <option value="need">⛔ Butuh data lebih</option>
+        </select>
+        <button class="btn-ghost" id="grExport">⬇️ Export CSV</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:560px">
+        <table id="grTable"><thead><tr>
+          <th data-k="name">Customer</th><th data-k="terr">Territory / District</th>
+          <th class="num" data-k="total">Total Visit</th>
+          <th data-k="existing">Long-lat Existing</th>
+          <th data-k="rec">Long-lat Rekomendasi</th>
+          <th class="num" data-k="modeCount">Modus (titik)</th>
+          <th class="num" data-k="distinct">Titik Unik</th>
+          <th class="num" data-k="dist">Jarak Geser</th>
+          <th data-k="status">Status</th>
+          <th data-k="conf">Confidence</th>
+        </tr></thead><tbody></tbody></table>
+      </div>
+      <div class="legend">
+        <span><span class="dot" style="background:var(--ok)"></span> Long lat sudah sesuai — jarak ≤ 100 m</span>
+        <span><span class="dot" style="background:var(--mid)"></span> Perlu update long lat — jarak &gt; 100 m</span>
+        <span><span class="dot" style="background:var(--bad)"></span> Butuh data lebih — rekomendasi tidak tersedia</span>
+      </div>
+      <div class="foot-note" id="grFoot"></div>
+    </div>
+  </div>
+
+  <div class="sec">Export Data Visit</div>
+  <div class="card export-card">
+    <div class="exp">
+      <div class="exp-ico">🗂️</div>
+      <div class="exp-body">
+        <h3>Export CSV per Zone</h3>
+        <p>Data visit level (semua baris), 1 file CSV per <b>zone_name</b> dibungkus jadi <b>1 file ZIP</b>. Kolom: visit_id, customer_code, channel, segmentasi, long-lat visit &amp; customer, timestamp, distance_meter, is_longlat_available, is_anomaly, anomaly_flag, hingga supervisor_name.</p>
+        <div class="foot-note" id="expFoot"></div>
+      </div>
+      <button class="btn primary" id="expZoneBtn">⬇️ Export ZIP</button>
+    </div>
+    <div class="exp">
+      <div class="exp-ico hero">🦸</div>
+      <div class="exp-body">
+        <h3>Send to My Hero Coach</h3>
+        <p>1 file CSV <b>level territory</b> berisi rekomendasi tindak lanjut (<i>call to action</i>) untuk tiap field force, siap dibagikan ke supervisor. Prioritas dihitung otomatis dari <b>cakupan GPS</b> &amp; <b>tingkat anomaly</b> per territory.</p>
+        <div class="foot-note" id="heroFoot"></div>
+      </div>
+      <button class="btn violet" id="heroCoachBtn">🦸 Generate CSV</button>
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================ PLACEHOLDERS -->
+<section class="placeholder" id="view-retailer" hidden>
+  <svg class="logo"><use href="#traceLogo"/></svg>
+  <h2>Retailer Validation</h2>
+  <p>Modul validasi keaslian transaksi &amp; order retailer (mis. dynamic QR / OTP, loyalty point) akan tampil di sini sebagai bagian dari ekosistem TRACE.</p>
+  <div class="ph-badge">🚧 Segera hadir</div>
+</section>
+<section class="placeholder" id="view-pasgar" hidden>
+  <svg class="logo"><use href="#traceLogo"/></svg>
+  <h2>Pasgar Validation</h2>
+  <p>Modul validasi pengantaran Pasukan Garuda (bukti serah-terima, rute &amp; waktu pengiriman) akan tampil di sini sebagai bagian dari ekosistem TRACE.</p>
+  <div class="ph-badge">🚧 Segera hadir</div>
+</section>
+</main>
+
+<footer class="pagefoot">TRACE · Tracking Real Activities for Credible Evidence · data diproses lokal di laptop Anda</footer>
+
+<!-- loader overlay -->
+<div class="loader" id="loader" hidden>
+  <div class="loader-card">
+    <div class="radar sm"><i></i><i></i><i></i><span></span></div>
+    <h3 id="loaderTitle">Membuka dataset</h3>
+    <div class="progress"><i id="loaderBar"></i></div>
+    <div class="phase" id="loaderPhase"></div>
+  </div>
+</div>
+<div class="ctxmenu" id="ctxMenu"></div>
+<div class="toast" id="toast"></div>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

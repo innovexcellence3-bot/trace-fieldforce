@@ -1,0 +1,20 @@
+# dependencies / build
+node_modules/
+frontend/dist/
+
+# local settings (Snowflake user etc.) - copy from .env.example
+.env
+
+# cached datasets (hasil query Snowflake / upload). Bisa ratusan MB, jangan di-commit.
+data/cache/*
+!data/cache/.gitkeep
+
+# portable Node.js (downloaded by scripts\use-node.bat, or copied in manually)
+.tools/
+node-v*-win-x64/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

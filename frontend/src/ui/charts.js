@@ -1,0 +1,195 @@
+/* Grafik dashboard (Chart.js) + menu klik kanan: copy image / download PNG / export CSV / salin data. */
+import Chart from 'chart.js/auto';
+import { $, fmt, pct, esc } from '../core/dom.js';
+import { S } from '../core/state.js';
+import { downloadCSV } from './exports.js';
+
+export const barColor = (r) => (r >= 60 ? '#e3141b' : r >= 40 ? '#f97316' : r >= 20 ? '#f59e0b' : '#16a34a');
+const HPAL = ['#2563eb', '#e3141b', '#14b8a6', '#f59e0b', '#7c3aed', '#f97316', '#0ea5e9', '#16a34a', '#db2777', '#84cc16',
+  '#0f766e', '#b91c1c', '#a16207', '#1e40af', '#9333ea', '#059669', '#be185d', '#4d7c0f', '#0891b2', '#78350f'];
+const HDASH = [[], [], [], [], [], [], [], [], [], [], [6, 3], [6, 3], [6, 3], [6, 3], [6, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]];
+const HIST_MAX_SERIES = 20;
+
+Chart.defaults.color = '#6b7280';
+Chart.defaults.font.family = "'Inter Variable','Segoe UI',sans-serif";
+Chart.defaults.borderColor = 'rgba(15,23,42,.06)';
+
+const charts = {};
+const CHART_EXP = {};
+const destroy = (id) => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
+const chH = (boxId, h) => { const b = $('#' + boxId); if (b) b.style.height = h + 'px'; };
+const regExp = (id, title, filename, header, rows) => { CHART_EXP[id] = { title, filename, header, rows }; };
+const grid = { color: 'rgba(15,23,42,.05)' };
+
+export function renderCharts() {
+  const A = S.A;
+  const zAll = Object.entries(A.zone).map(([k, v]) => ({ k, r: pct(v.anomaly, v.checkable), c: pct(v.checkable, v.total), t: v.total, v }));
+  const hBar = Math.max(160, Math.max(1, zAll.length) * 34 + 52);
+  chH('boxZone', hBar); chH('boxCover', hBar); chH('boxReason', hBar);
+
+  const z = zAll.slice().sort((a, b) => b.r - a.r);
+  destroy('chZone');
+  charts.chZone = new Chart($('#chZone'), {
+    type: 'bar',
+    data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.r.toFixed(1)), backgroundColor: z.map((x) => barColor(x.r)), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
+    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% anomaly · ' + fmt(z[c.dataIndex].t) + ' visit' } } },
+      scales: { x: { ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
+  });
+  regExp('chZone', 'Anomaly per Zone', 'trace_chart_anomaly_per_zone.csv',
+    ['zone_name', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'rapid_same_location', 'after_7pm'],
+    z.map((x) => [x.k, x.t, x.v.checkable, pct(x.v.checkable, x.v.total).toFixed(1), x.v.anomaly, x.r.toFixed(1), x.v.lm, x.v.rsl, x.v.a7]));
+
+  const zc = zAll.slice().sort((a, b) => a.c - b.c);
+  destroy('chCover');
+  const cvVals = zc.map((x) => x.c);
+  const cvMin = cvVals.length ? Math.min(...cvVals) : 0, cvMax = cvVals.length ? Math.max(...cvVals) : 100;
+  const cvXMin = Math.max(0, Math.floor((cvMin - 5) / 5) * 5);
+  const cvXMax = Math.min(100, Math.max(cvXMin + 10, Math.ceil((cvMax + 2) / 5) * 5));
+  charts.chCover = new Chart($('#chCover'), {
+    type: 'bar',
+    data: { labels: zc.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: zc.map((x) => +x.c.toFixed(1)), backgroundColor: zc.map((x) => (x.c >= 80 ? '#16a34a' : x.c >= 40 ? '#f59e0b' : '#e3141b')), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
+    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% cakupan GPS · ' + fmt(zc[c.dataIndex].t) + ' visit' } } },
+      scales: { x: { min: cvXMin, max: cvXMax, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
+  });
+  regExp('chCover', 'Cakupan GPS per Zone', 'trace_chart_cakupan_gps_per_zone.csv',
+    ['zone_name', 'total_visit', 'identified', 'not_identified', 'gps_coverage_pct'],
+    zc.map((x) => [x.k, x.t, x.v.checkable, x.t - x.v.checkable, x.c.toFixed(1)]));
+
+  destroy('chReason');
+  charts.chReason = new Chart($('#chReason'), {
+    type: 'doughnut',
+    data: { labels: ['Location Mismatch', 'Visit After 7PM', 'Rapid Same Location'], datasets: [{ data: [A.lm, A.a7, A.rsl], backgroundColor: ['#e3141b', '#f59e0b', '#2563eb'], borderWidth: 0, hoverOffset: 6 }] },
+    options: { maintainAspectRatio: false, cutout: '62%', plugins: { legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true, boxWidth: 8 } } } },
+  });
+  regExp('chReason', 'Komposisi Parameter Anomaly', 'trace_chart_komposisi_parameter.csv',
+    ['parameter', 'visit_terdampak', 'pct_of_identified'],
+    [['Location Mismatch', A.lm, pct(A.lm, A.checkable).toFixed(1)], ['Visit After 7PM', A.a7, pct(A.a7, A.checkable).toFixed(1)], ['Rapid Same Location', A.rsl, pct(A.rsl, A.checkable).toFixed(1)]]);
+
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const DOWF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  destroy('chDow');
+  charts.chDow = new Chart($('#chDow'), {
+    type: 'bar',
+    data: { labels: DOW, datasets: [{ data: A.dow.map((d) => +pct(d.a, d.c).toFixed(1)), backgroundColor: A.dow.map((d) => barColor(pct(d.a, d.c))), borderRadius: 7, categoryPercentage: 0.75 }] },
+    options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { title: (it) => DOWF[it[0].dataIndex], label: (c) => c.parsed.y + '% anomaly · ' + fmt(A.dow[c.dataIndex].c) + ' terident.' } } },
+      scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => v + '%' }, grid } } },
+  });
+  regExp('chDow', 'Tren Anomaly per Hari', 'trace_chart_tren_anomaly_per_hari.csv',
+    ['day_of_week', 'total_visit', 'identified', 'anomaly', 'anomaly_pct_of_identified'],
+    A.dow.map((d, i) => [DOWF[i], d.t, d.c, d.a, pct(d.a, d.c).toFixed(1)]));
+
+  renderHistory();
+}
+
+export function renderHistory() {
+  const A = S.A;
+  const metric = $('#histMetric').value;
+  const dim = $('#histDim').value;
+  const src = dim === 'region' ? A.wkRegion : A.wkZone;
+  const weeks = Object.keys(src).sort();
+  const tot = {};
+  weeks.forEach((w) => Object.entries(src[w]).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + v.t; }));
+  let keys = Object.keys(tot).sort();
+  const nAll = keys.length;
+  if (nAll > HIST_MAX_SERIES) keys = keys.slice().sort((a, b) => tot[b] - tot[a]).slice(0, HIST_MAX_SERIES).sort();
+  $('#histCap').textContent = (metric === 'cover' ? '% cakupan GPS' : '% anomaly') + ' per KPS week, per ' + (dim === 'region' ? 'region' : 'zone') +
+    (nAll > keys.length ? ' · menampilkan ' + keys.length + ' ' + (dim === 'region' ? 'region' : 'zone') + ' terbesar dari ' + nAll : '');
+  const ds = keys.map((kn, idx) => ({
+    label: kn.replace('Zone ', ''),
+    data: weeks.map((w) => {
+      const o = src[w][kn];
+      if (!o) return null;
+      return metric === 'cover' ? (o.t ? +pct(o.c, o.t).toFixed(1) : null) : (o.c ? +pct(o.a, o.c).toFixed(1) : null);
+    }),
+    borderColor: HPAL[idx % HPAL.length], backgroundColor: HPAL[idx % HPAL.length], borderDash: HDASH[idx % HDASH.length],
+    tension: 0.3, pointRadius: keys.length > 10 ? 2 : 3, pointHoverRadius: 5, borderWidth: 2, spanGaps: true, fill: false,
+  }));
+  destroy('chHist');
+  chH('boxHist', keys.length > 14 ? 330 : keys.length > 8 ? 290 : 250);
+  let hMax = 0;
+  ds.forEach((d) => d.data.forEach((v) => { if (v != null && v > hMax) hMax = v; }));
+  const hYMax = hMax <= 0 ? 100 : Math.min(100, Math.ceil((hMax + 2) / 5) * 5);
+  charts.chHist = new Chart($('#chHist'), {
+    type: 'line',
+    data: { labels: weeks, datasets: ds },
+    options: { maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
+        tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => c.dataset.label + ': ' + (c.parsed.y == null ? '—' : c.parsed.y + '%') } } },
+      scales: { x: { grid: { display: false }, title: { display: true, text: 'KPS Week' } }, y: { min: 0, max: hYMax, ticks: { callback: (v) => v + '%' }, grid } } },
+  });
+  const rows = [];
+  Object.keys(tot).sort().forEach((kn) => weeks.forEach((w) => {
+    const o = src[w][kn];
+    if (!o) return;
+    rows.push([w, dim === 'region' ? 'region_name' : 'zone_name', kn, o.t, o.c, o.a, pct(o.c, o.t).toFixed(1), o.c ? pct(o.a, o.c).toFixed(1) : '']);
+  }));
+  regExp('chHist', 'Historical Data', 'trace_chart_historical_' + dim + '.csv',
+    ['kps_week', 'dimension', 'name', 'total_visit', 'identified', 'anomaly', 'gps_coverage_pct', 'anomaly_pct_of_identified'], rows);
+}
+
+/* ---------- klik kanan pada grafik ---------- */
+function chartToCanvas(id) {
+  const src = document.getElementById(id);
+  if (!src) return null;
+  const e = CHART_EXP[id] || { title: '' };
+  const pad = 16, head = 34, dpr = window.devicePixelRatio || 2;
+  const w = src.clientWidth || src.width, h = src.clientHeight || src.height;
+  const out = document.createElement('canvas');
+  out.width = Math.round((w + pad * 2) * dpr); out.height = Math.round((h + head + pad * 2) * dpr);
+  const ctx = out.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w + pad * 2, h + head + pad * 2);
+  ctx.fillStyle = '#0f172a'; ctx.font = "700 15px 'Plus Jakarta Sans Variable', Segoe UI, sans-serif"; ctx.textBaseline = 'top';
+  ctx.fillText(e.title || '', pad, pad);
+  ctx.drawImage(src, pad, pad + head, w, h);
+  return out;
+}
+function chartDownloadImage(id) {
+  const c = chartToCanvas(id);
+  if (!c) return;
+  const e = CHART_EXP[id] || { filename: 'chart.csv' };
+  const a = document.createElement('a');
+  a.href = c.toDataURL('image/png');
+  a.download = (e.filename || 'chart').replace(/\.csv$/, '') + '.png';
+  a.click();
+}
+function chartCopyImage(id) {
+  const c = chartToCanvas(id);
+  if (!c) return;
+  if (!(navigator.clipboard && window.ClipboardItem)) { chartDownloadImage(id); return; }
+  c.toBlob((b) => { if (b) navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]).catch(() => chartDownloadImage(id)); }, 'image/png');
+}
+function closeCtx() { $('#ctxMenu').classList.remove('open'); }
+function openCtx(x, y, id) {
+  const e = CHART_EXP[id];
+  const m = $('#ctxMenu');
+  if (!e) { closeCtx(); return; }
+  m.innerHTML = '<div class="ctxhead">' + esc(e.title) + ' · ' + fmt(e.rows.length) + ' baris</div>' +
+    '<div class="ctxit" data-act="img">🖼️ Copy as image</div>' +
+    '<div class="ctxit" data-act="png">⬇️ Download gambar (PNG)</div>' +
+    '<div class="ctxit" data-act="csv">⬇️ Export data grafik (CSV)</div>' +
+    '<div class="ctxit" data-act="clip">📋 Salin data (tempel ke Excel)</div>';
+  m.querySelectorAll('.ctxit').forEach((it) => it.addEventListener('click', () => {
+    const a = it.dataset.act;
+    if (a === 'img') chartCopyImage(id);
+    else if (a === 'png') chartDownloadImage(id);
+    else if (a === 'csv') downloadCSV(e.filename, e.header, e.rows);
+    else navigator.clipboard?.writeText([e.header.join('\t')].concat(e.rows.map((r) => r.join('\t'))).join('\n'));
+    closeCtx();
+  }));
+  m.classList.add('open');
+  m.style.left = Math.min(x, window.innerWidth - m.offsetWidth - 8) + 'px';
+  m.style.top = Math.min(y, window.innerHeight - m.offsetHeight - 8) + 'px';
+}
+export function initChartContextMenu() {
+  document.addEventListener('contextmenu', (ev) => {
+    const box = ev.target.closest ? ev.target.closest('.chartbox[data-exp]') : null;
+    if (!box) return;
+    ev.preventDefault();
+    openCtx(ev.clientX, ev.clientY, box.dataset.exp);
+  });
+  document.addEventListener('click', closeCtx);
+  window.addEventListener('scroll', closeCtx, true);
+  window.addEventListener('resize', closeCtx);
+  $('#ctxMenu').addEventListener('click', (e) => e.stopPropagation());
+}

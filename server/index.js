@@ -1,0 +1,211 @@
+/* TRACE server — API + tampilan (frontend/dist) di satu port.
+
+     npm start            node server/index.js           (start.bat)
+     npm run dev          API (auto-reload) + Vite UI    (dev.bat)
+
+   API:
+     GET    /api/health
+     GET    /api/config                    info koneksi Snowflake + SQL yang dipakai
+     GET    /api/datasets                  daftar dataset di Data Library (data/cache)
+     GET    /api/datasets/:id/file         isi CSV (dipakai dashboard)
+     GET    /api/datasets/:id/download     isi CSV sebagai file unduhan
+     PATCH  /api/datasets/:id              ganti nama / simpan ringkasan (stats)
+     DELETE /api/datasets/:id
+     POST   /api/datasets/upload           upload CSV (body = isi file, header X-File-Name)
+     POST   /api/snowflake/query           { weekFrom, weekTo, channel, name?, user? } → { jobId }
+     POST   /api/snowflake/disconnect
+     GET    /api/jobs/:id                  progress query
+     POST   /api/jobs/:id/cancel */
+import express from 'express';
+import { spawn } from 'node:child_process';
+import { createWriteStream, existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { config, DIST_DIR } from './config.js';
+import {
+  csvPath, datasetStream, deleteDataset, finalize, getDataset, listDatasets,
+  missingColumns, newId, readHeader, updateDataset,
+} from './datasets.js';
+import * as sf from './snowflake.js';
+
+const app = express();
+app.disable('x-powered-by');
+app.use(express.json({ limit: '1mb' }));
+
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
+app.get('/api/health', (_req, res) => res.json({ ok: true, app: 'TRACE' }));
+
+app.get('/api/config', wrap(async (_req, res) => {
+  const s = config.snowflake;
+  res.json({
+    snowflake: {
+      account: s.account, host: s.host, user: s.user, database: s.database,
+      warehouse: s.warehouse, role: s.role, authenticator: s.authenticator,
+      ...sf.status(),
+    },
+    sql: await sf.readSql(),
+  });
+}));
+
+/* ---------------- Data Library ---------------- */
+app.get('/api/datasets', wrap(async (_req, res) => res.json(await listDatasets())));
+
+async function requireDataset(req, res) {
+  const meta = await getDataset(req.params.id);
+  if (!meta) res.status(404).json({ error: 'Dataset tidak ditemukan.' });
+  return meta;
+}
+
+app.get('/api/datasets/:id/file', wrap(async (req, res) => {
+  const meta = await requireDataset(req, res);
+  if (!meta) return;
+  res.sendFile(csvPath(meta.id), { headers: { 'Content-Type': 'text/csv; charset=utf-8', 'Cache-Control': 'no-store' } });
+}));
+
+app.get('/api/datasets/:id/download', wrap(async (req, res) => {
+  const meta = await requireDataset(req, res);
+  if (!meta) return;
+  const safe = (meta.name || meta.id).replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || meta.id;
+  res.download(csvPath(meta.id), `${safe}.csv`);
+}));
+
+app.patch('/api/datasets/:id', wrap(async (req, res) => {
+  const meta = await updateDataset(req.params.id, req.body || {});
+  if (!meta) return res.status(404).json({ error: 'Dataset tidak ditemukan.' });
+  res.json(meta);
+}));
+
+app.delete('/api/datasets/:id', wrap(async (req, res) => {
+  await deleteDataset(req.params.id);
+  res.json({ ok: true });
+}));
+
+app.post('/api/datasets/upload', wrap(async (req, res) => {
+  const fileName = decodeURIComponent(String(req.get('x-file-name') || 'upload.csv')).slice(0, 160);
+  const id = newId('up');
+  const part = csvPath(id) + '.part';
+  let rows = -1; // baris header tidak dihitung
+  let lastByte = 10;
+  const counter = new Transform({
+    transform(chunk, _enc, cb) {
+      for (let i = 0; i < chunk.length; i++) if (chunk[i] === 10) rows++;
+      if (chunk.length) lastByte = chunk[chunk.length - 1];
+      cb(null, chunk);
+    },
+  });
+  try {
+    await pipeline(req, counter, createWriteStream(part));
+  } catch (err) {
+    await rm(part, { force: true });
+    throw err;
+  }
+  if (lastByte !== 10) rows++; // baris terakhir tanpa newline
+  const missing = missingColumns(await readHeader(part));
+  if (missing.length) {
+    await rm(part, { force: true });
+    return res.status(400).json({ error: `Kolom wajib tidak ditemukan: ${missing.join(', ')}` });
+  }
+  const meta = await finalize(part, {
+    id,
+    name: fileName.replace(/\.csv$/i, ''),
+    source: 'upload',
+    params: { fileName },
+    rows: Math.max(0, rows),
+    createdAt: new Date().toISOString(),
+  });
+  res.json(meta);
+}));
+
+/* ---------------- Snowflake query jobs ---------------- */
+const jobs = new Map();
+let activeJob = null;
+
+function publicJob(j) {
+  const { cancel, ...rest } = j;
+  return { ...rest, elapsedMs: (j.finishedAt ? Date.parse(j.finishedAt) : Date.now()) - Date.parse(j.startedAt) };
+}
+
+app.post('/api/snowflake/query', wrap(async (req, res) => {
+  if (activeJob && activeJob.status === 'running') {
+    return res.status(409).json({ error: 'Masih ada query yang berjalan. Tunggu selesai atau batalkan dulu.', jobId: activeJob.id });
+  }
+  const { weekFrom, weekTo, channel, name, user } = req.body || {};
+  const wf = Number(weekFrom), wt = Number(weekTo);
+  if (!/^\d{6}$/.test(String(wf)) || !/^\d{6}$/.test(String(wt))) {
+    return res.status(400).json({ error: 'KPS week harus 6 digit, contoh 202630.' });
+  }
+  if (wf > wt) return res.status(400).json({ error: 'KPS week awal harus ≤ KPS week akhir.' });
+  if (!channel || String(channel).length > 60) return res.status(400).json({ error: 'Channel wajib diisi.' });
+
+  const job = {
+    id: newId('job'), status: 'running', phase: 'start', message: 'Menyiapkan...',
+    rows: 0, totalRows: null, startedAt: new Date().toISOString(), finishedAt: null,
+    params: { weekFrom: wf, weekTo: wt, channel: String(channel) }, dataset: null, error: null,
+  };
+  jobs.set(job.id, job);
+  activeJob = job;
+  res.json({ jobId: job.id });
+
+  try {
+    job.dataset = await sf.runVisitQuery({ weekFrom: wf, weekTo: wt, channel: String(channel), name, user }, job);
+    job.status = 'done';
+    job.phase = 'done';
+    job.message = `Selesai — ${job.rows.toLocaleString('id-ID')} baris tersimpan di Data Library.`;
+  } catch (err) {
+    job.status = job.status === 'cancelled' ? 'cancelled' : 'error';
+    job.error = String(err?.message || err);
+    job.message = job.status === 'cancelled' ? 'Query dibatalkan.' : 'Query gagal.';
+    console.error('[snowflake]', job.error);
+  } finally {
+    job.finishedAt = new Date().toISOString();
+  }
+}));
+
+app.get('/api/jobs/:id', (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job tidak ditemukan.' });
+  res.json(publicJob(job));
+});
+
+app.post('/api/jobs/:id/cancel', wrap(async (req, res) => {
+  const job = jobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job tidak ditemukan.' });
+  if (job.status === 'running') {
+    job.status = 'cancelled';
+    if (job.cancel) await job.cancel().catch(() => {});
+  }
+  res.json(publicJob(job));
+}));
+
+app.post('/api/snowflake/disconnect', wrap(async (_req, res) => {
+  await sf.disconnect();
+  res.json({ ok: true });
+}));
+
+/* ---------------- Frontend ---------------- */
+if (existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR, { index: false }));
+  app.get(/^(?!\/api\/).*/, (_req, res) => res.sendFile(join(DIST_DIR, 'index.html')));
+} else {
+  app.get('/', (_req, res) => res.type('text').send('Tampilan belum di-build. Jalankan "npm run build" (atau start.bat), atau "npm run dev" untuk development.'));
+}
+
+app.use('/api', (_req, res) => res.status(404).json({ error: 'Endpoint tidak ditemukan.' }));
+// eslint-disable-next-line no-unused-vars
+app.use((err, _req, res, _next) => {
+  console.error(err);
+  res.status(500).json({ error: String(err?.message || err) });
+});
+
+app.listen(config.port, config.host, () => {
+  const url = `http://${config.host === '0.0.0.0' ? 'localhost' : config.host}:${config.port}`;
+  console.log(`\n  TRACE siap di ${url}\n  Data Library: data/cache\n`);
+  if (config.openBrowser) {
+    const [cmd, args] = process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]]
+      : process.platform === 'darwin' ? ['open', [url]] : ['xdg-open', [url]];
+    try { spawn(cmd, args, { stdio: 'ignore', detached: true }).unref(); } catch { /* ignore */ }
+  }
+});
