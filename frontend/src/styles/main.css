@@ -245,6 +245,7 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:stretch}
 .grid-trend{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:16px;align-items:stretch}
 #boxDow{height:380px}
+#boxHour{height:300px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
 .hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}

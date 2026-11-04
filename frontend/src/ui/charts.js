@@ -66,6 +66,28 @@ export function renderCharts() {
     ['rule', 'flagged_visits', 'pct_of_identified'],
     [['Location Mismatch', A.lm, pct(A.lm, A.checkable).toFixed(1)], ['Rapid Same Location', A.rsl, pct(A.rsl, A.checkable).toFixed(1)]]);
 
+  /* Anomaly by hour: batang = % anomaly, garis = jumlah visit terverifikasi (konteks volume) */
+  const HRS = A.hour.map((_, h) => String(h).padStart(2, '0'));
+  destroy('chHour');
+  charts.chHour = new Chart($('#chHour'), {
+    data: { labels: HRS, datasets: [
+      { type: 'bar', label: 'Anomaly %', data: A.hour.map((d) => (d.c ? +pct(d.a, d.c).toFixed(1) : null)),
+        backgroundColor: A.hour.map((d) => barColor(pct(d.a, d.c))), borderRadius: 6, categoryPercentage: 0.8, yAxisID: 'y', order: 2 },
+      { type: 'line', label: 'Verifiable visits', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
+        borderColor: 'rgba(37,99,235,.45)', backgroundColor: 'rgba(37,99,235,.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: true },
+    ] },
+    options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, padding: 12 } },
+        tooltip: { callbacks: { title: (it) => `${HRS[it[0].dataIndex]}:00 – ${HRS[it[0].dataIndex]}:59`,
+          label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No verifiable visits' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} verifiable visits`) } } },
+      scales: { x: { grid: { display: false }, title: { display: true, text: 'Visit start hour' } },
+        y: { beginAtZero: true, ticks: { callback: (v) => v + '%' }, grid, title: { display: true, text: 'Anomaly %' } },
+        y2: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { callback: (v) => fmt(v) }, title: { display: true, text: 'Visits' } } } },
+  });
+  regExp('chHour', 'Anomaly by hour', 'trace_chart_anomaly_by_hour.csv',
+    ['hour', 'total_visit', 'identified', 'anomaly', 'anomaly_pct_of_identified'],
+    A.hour.map((d, h) => [HRS[h] + ':00', d.t, d.c, d.a, d.c ? pct(d.a, d.c).toFixed(1) : '']));
+
   const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const DOWF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   destroy('chDow');

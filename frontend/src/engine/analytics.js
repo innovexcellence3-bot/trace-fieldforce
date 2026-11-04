@@ -112,6 +112,7 @@ export function aggregate() {
   const terr = {};
   const dateT = new Float64Array(B.iDate.size), dateC = new Float64Array(B.iDate.size), dateA = new Float64Array(B.iDate.size);
   const dow = Array.from({ length: 7 }, tri);
+  const hour = Array.from({ length: 24 }, tri); // jam mulai visit (00–23)
   const misM = P.mismatchM, rc = P.rapidCount;
   const ids = geoIds();
   const geoAll = !(ids.gz || ids.gr || ids.ga || ids.gd || ids.gt);
@@ -149,6 +150,8 @@ export function aggregate() {
     te.total++; if (chk) te.gps++; if (isA) te.anomaly++; te.lm += lm; te.rsl += rsl;
     const wd = dowCache[di];
     if (wd >= 0) { const dd = dow[wd]; dd.t++; if (chk) dd.c++; if (isA) dd.a++; }
+    const ms = MS[i];
+    if (ms >= 0) { const hh = hour[Math.min(23, Math.floor(ms / 3600000))]; hh.t++; if (chk) hh.c++; if (isA) hh.a++; }
     dateT[di]++; if (chk) dateC[di]++; if (isA) dateA[di]++;
     const w = B.week[i];
     let zc = wkZM.get(w * K20 + z);
@@ -172,7 +175,7 @@ export function aggregate() {
   A.spot = { terrN, spotTerr, spotN, R: SP.R, K: SP.K };
 
   /* konversi ke struktur berkunci nama (dipakai grafik, tabel, export) */
-  Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, checkable, notcheck, cust: { size: nCust }, terr, dow });
+  Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, checkable, notcheck, cust: { size: nCust }, terr, dow, hour });
   A.reason = {};
   reasonCnt.forEach((v, k) => { if (v) A.reason[k === 4 ? 'Incomplete Coordinate' : REASONS[k]] = v; });
   const zn = (id) => B.iZone.val(id);
