@@ -1,4 +1,4 @@
-/* Peta sebaran visit (cluster). Klik titik → tampilkan lokasi tokonya. */
+/* Peta sebaran visit (cluster). Klik titik → detail visit + Street View titik visit. */
 import L from './leaflet-setup.js';
 import 'leaflet.markercluster';
 import { $, esc, fmt, streetView } from '../core/dom.js';
@@ -28,32 +28,26 @@ export function invalidateMaps() {
   setTimeout(() => { map?.invalidateSize(); }, 60);
 }
 
-const svButtons = (i) => {
-  const B = S.B;
-  let h = `<div class="svbtns"><a href="${streetView(B.latV[i], B.lonV[i])}" target="_blank" rel="noopener">👁️ Street View: visit</a>`;
-  if (!isNaN(B.latC[i]) && !isNaN(B.lonC[i])) h += `<a class="st" href="${streetView(B.latC[i], B.lonC[i])}" target="_blank" rel="noopener">🏬 Street View: store</a>`;
-  return h + '</div>';
-};
+/* Popup titik visit: detail visit + Street View di lokasi visit itu sendiri. */
 function popupHtml(i) {
   const B = S.B;
   const reason = [];
   if (B.lmA[i]) reason.push('Location Mismatch'); if (B.rslA[i]) reason.push('Rapid Same Location'); if (B.a7A[i]) reason.push('After 7PM');
+  const lat = B.latV[i], lon = B.lonV[i];
   return `<b>${esc(B.iCust.val(B.cust[i]))}</b><br>${esc(B.iEmp.val(B.emp[i]))}<br>` +
     `${esc(B.iTerr.val(B.terr[i]))} · ${esc(B.iDist.val(B.district[i]))}<br>` +
     `${esc(B.iArea.val(B.area[i]))} · ${esc(B.iZone.val(B.zone[i]))}<br>` +
     `Date: ${esc(B.iDate.val(B.date[i]))} · Week ${esc(B.iWeek.val(B.week[i]))}<br>` +
+    `Visit point: ${lat.toFixed(5)}, ${lon.toFixed(5)}<br>` +
     (isNaN(B.dist[i]) ? '' : `Distance to store: <b>${B.dist[i].toFixed(0)} m</b><br>`) +
-    `Status: <b style="color:${B.anA[i] ? RED : GREEN}">${B.anA[i] ? reason.join(' | ') : 'Normal'}</b>` + svButtons(i);
+    `Status: <b style="color:${B.anA[i] ? RED : GREEN}">${B.anA[i] ? reason.join(' | ') : 'Normal'}</b>` +
+    `<div class="svbtns"><a href="${streetView(lat, lon)}" target="_blank" rel="noopener">👁️ Street View at visit point</a></div>`;
 }
-function highlightStore(i) {
+/* Tandai titik visit yang dipilih (cincin), tanpa menggambar lokasi toko. */
+function markVisit(i) {
   const B = S.B;
   highlightLayer.clearLayers();
-  if (isNaN(B.latC[i]) || isNaN(B.lonC[i])) return;
-  const lat = B.latV[i], lon = B.lonV[i];
-  L.polyline([[lat, lon], [B.latC[i], B.lonC[i]]], { color: '#1d4ed8', weight: 3, opacity: 0.95 }).addTo(highlightLayer);
-  L.circleMarker([lat, lon], { radius: 11, color: '#1d4ed8', weight: 2, fill: false, opacity: 0.8 }).addTo(highlightLayer);
-  L.circleMarker([B.latC[i], B.lonC[i]], { radius: 10, color: '#fff', weight: 2.5, fillColor: BLUE, fillOpacity: 1 }).addTo(highlightLayer)
-    .bindPopup(`🏬 <b>Store location</b><br>${esc(B.iCust.val(B.cust[i]))}<br>` + (isNaN(B.dist[i]) ? '' : `Distance from visit: <b>${B.dist[i].toFixed(0)} m</b>`) + svButtons(i)).openPopup();
+  L.circleMarker([B.latV[i], B.lonV[i]], { radius: 12, color: BLUE, weight: 2.5, fill: false, opacity: 0.9, interactive: false }).addTo(highlightLayer);
 }
 
 /** Gambar titik visit sesuai filter peta. `f` = { district, terr, week, mode } */
@@ -90,7 +84,7 @@ export function renderMap(f, fit) {
     if (an) anom++;
     const mk = L.marker([lat, lon], { icon: an ? iconAnom : iconNorm });
     mk.bindPopup(() => popupHtml(i));
-    mk.on('click', () => highlightStore(i));
+    mk.on('click', () => markVisit(i));
     markers.push(mk);
     bounds.push([lat, lon]);
   }
