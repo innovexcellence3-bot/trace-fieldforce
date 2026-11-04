@@ -102,20 +102,27 @@ export function renderHistory() {
       return metric === 'cover' ? (o.t ? +pct(o.c, o.t).toFixed(1) : null) : (o.c ? +pct(o.a, o.c).toFixed(1) : null);
     }),
     borderColor: HPAL[idx % HPAL.length], backgroundColor: HPAL[idx % HPAL.length], borderDash: HDASH[idx % HDASH.length],
-    tension: 0.3, pointRadius: keys.length > 10 ? 2 : 3, pointHoverRadius: 5, borderWidth: 2, spanGaps: true, fill: false,
+    tension: 0.3, pointRadius: keys.length > 10 ? 2.5 : 3.5, pointHoverRadius: 6, borderWidth: keys.length > 10 ? 2 : 2.5, spanGaps: true, fill: false,
   }));
   destroy('chHist');
-  chH('boxHist', keys.length > 14 ? 330 : keys.length > 8 ? 290 : 250);
-  let hMax = 0;
-  ds.forEach((d) => d.data.forEach((v) => { if (v != null && v > hMax) hMax = v; }));
-  const hYMax = hMax <= 0 ? 100 : Math.min(100, Math.ceil((hMax + 2) / 5) * 5);
+  chH('boxHist', keys.length > 14 ? 440 : keys.length > 8 ? 410 : 380);
+  /* Sumbu Y mengikuti rentang data (bukan selalu 0–100%) supaya naik-turun antar week terlihat jelas. */
+  let hMin = Infinity, hMax = -Infinity;
+  ds.forEach((d) => d.data.forEach((v) => { if (v != null) { if (v < hMin) hMin = v; if (v > hMax) hMax = v; } }));
+  let yMin = 0, yMax = 100, yStep = 10;
+  if (hMax >= hMin) {
+    const span = Math.max(1, hMax - hMin) * 1.25;
+    yStep = [0.5, 1, 2, 2.5, 5, 10, 20].find((st) => span / st <= 7) || 20; // ±5–7 garis bantu
+    yMin = Math.max(0, Math.floor((hMin - yStep * 0.5) / yStep) * yStep);
+    yMax = Math.min(100, Math.ceil((hMax + yStep * 0.5) / yStep) * yStep);
+  }
   charts.chHist = new Chart($('#chHist'), {
     type: 'line',
     data: { labels: weeks, datasets: ds },
     options: { maintainAspectRatio: false,
       plugins: { legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => c.dataset.label + ': ' + (c.parsed.y == null ? '—' : c.parsed.y + '%') } } },
-      scales: { x: { grid: { display: false }, title: { display: true, text: 'KPS Week' } }, y: { min: 0, max: hYMax, ticks: { callback: (v) => v + '%' }, grid } } },
+      scales: { x: { grid: { display: false }, title: { display: true, text: 'KPS Week' } }, y: { min: yMin, max: yMax, ticks: { stepSize: yStep, callback: (v) => +v.toFixed(1) + '%' }, grid } } },
   });
   const rows = [];
   Object.keys(tot).sort().forEach((kn) => weeks.forEach((w) => {
