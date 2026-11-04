@@ -93,11 +93,8 @@ export function goToTerritory(t) {
 function renderParamChips() {
   const P = S.P;
   /* kartu aturan di atas panel parameter */
-  $('#rLm').textContent = fmt(P.mismatchM) + ' m';
-  $('#rRslN').textContent = P.rapidCount; $('#rRslM').textContent = P.rapidM + ' m';
-  $('#rA7').textContent = minToHHMM(P.nightMin);
-  $('#rSpotN').textContent = P.spotStores; $('#rSpotM').textContent = P.spotM + ' m';
-  $('#pchips').innerHTML = `<span>📍 &gt; ${fmt(P.mismatchM)} m</span><span>⚡ &gt; ${P.rapidCount} stores / ${P.rapidM} m</span><span>🌙 after ${minToHHMM(P.nightMin)}</span><span class="spotchip">📌 &gt; ${P.spotStores} stores / ${P.spotM} m · territory</span>`;
+  const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', a7: minToHHMM(P.nightMin), spotN: P.spotStores, spotM: P.spotM + ' m' };
+  document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; }); // kartu aturan + panel kanan
 }
 
 /* Skor di kanan atas: % anomaly & GPS coverage (ikut filter). */
@@ -269,7 +266,7 @@ function scheduleRecalc() {
       renderParamChips();
       recomputeAll();
       $('#recalc').classList.remove('busy');
-      $('#recalcTxt').textContent = '';
+      $('#recalcTxt').textContent = 'Changes apply instantly and are saved.';
     }, 15);
   }, 300);
 }
@@ -303,10 +300,9 @@ export function initDashboard() {
     $('#pdrawer').classList.toggle('open', open);
     $('#pveil').classList.toggle('open', open);
     $('#pdrawer').setAttribute('aria-hidden', String(!open));
-    $('#pboxToggle').setAttribute('aria-expanded', String(open));
     document.body.classList.toggle('pd-open', open);
   };
-  $('#pboxToggle').addEventListener('click', () => drawer(true));
+  $('#rules').addEventListener('click', () => drawer(true));
   $('#pEdge').addEventListener('click', () => drawer(!$('#pdrawer').classList.contains('open')));
   $('#pdClose').addEventListener('click', () => drawer(false));
   $('#pveil').addEventListener('click', () => drawer(false));

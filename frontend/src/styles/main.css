@@ -330,8 +330,6 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .score strong{display:block;font:800 17px var(--display);margin-top:2px}
 .score span{font-size:12px;color:var(--muted)}
 
-.pchips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
-.pchips span{font-size:12px;font-weight:600;background:#f5f6f8;border:1px solid var(--line);padding:4px 10px;border-radius:99px;white-space:nowrap}
 .recalc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
 .recalc .spin{width:13px;height:13px;border:2px solid #e5e7eb;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;display:none}
 .recalc.busy .spin{display:inline-block}
@@ -359,6 +357,7 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .lead-card li .v{font:800 14px var(--display);font-variant-numeric:tabular-nums}
 .lead-card.hot .v{color:var(--bad)}.lead-card.cool .v{color:var(--ok)}.lead-card.blind .v{color:#b7791f}
 .lead-card.hot{border-top:3px solid var(--bad)}.lead-card.cool{border-top:3px solid var(--ok)}.lead-card.blind{border-top:3px solid var(--warn)}
+.lead-card li.empty{display:block;text-align:center;color:var(--muted)}.lead-card li.empty::before{display:none}
 .lead-card .empty{padding:10px;font-size:12.5px}
 .legend.inline{margin:0 0 0 auto}
 .subhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:6px 2px 0}
@@ -370,14 +369,22 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .maplegend .mapstat.warn{color:#9a6512;font-weight:600}
 .hrow select{flex:0 0 auto}
 
-/* ---------------- parameter: strip + panel kanan ---------------- */
-.pstrip{width:100%;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:10px 14px;cursor:pointer;font:inherit;color:inherit;text-align:left;transition:.15s}
-.pstrip:hover{border-color:var(--accline);box-shadow:0 6px 20px rgba(37,99,235,.10)}
-.pstrip-ico{width:32px;height:32px;flex:0 0 32px;border-radius:10px;background:var(--accsoft);display:grid;place-items:center}
-.pstrip-title{font:700 14px var(--display);white-space:nowrap}
-.pchips{display:flex;gap:6px;flex-wrap:wrap;flex:1;min-width:0}
-.pchips span{font-size:12px;font-weight:600;background:#f5f6f8;border:1px solid var(--line);padding:4px 10px;border-radius:99px;white-space:nowrap}
-.pstrip-open{font-size:12.5px;font-weight:700;color:var(--acc);white-space:nowrap}
+/* ---------------- aturan deteksi (4 kartu) ---------------- */
+.rules{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px}
+.rule{cursor:pointer;transition:.15s;display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.rule::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc)}
+.r-lm{--rc:#e5484d;--rs:#fff1f2}.r-rsl{--rc:#8b5cf6;--rs:#f5f3ff}.r-a7{--rc:#f59e0b;--rs:#fffbeb}.r-spot{--rc:#6366f1;--rs:#eef0ff}
+.rule-art{width:72px;height:48px;flex:0 0 72px;background:var(--rs);border-radius:12px}
+.rule-body{min-width:0}
+.rule-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.rule-top b{font:700 14px var(--display)}
+.rule-top em{font-style:normal;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);background:#f3f4f6;padding:2px 7px;border-radius:99px}
+.rule-top em.terr{color:var(--spot);background:var(--spotsoft)}
+.rule p{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.rule .th{font-weight:800;color:var(--rc);background:var(--rs);padding:0 6px;border-radius:6px;white-space:nowrap}
+.rule:hover{border-color:var(--accline);box-shadow:0 8px 22px rgba(37,99,235,.10);transform:translateY(-1px)}
+.rules{margin-bottom:16px!important}
+/* ---------------- parameter: panel kanan ---------------- */
 .pedge{position:fixed;right:0;top:50%;transform:translateY(-50%);z-index:1260;border:0;cursor:pointer;background:var(--grad);color:#fff;
   padding:14px 8px;border-radius:12px 0 0 12px;box-shadow:-4px 6px 18px rgba(8,145,178,.28);font:700 12px var(--font);letter-spacing:.4px}
 .pedge span{writing-mode:vertical-rl;transform:rotate(180deg);display:block}
@@ -394,6 +401,7 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .pd-close{width:34px;height:34px;flex:0 0 34px;border-radius:50%;border:1px solid var(--line2);background:#fff;font-size:20px;line-height:1;cursor:pointer;color:var(--muted)}
 .pd-close:hover{color:var(--ink);border-color:var(--ink)}
 .pd-body{flex:1;overflow:auto;padding:16px 22px;display:flex;flex-direction:column;gap:12px}
+.pd-foot .recalc{flex:1;min-width:0}
 .pd-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
 .prule{flex:0 0 auto;position:relative;border:1px solid var(--line);border-radius:16px;padding:14px 14px 14px 16px;background:#fff;overflow:hidden}
 .prule::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rc)}
@@ -420,7 +428,6 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 
 /* ---------------- Shared spot ---------------- */
 .kpi .ico.i{background:var(--spotsoft)}
-.pchips .spotchip{background:var(--spotsoft);border-color:var(--spotline);color:#3f3fb3}
 .spotlight{border-color:var(--spotline);background:linear-gradient(135deg,#fbfbff 0%,#ffffff 60%)}
 .spot-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
 .spot-head h3{margin:0}.spot-head .cap{margin:2px 0 0}
@@ -482,26 +489,28 @@ tr.terr-row:hover .open-map{opacity:1}
 @media (max-width:1100px){
   .hero{grid-template-columns:1fr;padding-top:36px}
   .conn-grid,.mapgrid,.grid-trend,.rhead{grid-template-columns:minmax(0,1fr)}
-    .spot-grid{grid-template-columns:minmax(0,1fr)}
+  .leaders,.rules{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .spot-grid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:720px){
   .topnav{padding:0 16px;gap:12px}
   .rhead{padding:18px;border-radius:18px;margin-top:18px}
-    .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .leaders,.grid3,.rules{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpis .kpi{min-height:0}
   .tabs a{padding:8px 11px}.tabs a span{font-size:13px}
   .sfstat #sfStatTxt,.savestat #saveStatTxt,.brand .wm,.tabs .ti{display:none}
   .content{padding:0 16px 60px}
   .fb-inner{padding:10px 16px}
   .frow3{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.frow3 label:last-child{grid-column:1/-1}
-  .rtabs small,.pchips{display:none}.rtabs button{flex-direction:column;gap:4px;padding:10px 6px;text-align:center}.rtabs b{font-size:13px}
+  .rtabs small{display:none}.rtabs button{flex-direction:column;gap:4px;padding:10px 6px;text-align:center}.rtabs b{font-size:13px}
   .filterbar{position:static}
   .rtabs b{white-space:normal;line-height:1.25;font-size:12.5px}
   .ring{width:52px;height:52px;flex:0 0 auto}.ring b{font-size:11.5px}.score strong{font-size:13px}
   .scores{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.score{min-width:0;padding:10px 6px;gap:6px;flex-direction:column;text-align:center}.score span{display:none}.score small{font-size:9.5px;letter-spacing:.4px}
   .libitem{grid-template-columns:44px 1fr}.libitem .acts{grid-column:1/-1}
   .activecard{flex-wrap:wrap}.activecard .btn{width:100%}
-    input[type=search]{min-width:0;width:100%}
+  input[type=search]{min-width:0;width:100%}
   .sig{min-width:0;right:18px}
 }
 @media (prefers-reduced-motion:reduce){
