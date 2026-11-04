@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRACE · Tracking Real Activities for Credible Evidence</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<style>
+:root{
+  --nav:#0c2f45; --nav2:#0a2438; --navln:#1b4560; --navtx:#a9c2d4; --navac:#22c3a6;
+  --bg:#eef2f8; --card:#ffffff; --line:#e4eaf3; --ink:#17263a; --muted:#69788f;
+  --brand:#2f6fed; --brand2:#1c4fd1; --teal:#14b8a6;
+  --ok:#22c55e; --warn:#f5a623; --mid:#fb8c3f; --bad:#ef4d6b;
+  --shadow:0 6px 20px rgba(21,40,73,.06); --shadow2:0 10px 34px rgba(21,40,73,.10);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.app{display:flex;min-height:100vh}
+.side{width:246px;flex:0 0 246px;background:linear-gradient(180deg,var(--nav),var(--nav2));color:var(--navtx);display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 20px 16px}
+.brand .logo{width:38px;height:44px;flex:0 0 38px}
+.brand .txt b{color:#fff;font-size:19px;letter-spacing:2px;display:block;line-height:1}
+.brand .txt span{font-size:9px;color:var(--navac);letter-spacing:.6px}
+.navlbl{font-size:10px;letter-spacing:1.4px;color:#5f7d92;padding:14px 22px 6px;text-transform:uppercase}
+.nav{display:flex;flex-direction:column;gap:2px;padding:0 12px}
+.nav a{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;color:var(--navtx);text-decoration:none;font-size:14px;cursor:pointer;transition:.15s;position:relative}
+.nav a .ic{width:20px;text-align:center;font-size:16px}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.active{background:linear-gradient(90deg,rgba(34,195,166,.22),rgba(34,195,166,.05));color:#fff}
+.nav a.active::before{content:"";position:absolute;left:-12px;top:8px;bottom:8px;width:4px;border-radius:0 4px 4px 0;background:var(--navac)}
+.nav a .soon{margin-left:auto;font-size:9px;background:#123c53;color:#7fb7c9;padding:2px 7px;border-radius:99px;letter-spacing:.4px}
+.side .spacer{flex:1}
+.usr{border-top:1px solid var(--navln);padding:14px 18px;display:flex;align-items:center;gap:11px}
+.usr .av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--brand));display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px}
+.usr .nm{font-size:13px;color:#fff;font-weight:600}.usr .rl{font-size:11px;color:var(--navtx)}
+.sysbar{padding:10px 18px 16px;font-size:11px;color:var(--navtx)}
+.sysbar .st{display:flex;align-items:center;gap:7px}.sysbar .st .d{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--card);border-bottom:1px solid var(--line);padding:14px 26px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:1200}
+.topbar h1{font-size:19px;margin:0;letter-spacing:.3px}
+.topbar .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.tb-right{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.datefilter{display:none;align-items:center;gap:8px;background:#eef4ff;border:1px solid #cfe0fb;color:var(--brand);padding:7px 12px;border-radius:10px;font-size:12.5px;font-weight:600}
+.datefilter input[type=date]{background:#fff;border:1px solid #cfe0fb;color:var(--ink);border-radius:8px;padding:6px 8px;font-size:12.5px;font-weight:600;outline:none}
+.datefilter input[type=date]:focus{border-color:var(--brand)}
+/* compact multi-select (req2) */
+.ms{position:relative;display:none}
+.ms.show{display:inline-block}
+.ms-btn{display:inline-flex;align-items:center;gap:7px;background:#f3f6fb;border:1px solid var(--line);color:var(--ink);padding:8px 11px;border-radius:10px;font-size:12.5px;cursor:pointer;white-space:nowrap}
+.ms-btn:hover{border-color:var(--brand)}
+.ms-btn b{color:var(--brand)}
+.ms-panel{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow2);padding:8px;min-width:210px;max-height:300px;overflow:auto;display:none;z-index:1400}
+.ms-panel.open{display:block}
+.ms-panel .msrow{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;font-size:13px;cursor:pointer}
+.ms-panel .msrow:hover{background:#f3f6fb}
+.ms-panel .msrow input{accent-color:var(--brand)}
+.ms-panel .mshead{display:flex;justify-content:space-between;padding:4px 8px 8px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.ms-panel .mshead a{font-size:11.5px;color:var(--brand);cursor:pointer}
+.chipbtn{display:inline-flex;align-items:center;gap:8px;background:#f3f6fb;border:1px solid var(--line);color:var(--ink);padding:9px 13px;border-radius:10px;font-size:12.5px;cursor:pointer}
+.chipbtn:hover{border-color:var(--brand);color:var(--brand)}
+.uploadbtn{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;border:none;padding:10px 16px;border-radius:11px;font-size:13.5px;font-weight:600;cursor:pointer;box-shadow:var(--shadow)}
+.uploadbtn:hover{filter:brightness(1.06)}
+.content{padding:24px 26px 60px}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:30px;text-align:center}
+.hero .logo{width:74px;height:86px;margin:0 auto 8px}
+.hero h2{margin:6px 0 4px;font-size:22px;letter-spacing:1px}
+.hero p{color:var(--muted);margin:0 auto;max-width:560px;font-size:13.5px;line-height:1.6}
+.drop{border:1.6px dashed #c7d3e6;border-radius:16px;padding:34px;margin-top:22px;transition:.2s;background:#f7f9fd}
+.drop.drag{border-color:var(--brand);background:#eef4ff}
+.drop .big{font-size:38px}
+.drop h3{margin:8px 0 4px;font-size:16px}
+.drop .muted{color:var(--muted);font-size:13px}
+.progress{height:8px;background:#e7edf6;border-radius:99px;overflow:hidden;margin:16px auto 0;max-width:520px;display:none}
+.progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--brand),var(--teal));transition:width .12s}
+.phase{font-size:12.5px;color:var(--brand);margin-top:9px;font-weight:600;display:none}
+.params{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px;text-align:left}
+.param{background:#f7f9fd;border:1px solid var(--line);border-radius:12px;padding:13px}
+.param label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:8px;font-weight:600}
+.param .row{display:flex;align-items:center;gap:8px}
+.param input{width:100%;background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:9px 10px;font-size:14px;font-weight:700;outline:none}
+.param input:focus{border-color:var(--brand)}
+.param .u{color:var(--muted);font-size:12px;white-space:nowrap}
+.param .d{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.45}
+.dash{display:none}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:26px 2px 12px;font-weight:700;display:flex;align-items:center;gap:10px}
+.sec .hintx{font-weight:400;text-transform:none;letter-spacing:0;color:#9aa8bd}
+.parambar{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.parambar .pg{display:flex;flex-direction:column;gap:6px}
+.parambar .pg label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.parambar .pg .row{display:flex;align-items:center;gap:6px}
+.parambar .pg input{width:92px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 9px;font-size:13.5px;font-weight:700;outline:none}
+.parambar .pg input:focus{border-color:var(--brand)}
+.parambar .pg .u{font-size:11px;color:var(--muted)}
+.parambar .recalc{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:8px}
+.parambar .recalc .spin{width:14px;height:14px;border:2px solid #cdd8ea;border-top-color:var(--brand);border-radius:50%;animation:sp .7s linear infinite;display:none}
+.parambar.busy .recalc .spin{display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:14px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:15px 16px;box-shadow:var(--shadow)}
+.kpi .top{display:flex;align-items:center;justify-content:space-between}
+.kpi .ico{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:#eef4ff;color:var(--brand)}
+.kpi .ico.g{background:#e8f9f1;color:var(--ok)}.kpi .ico.y{background:#fef4e2;color:var(--warn)}
+.kpi .ico.r{background:#fdeef1;color:var(--bad)}.kpi .ico.t{background:#e6faf6;color:var(--teal)}
+.kpi .ico.p{background:#f0ecfe;color:#7c5cff}
+.kpi .lbl{font-size:11.5px;color:var(--muted);margin-top:11px;font-weight:600;letter-spacing:.2px}
+.kpi .val{font-size:24px;font-weight:800;margin-top:3px;letter-spacing:.2px}
+.kpi .foot{font-size:11.5px;color:var(--muted);margin-top:3px}
+.kpi .foot.up{color:var(--bad)}.kpi .foot.dn{color:var(--ok)}
+.insight{background:linear-gradient(180deg,#f2f7ff,#eef4ff);border:1px solid #dbe7fb;border-left:4px solid var(--brand);border-radius:13px;padding:15px 18px;margin-top:14px;line-height:1.6;font-size:13.5px;color:#26364c}
+.insight b{color:#0f2036}
+.insight .tag{display:inline-block;background:#e2ecfe;color:var(--brand);border:1px solid #c7dbfb;font-size:10.5px;padding:2px 9px;border-radius:99px;margin-right:6px;font-weight:700;letter-spacing:.4px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;align-items:start}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:16px;align-items:start}
+.mapgrid{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+.card h3{margin:0 0 3px;font-size:15px}
+.card .cap{color:var(--muted);font-size:12px;margin-bottom:12px}
+.card .hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card .hrow select{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px;outline:none}
+.card .hrow select:focus{border-color:var(--brand)}
+.chartbox{position:relative;height:250px}.chartbox.sm{height:250px}
+/* context menu export data grafik */
+.chartbox[data-exp]{cursor:context-menu}
+.ctxmenu{position:fixed;z-index:3000;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow2);padding:6px;min-width:210px;display:none}
+.ctxmenu.open{display:block}
+.ctxmenu .ctxhead{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:5px 10px 7px;border-bottom:1px solid var(--line);margin-bottom:5px;font-weight:700}
+.ctxmenu .ctxit{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;font-size:13px;cursor:pointer;color:var(--ink)}
+.ctxmenu .ctxit:hover{background:#eef4ff;color:var(--brand)}
+.ctxhint{font-size:11px;color:#9aa8bd;margin-top:6px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:2px 0 12px}
+select,input[type=search]{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;outline:none}
+select:focus,input[type=search]:focus{border-color:var(--brand)}
+.scombo{position:relative;display:inline-block}
+.scombo-input{background:#fff;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;outline:none;min-width:180px;cursor:pointer}
+.scombo-input:focus{border-color:var(--brand)}
+.scombo-panel{position:absolute;top:calc(100% + 5px);left:0;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:var(--shadow2);padding:6px;min-width:220px;max-height:280px;overflow:auto;display:none;z-index:1500}
+.scombo-panel.open{display:block}
+.scombo-item{padding:8px 10px;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.scombo-item:hover{background:#f3f6fb}
+.scombo-item.sel{background:#eef4ff;color:var(--brand);font-weight:600}
+.scombo-empty{padding:8px 10px;color:var(--muted);font-size:12px}
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+th,td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:#f5f8fc;color:var(--muted);font-weight:600;position:sticky;top:0;cursor:pointer;user-select:none}
+th:hover{color:var(--ink)}
+th .sar{opacity:.35;font-size:10px;margin-left:3px}
+th.sorted{color:var(--brand)}th.sorted .sar{opacity:1}
+tbody tr:hover{background:#f6f9fe}
+td.num,th.num{text-align:right}
+.bar{position:relative;background:#eef2f8;border-radius:6px;height:20px;overflow:hidden}
+/* consistent coverage cell: bar + % aligned across rows (req1) */
+.covcell{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.covcell .bar{flex:0 0 46px;width:46px;height:13px}
+.covcell .covpct{flex:0 0 34px;min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+/* geotag recommendation: map (left) + table (right) grid (req2) */
+.grgrid{display:grid;grid-template-columns:1fr 1.1fr;gap:16px;align-items:start;margin-top:16px}
+#grMap{height:520px;border-radius:12px;border:1px solid var(--line);z-index:1}
+tr.grrow{cursor:pointer}
+tr.grrow.active{background:#eaf1ff!important}
+.bar > i{display:block;height:100%;border-radius:6px}
+.pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;display:inline-block}
+.p-norm{background:#e8f9f1;color:#16a34a}.p-low{background:#fef4e2;color:#c07f10}
+.p-mid{background:#feeede;color:#d1660f}.p-high{background:#fdeef1;color:#d63a58}
+.chev{transition:.2s;display:inline-block;color:var(--muted)}
+tr.parent{cursor:pointer}tr.parent .chev.open{transform:rotate(90deg)}
+tr.child td:first-child{padding-left:34px}tr.child2 td:first-child{padding-left:56px}
+tr.child,tr.child2{background:#fafcff;display:none}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:11px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.foot-note{color:var(--muted);font-size:12px;margin-top:8px;line-height:1.55}
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.method .m{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px;box-shadow:var(--shadow)}
+.method .m .ic{font-size:22px}.method .m h4{margin:8px 0 6px;font-size:14px}
+.method .m p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.55}
+.badge-th{font-size:10.5px;color:var(--brand);background:#eef4ff;border:1px solid #cfe0fb;padding:2px 8px;border-radius:99px}
+.btn-ghost{background:#f3f6fb;border:1px solid var(--line);color:var(--muted);padding:8px 12px;border-radius:9px;cursor:pointer;font-size:12.5px}
+.btn-ghost:hover{color:var(--brand);border-color:var(--brand)}
+#map{height:520px;border-radius:12px;border:1px solid var(--line);z-index:1}
+.maplegend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:10px}
+.maplegend span{display:inline-flex;align-items:center;gap:6px}
+.mapstat{background:#f7f9fd;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted);margin-top:10px}
+.mapstat.warn{background:#fff7ec;border-color:#ffd89a;color:#a5701a}
+.leaflet-popup-content{font-size:12.5px;line-height:1.5}
+.trow.active{background:#eaf1ff!important}
+.placeholder{display:none;text-align:center;padding:70px 20px}
+.placeholder .logo{width:70px;height:82px;margin:0 auto 14px;opacity:.5}
+.placeholder h2{margin:0 0 6px;font-size:20px}
+.placeholder p{color:var(--muted);max-width:440px;margin:0 auto;font-size:13.5px;line-height:1.6}
+.ph-badge{display:inline-block;margin-top:16px;background:#eef4ff;color:var(--brand);border:1px solid #cfe0fb;font-size:12px;padding:6px 14px;border-radius:99px;font-weight:600}
+@media(max-width:1100px){.mapgrid{grid-template-columns:1fr}.grgrid{grid-template-columns:1fr}.params{grid-template-columns:1fr}
+  .side{width:70px;flex-basis:70px}.brand .txt,.nav a span.t,.navlbl,.usr .nm,.usr .rl,.sysbar,.nav a .soon{display:none}
+  .nav a{justify-content:center}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="traceLogo" viewBox="0 0 120 140">
+    <defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3aa0ff"/><stop offset="1" stop-color="#1c4fd1"/></linearGradient></defs>
+    <path d="M60 4 L110 24 V70 C110 104 88 126 60 136 C32 126 10 104 10 70 V24 Z" fill="url(#tg)" stroke="#0f2b6b" stroke-width="4"/>
+    <path d="M60 16 L98 31 V70 C98 97 81 115 60 124 C39 115 22 97 22 70 V31 Z" fill="#ffffff" opacity=".12"/>
+    <circle cx="52" cy="60" r="20" fill="none" stroke="#ffffff" stroke-width="6"/>
+    <line x1="66" y1="74" x2="86" y2="96" stroke="#ffffff" stroke-width="8" stroke-linecap="round"/>
+    <circle cx="44" cy="52" r="4.4" fill="#7fe3ff"/><circle cx="60" cy="66" r="4.4" fill="#7fe3ff"/><circle cx="58" cy="48" r="4.4" fill="#7fe3ff"/>
+    <line x1="44" y1="52" x2="58" y2="48" stroke="#7fe3ff" stroke-width="2.4"/><line x1="58" y1="48" x2="60" y2="66" stroke="#7fe3ff" stroke-width="2.4"/>
+  </symbol>
+</svg>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><svg class="logo"><use href="#traceLogo"/></svg><div class="txt"><b>TRACE</b><span>CREDIBLE EVIDENCE</span></div></div>
+    <div class="navlbl">Modul Validasi</div>
+    <nav class="nav" id="nav">
+      <a class="active" data-menu="field"><span class="ic">🧭</span><span class="t">Field Force</span></a>
+      <a data-menu="retailer"><span class="ic">🏪</span><span class="t">Retailer</span><span class="soon">SOON</span></a>
+      <a data-menu="pasgar"><span class="ic">🚚</span><span class="t">Pasgar</span><span class="soon">SOON</span></a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="usr"><div class="av">MZ</div><div><div class="nm">M. Zhafran</div><div class="rl">Enterprise Innovation</div></div></div>
+    <div class="sysbar"><div class="st"><span class="d"></span> System Operational · Data lokal</div></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Field Force Visit Verification</h1>
+        <div class="sub" id="pageSub"></div>
+      </div>
+      <div class="tb-right">
+        <div class="datefilter" id="datefilter">📅 <input type="date" id="dateFrom"> <span>–</span> <input type="date" id="dateTo"></div>
+        <!-- multi-select geo filters (req2) -->
+        <div class="ms" id="msZone"><button class="ms-btn" id="msZoneBtn">Zone: <b>Semua</b> ▾</button><div class="ms-panel" id="msZonePanel"></div></div>
+        <div class="ms" id="msRegion"><button class="ms-btn" id="msRegionBtn">Region: <b>Semua</b> ▾</button><div class="ms-panel" id="msRegionPanel"></div></div>
+        <div class="ms" id="msArea"><button class="ms-btn" id="msAreaBtn">Area: <b>Semua</b> ▾</button><div class="ms-panel" id="msAreaPanel"></div></div>
+        <div class="ms" id="msDistrict"><button class="ms-btn" id="msDistrictBtn">District: <b>Semua</b> ▾</button><div class="ms-panel" id="msDistrictPanel"></div></div>
+        <div class="ms" id="msTerritory"><button class="ms-btn" id="msTerritoryBtn">Territory: <b>Semua</b> ▾</button><div class="ms-panel" id="msTerritoryPanel"></div></div>
+        <button class="chipbtn" id="reloadBtn" style="display:none">↺ Ganti Data</button>
+        <button class="uploadbtn" id="pickBtn">⬆️ Upload CSV Visit</button>
+        <input type="file" id="file" accept=".csv" hidden>
+      </div>
+    </div>
+    <div class="content">
+      <div id="menu-field">
+        <div id="landing">
+          <div class="hero">
+            <svg class="logo"><use href="#traceLogo"/></svg>
+            <h2>TRACE</h2>
+            <p><b>Tracking Real Activities for Credible Evidence.</b> Unggah data kunjungan field force (kolom mentah saja) — TRACE menghitung sendiri seluruh parameter anomaly di perangkat Anda, tanpa mengirim data ke server.</p>
+            <div class="drop" id="drop">
+              <div class="big">📥</div>
+              <h3>Tarik &amp; lepas file CSV di sini</h3>
+              <div class="muted">atau klik <b>Upload CSV Visit</b> di kanan atas · mendukung jutaan baris</div>
+              <div class="progress" id="prog"><i></i></div>
+              <div class="phase" id="phaseText"></div>
+            </div>
+            <div class="params">
+              <div class="param"><label>📍 Location Mismatch</label><div class="row"><input type="number" id="pMismatch" value="1000" min="1"><span class="u">meter</span></div><div class="d">Jarak titik visit ke lokasi toko melebihi nilai ini.</div></div>
+              <div class="param"><label>⚡ Rapid — Radius</label><div class="row"><input type="number" id="pRadius" value="50" min="1"><span class="u">meter</span></div><div class="d">Radius pengelompokan titik visit berdekatan.</div></div>
+              <div class="param"><label>⚡ Rapid — Batas Toko</label><div class="row"><input type="number" id="pStores" value="5" min="1"><span class="u">toko</span></div><div class="d">Flag bila toko unik dalam radius melebihi nilai ini.</div></div>
+              <div class="param"><label>🌙 Jam Malam</label><div class="row"><input type="time" id="pNight" value="19:00"></div><div class="d">Visit yang mulai antara jam ini hingga tengah malam (23:59) ditandai.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="dash" id="dash">
+          <!-- req5: Cara Membaca Parameter moved to top -->
+          <div class="sec">Cara Membaca Parameter</div>
+          <div class="method" id="methodCards"></div>
+          <div class="foot-note" id="methodFoot" style="margin-bottom:6px"></div>
+
+          <div class="sec">Parameter Deteksi</div>
+          <div class="parambar" id="parambar">
+            <div class="pg"><label>📍 Location Mismatch</label><div class="row"><input type="number" id="dMismatch" value="1000" min="1"><span class="u">m</span></div></div>
+            <div class="pg"><label>⚡ Rapid Radius</label><div class="row"><input type="number" id="dRadius" value="50" min="1"><span class="u">m</span></div></div>
+            <div class="pg"><label>⚡ Rapid Batas Toko</label><div class="row"><input type="number" id="dStores" value="5" min="1"><span class="u">toko</span></div></div>
+            <div class="pg"><label>🌙 Jam Malam</label><div class="row"><input type="time" id="dNight" value="19:00"></div></div>
+            <div class="recalc"><span class="spin"></span><span id="recalcTxt">Sinkron</span></div>
+          </div>
+          <div class="sec">Ringkasan Eksekutif <span class="hintx" id="tfInline"></span></div>
+          <div class="kpis" id="kpis"></div>
+          <div class="insight" id="narrative"></div>
+          <div class="sec">Potret Anomaly <span class="hintx">— klik kanan pada grafik untuk copy as image atau export datanya</span></div>
+          <div class="grid3">
+            <div class="card"><h3>Anomaly per Zone</h3><div class="cap">% visit anomaly dari visit teridentifikasi</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+            <div class="card"><h3>Cakupan GPS per Zone</h3><div class="cap">% visit yang punya long-lat (visit &amp; toko)</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+            <div class="card"><h3>Komposisi Parameter Anomaly</h3><div class="cap">Jumlah Visit per jenis parameter</div><div class="chartbox" id="boxReason" data-exp="chReason"><canvas id="chReason"></canvas></div></div>
+          </div>
+          <div class="grid2" style="margin-top:16px">
+            <div class="card"><h3>Tren Anomaly per Hari</h3><div class="cap">% anomaly berdasarkan hari (Minggu–Sabtu)</div><div class="chartbox sm" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+            <div class="card">
+              <div class="hrow">
+                <div><h3>Historical Data</h3><div class="cap" id="histCap">% cakupan GPS per KPS week, per zone</div></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+                  <select id="histDim"><option value="zone">Legend: Zone</option><option value="region">Legend: Region</option></select>
+                  <select id="histMetric"><option value="cover">% Cakupan GPS</option><option value="anom">% Anomaly</option></select>
+                </div>
+              </div>
+              <div class="chartbox sm" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
+            </div>
+          </div>
+          <div class="sec">Drill-down Wilayah · Zone → Region → Area</div>
+          <div class="card">
+            <div class="toolbar">
+              <input type="search" id="geoSearch" placeholder="🔎 Cari zone / region / area...">
+              <button class="btn-ghost" id="geoExport">⬇️ Export CSV</button>
+              <span class="foot-note" style="margin:0">Klik baris untuk buka detail. Header bisa diklik untuk sortir.</span>
+            </div>
+            <div class="tbl-wrap" style="max-height:520px">
+              <table id="geoTable"><thead><tr>
+                <th data-k="name">Wilayah</th><th class="num" data-k="total">Total Visit</th>
+                <th class="num" data-k="cover">Cakupan GPS</th><th class="num" data-k="checkable">Terident.</th>
+                <th class="num" data-k="anomaly">Anomaly</th><th class="num" data-k="rate">% Anomaly</th>
+                <th class="num" data-k="lm">Loc. Mismatch</th><th class="num" data-k="a7">After 7PM</th>
+                <th class="num" data-k="rsl">Rapid Loc.</th><th data-k="rate">Status</th>
+              </tr></thead><tbody></tbody></table>
+            </div>
+            <div class="legend">
+              <span><span class="dot" style="background:var(--ok)"></span> Sehat &lt;20%</span>
+              <span><span class="dot" style="background:var(--warn)"></span> Waspada 20–40%</span>
+              <span><span class="dot" style="background:var(--mid)"></span> Tinggi 40–60%</span>
+              <span><span class="dot" style="background:var(--bad)"></span> Kritis &gt;60%</span>
+              <span style="margin-left:auto">% Anomaly = anomaly ÷ visit teridentifikasi</span>
+            </div>
+          </div>
+          <div class="sec">Peta Sebaran Visit <span class="hintx">— pilih Territory / District, titik dikelompokkan (cluster) saat zoom-out</span></div>
+          <div class="mapgrid">
+            <div class="card">
+              <div class="toolbar">
+                <select id="mDistrict"><option value="">Semua District</option></select>
+                <select id="mTerr"><option value="">Semua Territory</option></select>
+                <select id="mMode">
+                  <option value="all">Semua status</option>
+                  <option value="anom">Hanya anomaly</option>
+                  <option value="normal">Hanya normal</option>
+                  <option value="lm">📍 Location Mismatch</option>
+                  <option value="rsl">⚡ Rapid Same Location</option>
+                  <option value="a7">🌙 Visit After 7PM</option>
+                </select>
+                <label style="font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px"><input type="checkbox" id="mLine" checked> Garis ke lokasi toko</label>
+              </div>
+              <div id="map"></div>
+              <div class="maplegend">
+                <span><span class="dot" style="background:#ef4d6b"></span> Visit anomaly</span>
+                <span><span class="dot" style="background:#22c55e"></span> Visit normal</span>
+                <span><span class="dot" style="background:#2f6fed"></span> Lokasi toko (profil)</span>
+                <span style="margin-left:auto">💡 Klik titik untuk highlight lokasi tokonya</span>
+              </div>
+              <div class="mapstat" id="mapStat"></div>
+            </div>
+            <div class="card">
+              <h3>Territory Level</h3>
+              <div class="cap">Achievement per territory pada 1 KPS week — klik baris untuk lihat titiknya di peta</div>
+              <div class="toolbar">
+                <select id="mWeek"></select>
+              </div>
+              <div class="tbl-wrap" style="max-height:430px">
+                <table id="tTable"><thead><tr>
+                  <th data-k="terr">Territory</th><th class="num" data-k="total">Visit</th><th class="num" data-k="gps">Ber-GPS</th><th class="num" data-k="cover">Cakupan</th>
+                  <th class="num" data-k="lm">LM</th><th class="num" data-k="rsl">RL</th><th class="num" data-k="a7">7PM</th><th class="num" data-k="rate">% Anom</th>
+                </tr></thead><tbody></tbody></table>
+              </div>
+              <div class="foot-note" id="tFoot"></div>
+            </div>
+          </div>
+          <div class="sec">Geotag Recommendation</div>
+          <div class="kpis" id="grKpis"></div>
+          <div class="grgrid">
+          <div class="card">
+            <h3>Peta Historical Visit Toko</h3>
+            <div class="cap" id="grMapCap">Klik salah satu customer di tabel untuk melihat sebaran seluruh historical visit-nya (mengabaikan filter week), lokasi toko existing, dan titik rekomendasi modus.</div>
+            <div id="grMap"></div>
+            <div class="maplegend">
+              <span><span class="dot" style="background:#94a3b8"></span> Historical visit</span>
+              <span><span class="dot" style="background:#2f6fed"></span> Lokasi toko (existing)</span>
+              <span><span class="dot" style="background:#14b8a6"></span> Rekomendasi (modus)</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="toolbar">
+              <input type="search" id="grSearch" placeholder="🔎 Cari customer / territory / district...">
+              <select id="grFilter">
+                <option value="all">Semua status</option>
+                <option value="ok">✅ Long lat sudah sesuai</option>
+                <option value="update">🟠 Perlu update long lat</option>
+                <option value="need">⛔ Butuh data lebih</option>
+              </select>
+              <button class="btn-ghost" id="grExport">⬇️ Export CSV</button>
+            </div>
+            <div class="tbl-wrap" style="max-height:560px">
+              <table id="grTable"><thead><tr>
+                <th data-k="name">Customer</th><th data-k="terr">Territory / District</th>
+                <th class="num" data-k="total">Total Visit</th>
+                <th data-k="existing">Long-lat Existing</th>
+                <th data-k="rec">Long-lat Rekomendasi</th>
+                <th class="num" data-k="modeCount">Modus (titik)</th>
+                <th class="num" data-k="distinct">Titik Unik</th>
+                <th class="num" data-k="dist">Jarak Geser</th>
+                <th data-k="status">Status</th>
+                <th data-k="conf">Confidence</th>
+              </tr></thead><tbody></tbody></table>
+            </div>
+            <div class="legend">
+              <span><span class="dot" style="background:var(--ok)"></span> Long lat sudah sesuai — jarak ≤ 100 m</span>
+              <span><span class="dot" style="background:var(--mid)"></span> Perlu update long lat — jarak &gt; 100 m</span>
+              <span><span class="dot" style="background:var(--bad)"></span> Butuh data lebih — rekomendasi tidak tersedia</span>
+            </div>
+            <div class="foot-note" id="grFoot"></div>
+          </div>
+          </div>
+          <div class="sec">Export Data Visit</div>
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+              <button class="uploadbtn" id="expZoneBtn">⬇️ Export CSV per Zone</button>
+              <button class="uploadbtn" id="heroCoachBtn" style="background:linear-gradient(135deg,#7c5cff,#5a3ff0)">🦸 Send to My Hero Coach</button>
+              <div class="foot-note" style="margin:0;flex:1;min-width:220px">Generate data visit level (semua baris), dipisah 1 file CSV per <b>zone_name</b> (± 7 file) lalu dibungkus jadi <b>1 file ZIP</b>. Kolom: visit_id, customer_code, channel, segmentasi, long-lat visit &amp; customer, timestamp, distance_meter, is_longlat_available, is_anomaly, anomaly_flag, hingga supervisor_name.</div>
+            </div>
+            <div class="foot-note" id="expFoot" style="margin-top:10px"></div>
+            <div class="foot-note" style="margin-top:12px;border-top:1px dashed var(--line);padding-top:12px">🦸 <b>Send to My Hero Coach</b> — generate 1 file CSV <b>level territory</b> berisi rekomendasi tindak lanjut (<i>call to action</i>) untuk tiap field force, siap dibagikan ke supervisor (district). Kolom: territory_code, district_code, area_name, region_name, zone_name, supervisor_name, employee_name, <b>call_to_actions</b>, <b>gps_coverage_pct</b>, <b>anomaly_pct</b>. Prioritas dihitung otomatis dari <b>cakupan GPS</b> &amp; <b>tingkat anomaly</b> per territory.</div>
+            <div class="foot-note" id="heroFoot" style="margin-top:8px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="placeholder" id="menu-retailer">
+        <svg class="logo"><use href="#traceLogo"/></svg>
+        <h2>Retailer Validation</h2>
+        <p>Modul validasi keaslian transaksi &amp; order retailer (mis. dynamic QR / OTP, loyalty point) akan tampil di sini sebagai bagian dari ekosistem TRACE.</p>
+        <div class="ph-badge">🚧 Segera hadir</div>
+      </div>
+      <div class="placeholder" id="menu-pasgar">
+        <svg class="logo"><use href="#traceLogo"/></svg>
+        <h2>Pasgar Validation</h2>
+        <p>Modul validasi pengantaran Pasukan Garuda (bukti serah-terima, rute &amp; waktu pengiriman) akan tampil di sini sebagai bagian dari ekosistem TRACE.</p>
+        <div class="ph-badge">🚧 Segera hadir</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="ctxmenu" id="ctxMenu"></div>
+<script>
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const fmt=n=>Number(n).toLocaleString('id-ID');
+const pct=(a,b)=>b?(a/b*100):0;
+const ZPAL=['#2f6fed','#ef4d6b','#14b8a6','#f5a623','#7c5cff','#fb8c3f','#0ea5e9','#22c55e','#e11d48','#84cc16'];
+/* palet legend historical (siap sampai 20 seri, mis. saat dipecah per region_name) */
+const HPAL=['#2f6fed','#ef4d6b','#14b8a6','#f5a623','#7c5cff','#fb8c3f','#0ea5e9','#22c55e','#e11d48','#84cc16',
+            '#0f766e','#b91c1c','#a16207','#1e40af','#9333ea','#059669','#db2777','#4d7c0f','#0891b2','#78350f'];
+const HDASH=[[],[],[],[],[],[],[],[],[],[],[6,3],[6,3],[6,3],[6,3],[6,3],[2,3],[2,3],[2,3],[2,3],[2,3]];
+const HIST_MAX_SERIES=20;
+const MENUS={
+  field:{title:'Field Force Visit Verification',sub:''},
+  retailer:{title:'TRACE · Retailer Validation',sub:'Validasi keaslian transaksi & order retailer'},
+  pasgar:{title:'TRACE · Pasgar Validation',sub:'Validasi pengantaran Pasukan Garuda'}
+};
+let loaded=false;
+$$('#nav a').forEach(a=>a.addEventListener('click',()=>{
+  const m=a.dataset.menu;
+  $$('#nav a').forEach(x=>x.classList.toggle('active',x===a));
+  $('#pageTitle').textContent=MENUS[m].title; $('#pageSub').textContent=MENUS[m].sub;
+  $('#menu-field').style.display=m==='field'?'block':'none';
+  $('#menu-retailer').style.display=m==='retailer'?'block':'none';
+  $('#menu-pasgar').style.display=m==='pasgar'?'block':'none';
+  $('#pickBtn').style.display=m==='field'?'inline-flex':'none';
+  const on=(m==='field'&&loaded);
+  $('#reloadBtn').style.display=on?'inline-flex':'none';
+  $('#datefilter').style.display=on?'flex':'none';
+  ['msZone','msRegion','msArea','msDistrict','msTerritory'].forEach(id=>$('#'+id).classList.toggle('show',on));
+  if(on&&map)setTimeout(()=>map.invalidateSize(),60);
+}));
+/* ---------- Parameters ---------- */
+let P={mismatchM:1000,rapidM:50,rapidCount:5,nightMin:19*60};
+function readParamsFrom(pre){
+  P.mismatchM=Math.max(1,+$('#'+pre+'Mismatch').value||1000);
+  P.rapidM=Math.max(1,+$('#'+pre+'Radius').value||50);
+  P.rapidCount=Math.max(1,+$('#'+pre+'Stores').value||5);
+  const t=($('#'+pre+'Night').value||'19:00').split(':');P.nightMin=(+t[0])*60+(+t[1]||0);
+}
+function syncDashParams(){
+  $('#dMismatch').value=P.mismatchM;$('#dRadius').value=P.rapidM;$('#dStores').value=P.rapidCount;
+  $('#dNight').value=String(Math.floor(P.nightMin/60)).padStart(2,'0')+':'+String(P.nightMin%60).padStart(2,'0');
+}
+let FILT={from:'',to:''};
+let GF={zone:[],region:[],area:[],district:[],territory:[]};      // multi-select (req2)
+let GEOALL={zones:[],z2r:{},zr2a:{},districts:[],d2t:{}};
+/* ---------- CSV parsing ---------- */
+function parseLine(line){const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(q){if(c=='"'){if(line[i+1]=='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else{if(c=='"')q=true;else if(c==','){out.push(cur);cur='';}else cur+=c;}}
+  out.push(cur);return out;}
+const COL={};
+function num(x){const v=parseFloat(x);return isNaN(v)?null:v;}
+function haversine(la1,lo1,la2,lo2){const R=6371000,r=Math.PI/180;const dLa=(la2-la1)*r,dLo=(lo2-lo1)*r;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)**2;return R*2*Math.asin(Math.min(1,Math.sqrt(a)));}
+function tmin(ts){const t=(ts||'').split(' ')[1];if(!t)return null;const p=t.split(':');return (+p[0])*60+(+p[1]||0);}
+function dateOf(ts){return (ts||'').split(' ')[0];}
+function weekdayOf(dstr){const p=(dstr||'').split('-');if(p.length<3)return -1;const dt=new Date(Date.UTC(+p[0],+p[1]-1,+p[2]));const w=dt.getUTCDay();return isNaN(w)?-1:w;}
+function Interner(){const m=new Map(),a=[];return{id(s){let i=m.get(s);if(i===undefined){i=a.length;m.set(s,i);a.push(s);}return i;},val(i){return a[i];},get size(){return a.length;}};}
+let B;
+function resetBuffer(){B={n:0,gMin:'',gMax:'',
+  iZone:Interner(),iReg:Interner(),iArea:Interner(),iTerr:Interner(),iDist:Interner(),iEmp:Interner(),iCust:Interner(),iDate:Interner(),iWeek:Interner(),
+  iChannel:Interner(),iSeg:Interner(),iSales:Interner(),iSup:Interner(),
+  zone:[],region:[],area:[],terr:[],district:[],emp:[],cust:[],date:[],week:[],latV:[],lonV:[],latC:[],lonC:[],chk:[],dist:[],tm:[],
+  visitId:[],ts:[],channel:[],seg:[],sales:[],sup:[],
+  uniq:null,lmA:null,rslA:null,a7A:null,anA:null};}
+function g(f,name){const i=COL[name];return i==null?'':f[i];}
+function ingest(f){
+  const latV=num(g(f,'ISMS_LAT_VISIT')),lonV=num(g(f,'ISMS_LON_VISIT'));
+  const latC=num(g(f,'ISMS_LAT_CUSTOMER')),lonC=num(g(f,'ISMS_LON_CUSTOMER'));
+  let chk=1;
+  if(latV==null||lonV==null||latC==null||lonC==null)chk=0;
+  else if(latV===0||lonV===0||latC===0||lonC===0)chk=0;
+  const dist=chk?haversine(latV,lonV,latC,lonC):NaN;
+  B.zone.push(B.iZone.id(g(f,'ZONE_NAME')||'(?)'));
+  B.region.push(B.iReg.id(g(f,'REGION_NAME')||'(?)'));
+  B.area.push(B.iArea.id(g(f,'AREA_NAME')||'(?)'));
+  B.terr.push(B.iTerr.id(g(f,'TERRITORY_CODE')||'(?)'));
+  B.district.push(B.iDist.id(g(f,'DISTRICT_CODE')||'(?)'));
+  B.emp.push(B.iEmp.id(g(f,'EMPLOYEE_NAME')||'(tanpa nama)'));
+  B.cust.push(B.iCust.id(g(f,'CUSTOMER_CODE')||('#'+B.n)));
+  B.week.push(B.iWeek.id(g(f,'KPS_WEEK')||'(?)'));
+  const rawTs=g(f,'VISIT_START_TIMESTAMP');
+  const ds=dateOf(rawTs);
+  B.date.push(B.iDate.id(ds));
+  if(ds){if(!B.gMin||ds<B.gMin)B.gMin=ds;if(!B.gMax||ds>B.gMax)B.gMax=ds;}
+  B.latV.push(latV==null?NaN:latV);B.lonV.push(lonV==null?NaN:lonV);
+  B.latC.push(latC==null?NaN:latC);B.lonC.push(lonC==null?NaN:lonC);
+  B.chk.push(chk);B.dist.push(dist);B.tm.push(tmin(rawTs));
+  // extra raw fields for export
+  B.visitId.push(g(f,'VISIT_ID')||'');
+  B.ts.push(rawTs||'');
+  B.channel.push(B.iChannel.id(g(f,'CHANNEL')||''));
+  B.seg.push(B.iSeg.id(g(f,'CUSTOMER_SEGMENT_INTERNAL_CLASSIFICATION_KPS_WEEK')||''));
+  B.sales.push(B.iSales.id(g(f,'SALES_POINT_NAME')||''));
+  B.sup.push(B.iSup.id(g(f,'SUPERVISOR_NAME')||''));
+  B.n++;
+}
+function computeRapid(){
+  const n=B.n;const uniq=new Int32Array(n).fill(-1);const groups=new Map();
+  for(let i=0;i<n;i++){if(!B.chk[i])continue;const key=B.terr[i]*1000000+B.date[i];let arr=groups.get(key);if(!arr){arr=[];groups.set(key,arr);}arr.push(i);}
+  const cell=P.rapidM;
+  for(const arr of groups.values()){
+    const refLat=B.latV[arr[0]];const mLat=111320,mLon=111320*Math.cos(refLat*Math.PI/180);
+    const grid=new Map();const xs=new Float64Array(arr.length),ys=new Float64Array(arr.length);
+    for(let a=0;a<arr.length;a++){const i=arr[a];xs[a]=B.lonV[i]*mLon;ys[a]=B.latV[i]*mLat;
+      const key=(Math.floor(xs[a]/cell))+','+(Math.floor(ys[a]/cell));let gg=grid.get(key);if(!gg){gg=[];grid.set(key,gg);}gg.push(a);}
+    for(let a=0;a<arr.length;a++){const gx=Math.floor(xs[a]/cell),gy=Math.floor(ys[a]/cell);const set=new Set();
+      for(let dx=-1;dx<=1;dx++)for(let dy=-1;dy<=1;dy++){const bucket=grid.get((gx+dx)+','+(gy+dy));if(!bucket)continue;
+        for(const b of bucket){if(Math.hypot(xs[a]-xs[b],ys[a]-ys[b])<=cell)set.add(B.cust[arr[b]]);}}
+      uniq[arr[a]]=set.size;}
+  }
+  B.uniq=uniq;
+}
+const A={};
+function buildDateOK(){
+  const nd=B.iDate.size;A.dateOK=new Int8Array(nd);
+  for(let k=0;k<nd;k++){const d=B.iDate.val(k);A.dateOK[k]=((!FILT.from||d>=FILT.from)&&(!FILT.to||d<=FILT.to))?1:0;}
+}
+function geoIds(){
+  const toSet=(arr,intr)=>{if(!arr.length)return null;const s=new Set();arr.forEach(v=>s.add(intr.id(v)));return s;};
+  return{gz:toSet(GF.zone,B.iZone),gr:toSet(GF.region,B.iReg),ga:toSet(GF.area,B.iArea),gd:toSet(GF.district,B.iDist),gt:toSet(GF.territory,B.iTerr)};
+}
+function passGeo(i,ids){if(ids.gz&&!ids.gz.has(B.zone[i]))return false;if(ids.gr&&!ids.gr.has(B.region[i]))return false;if(ids.ga&&!ids.ga.has(B.area[i]))return false;if(ids.gd&&!ids.gd.has(B.district[i]))return false;if(ids.gt&&!ids.gt.has(B.terr[i]))return false;return true;}
+function aggregate(){
+  const n=B.n;
+  if(!B.lmA||B.lmA.length!==n){B.lmA=new Int8Array(n);B.rslA=new Int8Array(n);B.a7A=new Int8Array(n);B.anA=new Int8Array(n);}
+  buildDateOK();
+  A.total=0;A.anomaly=0;A.lm=0;A.rsl=0;A.a7=0;A.checkable=0;A.notcheck=0;
+  A.reason={};A.cust=new Set();
+  A.zone={};A.region={};A.area={};A.terr={};A.date={};A.wkZone={};A.wkRegion={};
+  A.dow=Array.from({length:7},()=>({t:0,c:0,a:0}));
+  const nightMin=P.nightMin,misM=P.mismatchM,rc=P.rapidCount;
+  const ids=geoIds();
+  const newAgg=()=>({total:0,anomaly:0,lm:0,rsl:0,a7:0,checkable:0});
+  const bump=(map,key,isA,lm,rsl,a7,chk)=>{let o=map[key];if(!o){o=newAgg();map[key]=o;}o.total++;if(isA)o.anomaly++;o.lm+=lm;o.rsl+=rsl;o.a7+=a7;if(chk)o.checkable++;};
+  const nd=B.iDate.size;const dowCache=new Int8Array(nd);for(let k=0;k<nd;k++)dowCache[k]=weekdayOf(B.iDate.val(k));
+  for(let i=0;i<n;i++){
+    const di=B.date[i];
+    const chk=B.chk[i],dist=B.dist[i],uq=B.uniq[i];
+    const lm=(chk&&dist>misM)?1:0,rsl=(chk&&uq>rc)?1:0,a7=(chk&&B.tm[i]!=null&&B.tm[i]>nightMin)?1:0;
+    const isA=(lm+rsl+a7)>0;
+    B.lmA[i]=lm;B.rslA[i]=rsl;B.a7A[i]=a7;B.anA[i]=isA?1:0;
+    if(!A.dateOK[di])continue;
+    if(!passGeo(i,ids))continue;
+    A.total++;A.lm+=lm;A.rsl+=rsl;A.a7+=a7;if(isA)A.anomaly++;if(chk)A.checkable++;else A.notcheck++;
+    let reason;if(isA){const r=[];if(lm)r.push('Location Mismatch');if(rsl)r.push('Rapid Same Location');if(a7)r.push('Visit After 7 PM');reason=r.join(' | ');}else reason=chk?'No Anomaly':'Incomplete Coordinate';
+    A.reason[reason]=(A.reason[reason]||0)+1;
+    const zone=B.iZone.val(B.zone[i]),region=B.iReg.val(B.region[i]),area=B.iArea.val(B.area[i]);
+    A.cust.add(B.cust[i]);
+    bump(A.zone,zone,isA,lm,rsl,a7,chk);
+    bump(A.region,zone+'||'+region,isA,lm,rsl,a7,chk);
+    bump(A.area,zone+'||'+region+'||'+area,isA,lm,rsl,a7,chk);
+    const tid=B.terr[i];let te=A.terr[tid];
+    if(!te){te={terr:B.iTerr.val(tid),district:B.iDist.val(B.district[i]),zone,total:0,gps:0,anomaly:0,lm:0,rsl:0,a7:0};A.terr[tid]=te;}
+    te.total++;if(chk)te.gps++;if(isA)te.anomaly++;te.lm+=lm;te.rsl+=rsl;te.a7+=a7;
+    const wd=dowCache[di];if(wd>=0){const dd=A.dow[wd];dd.t++;if(chk)dd.c++;if(isA)dd.a++;}
+    const dstr=B.iDate.val(di);let hd=A.date[dstr];if(!hd){hd={t:0,c:0,a:0};A.date[dstr]=hd;}hd.t++;if(chk)hd.c++;if(isA)hd.a++;
+    // week x zone historical (req3: keep t,c,a for both metrics)
+    const wkName=B.iWeek.val(B.week[i]);let wz=A.wkZone[wkName];if(!wz){wz={};A.wkZone[wkName]=wz;}
+    let zc=wz[zone];if(!zc){zc={t:0,c:0,a:0};wz[zone]=zc;}zc.t++;if(chk)zc.c++;if(isA)zc.a++;
+    // week x region historical (untuk opsi legend by region_name)
+    let wr=A.wkRegion[wkName];if(!wr){wr={};A.wkRegion[wkName]=wr;}
+    let rgc=wr[region];if(!rgc){rgc={t:0,c:0,a:0};wr[region]=rgc;}rgc.t++;if(chk)rgc.c++;if(isA)rgc.a++;
+  }
+  const ds=Object.keys(A.date).sort();A.dateMin=ds[0]||'—';A.dateMax=ds[ds.length-1]||'—';
+}
+/* ---------- Streaming ---------- */
+const CHUNK=8*1024*1024;
+function loadFile(file){
+  readParamsFrom('p');FILT={from:'',to:''};GF={zone:[],region:[],area:[],district:[],territory:[]};resetBuffer();for(const k in COL)delete COL[k];
+  $('#prog').style.display='block';$('#phaseText').style.display='block';
+  const bar=$('#prog i');
+  $('#phaseText').textContent='① Membaca & mem-parsing '+file.name+' ('+(file.size/1048576).toFixed(1)+' MB)...';
+  let offset=0,leftover='',headerDone=false;const reader=new FileReader();
+  reader.onload=e=>{
+    let text=leftover+e.target.result;
+    if(!headerDone){const nl=text.indexOf('\n');parseLine(text.slice(0,nl).replace(/\r$/,'')).forEach((h,i)=>{COL[h.trim().toUpperCase()]=i;});text=text.slice(nl+1);headerDone=true;}
+    let start=0;while(true){const nl=text.indexOf('\n',start);if(nl<0){leftover=text.slice(start);break;}
+      let line=text.slice(start,nl);start=nl+1;if(line.endsWith('\r'))line=line.slice(0,-1);if(line)ingest(parseLine(line));}
+    offset+=CHUNK;bar.style.width=Math.min(96,offset/file.size*100).toFixed(1)+'%';
+    if(offset<file.size)setTimeout(readNext,0);
+    else{if(leftover.trim())ingest(parseLine(leftover.replace(/\r$/,'')));postProcess();}
+  };
+  reader.onerror=()=>alert('Gagal membaca file.');
+  function readNext(){reader.readAsText(file.slice(offset,offset+CHUNK));}
+  readNext();
+}
+function postProcess(){
+  const bar=$('#prog i');
+  $('#phaseText').textContent='② Menghitung Rapid Same Location (grid spasial per territory + tanggal)...';bar.style.width='97%';
+  setTimeout(()=>{computeRapid();$('#phaseText').textContent='③ Menghitung flag & merangkum insight...';bar.style.width='99%';
+    setTimeout(()=>{aggregate();bar.style.width='100%';syncDashParams();finish();},30);},30);
+}
+/* ---------- Render ---------- */
+function riskClass(r){return r>=60?'p-high':r>=40?'p-mid':r>=20?'p-low':'p-norm';}
+function riskLabel(r){return r>=60?'Kritis':r>=40?'Tinggi':r>=20?'Waspada':'Sehat';}
+function barColor(r){return r>=60?'#ef4d6b':r>=40?'#fb8c3f':r>=20?'#f5a623':'#22c55e';}
+let charts={};
+function destroy(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+function chH(boxId,h){const b=$('#'+boxId);if(b)b.style.height=h+'px';}
+function finish(){
+  loaded=true;
+  $('#landing').style.display='none';$('#dash').style.display='block';
+  $('#reloadBtn').style.display='inline-flex';$('#datefilter').style.display='flex';
+  ['msZone','msRegion','msArea','msDistrict','msTerritory'].forEach(id=>$('#'+id).classList.add('show'));
+  $('#dateFrom').min=B.gMin;$('#dateFrom').max=B.gMax;$('#dateFrom').value=B.gMin;
+  $('#dateTo').min=B.gMin;$('#dateTo').max=B.gMax;$('#dateTo').value=B.gMax;
+  captureGeoAll();buildAllMS();
+  buildWeekOptions();refreshTerrData();
+  renderMethod();renderAll();
+  initMap();buildMapFilters();
+  makeSearchable('mDistrict','Cari district...');makeSearchable('mTerr','Cari territory...');
+  combos.mDistrict.refresh();combos.mTerr.refresh();
+  renderTerr();renderMap();
+  computeGeoRec();renderGeoRec();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function captureGeoAll(){
+  GEOALL={zones:[],z2r:{},zr2a:{},districts:[],d2t:{}};
+  Object.keys(A.zone).forEach(z=>GEOALL.zones.push(z));
+  Object.keys(A.region).forEach(k=>{const p=k.split('||');(GEOALL.z2r[p[0]]=GEOALL.z2r[p[0]]||new Set()).add(p[1]);});
+  Object.keys(A.area).forEach(k=>{const p=k.split('||');const kk=p[0]+'||'+p[1];(GEOALL.zr2a[kk]=GEOALL.zr2a[kk]||new Set()).add(p[2]);});
+  GEOALL.zones.sort();
+  // district -> territories (from A.terr)
+  const dset=new Set();
+  Object.values(A.terr).forEach(t=>{dset.add(t.district);(GEOALL.d2t[t.district]=GEOALL.d2t[t.district]||new Set()).add(t.terr);});
+  GEOALL.districts=[...dset].sort();
+}
+/* ---------- Multi-select geo (req2) ---------- */
+function msLabel(id,arr,noun){const b=$('#'+id+'Btn');b.innerHTML=noun+': <b>'+(arr.length?(arr.length+' dipilih'):'Semua')+'</b> ▾';}
+function fillMS(id,options,selected,onToggle){
+  const panel=$('#'+id+'Panel');
+  const head='<div class="mshead"><a data-act="all">Pilih semua</a><a data-act="none">Kosongkan</a></div>';
+  panel.innerHTML=head+options.map(o=>`<label class="msrow"><input type="checkbox" value="${o}" ${selected.includes(o)?'checked':''}>${o}</label>`).join('')
+    +(options.length?'':'<div style="padding:8px;color:var(--muted);font-size:12px">Tidak ada opsi</div>');
+  panel.querySelectorAll('input[type=checkbox]').forEach(cb=>cb.addEventListener('change',()=>{
+    const vals=[...panel.querySelectorAll('input:checked')].map(x=>x.value);onToggle(vals);
+  }));
+  panel.querySelectorAll('.mshead a').forEach(a=>a.addEventListener('click',()=>{
+    const vals=a.dataset.act==='all'?options.slice():[];onToggle(vals);
+  }));
+}
+function availRegions(){
+  if(GF.zone.length){const s=new Set();GF.zone.forEach(z=>(GEOALL.z2r[z]||new Set()).forEach(r=>s.add(r)));return [...s].sort();}
+  const s=new Set();Object.values(GEOALL.z2r).forEach(set=>set.forEach(r=>s.add(r)));return [...s].sort();
+}
+function availAreas(){
+  const s=new Set();
+  Object.entries(GEOALL.zr2a).forEach(([k,set])=>{const p=k.split('||');
+    const zOk=!GF.zone.length||GF.zone.includes(p[0]);
+    const rOk=!GF.region.length||GF.region.includes(p[1]);
+    if(zOk&&rOk)set.forEach(a=>s.add(a));});
+  return [...s].sort();
+}
+function availTerritories(){
+  if(GF.district.length){const s=new Set();GF.district.forEach(d=>(GEOALL.d2t[d]||new Set()).forEach(t=>s.add(t)));return [...s].sort();}
+  const s=new Set();Object.values(GEOALL.d2t).forEach(set=>set.forEach(t=>s.add(t)));return [...s].sort();
+}
+function buildAllMS(){
+  fillMS('msZone',GEOALL.zones,GF.zone,vals=>{GF.zone=vals;
+    GF.region=GF.region.filter(r=>availRegions().includes(r));
+    GF.area=GF.area.filter(a=>availAreas().includes(a));
+    buildAllMS();recomputeAll();});
+  fillMS('msRegion',availRegions(),GF.region,vals=>{GF.region=vals;
+    GF.area=GF.area.filter(a=>availAreas().includes(a));
+    fillMS('msArea',availAreas(),GF.area,onArea);msLabel('msRegion',GF.region,'Region');msLabel('msArea',GF.area,'Area');recomputeAll();});
+  fillMS('msArea',availAreas(),GF.area,onArea);
+  fillMS('msDistrict',GEOALL.districts,GF.district,vals=>{GF.district=vals;
+    GF.territory=GF.territory.filter(t=>availTerritories().includes(t));
+    fillMS('msTerritory',availTerritories(),GF.territory,onTerritory);msLabel('msDistrict',GF.district,'District');msLabel('msTerritory',GF.territory,'Territory');recomputeAll();});
+  fillMS('msTerritory',availTerritories(),GF.territory,onTerritory);
+  msLabel('msZone',GF.zone,'Zone');msLabel('msRegion',GF.region,'Region');msLabel('msArea',GF.area,'Area');
+  msLabel('msDistrict',GF.district,'District');msLabel('msTerritory',GF.territory,'Territory');
+}
+function onArea(vals){GF.area=vals;msLabel('msArea',GF.area,'Area');recomputeAll();}
+function onTerritory(vals){GF.territory=vals;msLabel('msTerritory',GF.territory,'Territory');recomputeAll();}
+function renderAll(){renderKPIs();renderNarrative();renderCharts();renderGeo();$('#tfInline').textContent='· Periode: '+A.dateMin+' → '+A.dateMax;}
+function kpi(icoCls,ico,lbl,val,foot,footCls){return `<div class="kpi"><div class="top"><div class="ico ${icoCls}">${ico}</div></div><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="foot ${footCls||''}">${foot}</div></div>`;}
+function renderKPIs(){
+  const rate=pct(A.anomaly,A.checkable);const cover=pct(A.checkable,A.total);
+  $('#kpis').innerHTML=
+    kpi('','📋','Total Visit',fmt(A.total),fmt(A.cust.size)+' toko unik')+
+    kpi('t','🛰️','Visit Teridentifikasi',fmt(A.checkable),fmt(A.notcheck)+' tak teridentifikasi')+
+    kpi(cover>=80?'g':cover>=50?'y':'r','📡','Cakupan GPS',cover.toFixed(1)+'%','punya long-lat visit & toko')+
+    kpi(rate>=40?'r':rate>=20?'y':'g','⚠️','Visit Anomaly',fmt(A.anomaly),rate.toFixed(1)+'% dari teridentifikasi','up')+
+    kpi('','📍','Location Mismatch',fmt(A.lm),pct(A.lm,A.checkable).toFixed(1)+'% terident.')+
+    kpi('p','⚡','Rapid Same Location',fmt(A.rsl),pct(A.rsl,A.checkable).toFixed(1)+'% terident.')+
+    kpi('y','🌙','Visit After 7PM',fmt(A.a7),pct(A.a7,A.checkable).toFixed(1)+'% terident.');
+}
+function renderNarrative(){
+  const rate=pct(A.anomaly,A.checkable);const cover=pct(A.checkable,A.total);
+  const zones=Object.entries(A.zone).map(([k,v])=>({k,r:pct(v.anomaly,v.checkable),c:pct(v.checkable,v.total),t:v.total})).filter(z=>z.t>=30).sort((a,b)=>b.r-a.r);
+  const worst=zones[0],best=zones[zones.length-1];
+  const lowCover=zones.slice().sort((a,b)=>a.c-b.c)[0];
+  const dom=A.lm>=A.a7&&A.lm>=A.rsl?'Location Mismatch':(A.a7>=A.rsl?'Visit After 7PM':'Rapid Same Location');
+  const DOWID=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+  let peak=-1,peakv=-1;A.dow.forEach((d,i)=>{const rr=pct(d.a,d.c);if(d.c>0&&rr>peakv){peakv=rr;peak=i;}});
+  const parts=[];if(GF.zone.length)parts.push(GF.zone.length+' zone');if(GF.region.length)parts.push(GF.region.length+' region');if(GF.area.length)parts.push(GF.area.length+' area');
+  const scope=parts.length?parts.join(', '):'semua wilayah';
+  // --- Zone paling progressing: cakupan GPS naik & anomaly turun antar KPS week ---
+  const prog=computeZoneProgress();
+  $('#narrative').innerHTML=
+    `<span class="tag">TEMUAN UTAMA</span> Periode <b>${A.dateMin} → ${A.dateMax}</b> · cakupan <b>${scope}</b>. Dari <b>${fmt(A.total)}</b> visit, <b>${cover.toFixed(1)}%</b> punya long-lat sehingga bisa diperiksa. `+
+    `Dari visit teridentifikasi, <b>${rate.toFixed(1)}%</b> terindikasi anomaly. `+
+    (worst?`Zona paling berisiko <b>${worst.k}</b> (${worst.r.toFixed(1)}%), paling sehat <b>${best.k}</b> (${best.r.toFixed(1)}%). `:'')+
+    (peak>=0?`Anomaly cenderung memuncak di hari <b>${DOWID[peak]}</b> (${peakv.toFixed(1)}%). `:'')+
+    (lowCover&&lowCover.c<80?`Perhatikan <b>${lowCover.k}</b> yang cakupan GPS-nya hanya <b>${lowCover.c.toFixed(1)}%</b> — angka anomaly di sana bisa bias. `:'')+
+    (prog?`Secara tren, zona paling <b>progressing</b> adalah <b>${prog.zone}</b>: cakupan GPS ${prog.dCover>=0?'naik':'turun'} <b>${prog.dCover>=0?'+':''}${prog.dCover.toFixed(1)} pts</b> (${prog.coverFirst.toFixed(1)}% → ${prog.coverLast.toFixed(1)}%) dan anomaly ${prog.dAnom<=0?'turun':'naik'} <b>${prog.dAnom<=0?'':'+'}${prog.dAnom.toFixed(1)} pts</b> (${prog.anomFirst.toFixed(1)}% → ${prog.anomLast.toFixed(1)}%) dari ${prog.wkFirst} ke ${prog.wkLast}. `:'')+
+    `Parameter dominan: <b>${dom}</b>.`;
+}
+/* Hitung zone dengan progres terbaik: cakupan GPS bertumbuh + anomaly berkurang antar KPS week */
+function computeZoneProgress(){
+  const weeks=Object.keys(A.wkZone||{}).sort();
+  if(weeks.length<2)return null;
+  const zoneList=Object.keys(A.zone||{});
+  let best=null;
+  zoneList.forEach(zn=>{
+    // seri (week → {cover%, anom%}) hanya untuk week yang punya data cukup
+    const ser=[];
+    weeks.forEach(w=>{const zc=A.wkZone[w][zn];if(zc&&zc.t>=20){ser.push({w,cover:pct(zc.c,zc.t),anom:zc.c?pct(zc.a,zc.c):null});}});
+    if(ser.length<2)return;
+    const f=ser[0],l=ser[ser.length-1];
+    if(f.anom==null||l.anom==null)return;
+    const dCover=l.cover-f.cover;      // + = cakupan bertumbuh
+    const dAnom=l.anom-f.anom;         // - = anomaly berkurang
+    // syarat "progressing": cakupan tidak menurun & anomaly tidak meningkat, minimal salah satu membaik
+    if(dCover< -0.5||dAnom>0.5)return;
+    const score=dCover-dAnom;          // makin besar makin progressing
+    if(!best||score>best.score){best={zone:zn,score,dCover,dAnom,coverFirst:f.cover,coverLast:l.cover,anomFirst:f.anom,anomLast:l.anom,wkFirst:f.w,wkLast:l.w};}
+  });
+  if(best&&best.score<=0.5)return null; // tidak ada yang cukup signifikan
+  return best;
+}
+/* ---------- Export data grafik via klik kanan ---------- */
+const CHART_EXP={};
+function regExp(id,title,filename,header,rows){CHART_EXP[id]={title,filename,header,rows};}
+function chartExpCSV(id){const e=CHART_EXP[id];if(!e)return;downloadCSV(e.filename,e.header,e.rows);}
+function chartExpClipboard(id){
+  const e=CHART_EXP[id];if(!e)return;
+  const txt=[e.header.join('\t')].concat(e.rows.map(r=>r.join('\t'))).join('\n');
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt);
+}
+/* render chart ke canvas baru: background putih + judul, supaya rapi saat di-paste */
+function chartToCanvas(id){
+  const src=document.getElementById(id);if(!src)return null;
+  const e=CHART_EXP[id]||{title:''};
+  const pad=16,head=34,dpr=window.devicePixelRatio||2;
+  const w=src.clientWidth||src.width, h=src.clientHeight||src.height;
+  const out=document.createElement('canvas');
+  out.width=Math.round((w+pad*2)*dpr);out.height=Math.round((h+head+pad*2)*dpr);
+  const ctx=out.getContext('2d');ctx.scale(dpr,dpr);
+  ctx.fillStyle='#ffffff';ctx.fillRect(0,0,w+pad*2,h+head+pad*2);
+  ctx.fillStyle='#17263a';ctx.font='600 15px Segoe UI, system-ui, sans-serif';ctx.textBaseline='top';
+  ctx.fillText(e.title||'',pad,pad);
+  ctx.drawImage(src,pad,pad+head,w,h);
+  return out;
+}
+function chartCopyImage(id){
+  const c=chartToCanvas(id);if(!c)return;
+  if(!(navigator.clipboard&&window.ClipboardItem)){chartDownloadImage(id);return;}
+  c.toBlob(b=>{if(!b)return;
+    navigator.clipboard.write([new ClipboardItem({'image/png':b})]).catch(()=>chartDownloadImage(id));
+  },'image/png');
+}
+function chartDownloadImage(id){
+  const c=chartToCanvas(id);if(!c)return;
+  const e=CHART_EXP[id]||{filename:'chart.csv'};
+  const a=document.createElement('a');a.href=c.toDataURL('image/png');
+  a.download=(e.filename||'chart').replace(/\.csv$/,'')+'.png';a.click();
+}
+function closeCtx(){$('#ctxMenu').classList.remove('open');}
+function openCtx(x,y,id){
+  const e=CHART_EXP[id];const m=$('#ctxMenu');
+  if(!e){closeCtx();return;}
+  m.innerHTML='<div class="ctxhead">'+e.title+' \u00b7 '+fmt(e.rows.length)+' baris</div>'+
+    '<div class="ctxit" data-act="img">\ud83d\uddbc\ufe0f Copy as image</div>'+
+    '<div class="ctxit" data-act="png">\u2b07\ufe0f Download gambar (PNG)</div>'+
+    '<div class="ctxit" data-act="csv">\u2b07\ufe0f Export data grafik (CSV)</div>'+
+    '<div class="ctxit" data-act="clip">\ud83d\udccb Salin data (tempel ke Excel)</div>';
+  m.querySelectorAll('.ctxit').forEach(it=>it.addEventListener('click',()=>{
+    const a=it.dataset.act;
+    if(a==='img')chartCopyImage(id);
+    else if(a==='png')chartDownloadImage(id);
+    else if(a==='csv')chartExpCSV(id);
+    else chartExpClipboard(id);
+    closeCtx();}));
+  m.classList.add('open');
+  const w=m.offsetWidth,h=m.offsetHeight;
+  m.style.left=Math.min(x,window.innerWidth-w-8)+'px';
+  m.style.top=Math.min(y,window.innerHeight-h-8)+'px';
+}
+document.addEventListener('contextmenu',ev=>{
+  const box=ev.target.closest?ev.target.closest('.chartbox[data-exp]'):null;
+  if(!box)return;
+  ev.preventDefault();openCtx(ev.clientX,ev.clientY,box.dataset.exp);
+});
+document.addEventListener('click',closeCtx);
+window.addEventListener('scroll',closeCtx,true);
+window.addEventListener('resize',closeCtx);
+$('#ctxMenu').addEventListener('click',e=>e.stopPropagation());
+Chart.defaults.color='#69788f';Chart.defaults.font.family="'Segoe UI',sans-serif";Chart.defaults.borderColor='rgba(20,40,73,.06)';
+function renderCharts(){
+  const zAll=Object.entries(A.zone).map(([k,v])=>({k,r:pct(v.anomaly,v.checkable),c:pct(v.checkable,v.total),t:v.total,v}));
+  const nZ=Math.max(1,zAll.length);
+  const hBar=Math.max(160,nZ*34+52);
+  chH('boxZone',hBar);chH('boxCover',hBar);chH('boxReason',hBar);
+  const z=zAll.slice().sort((a,b)=>b.r-a.r);
+  destroy('chZone');
+  charts.chZone=new Chart($('#chZone'),{type:'bar',data:{labels:z.map(x=>x.k.replace('Zone ','')),
+    datasets:[{data:z.map(x=>+x.r.toFixed(1)),backgroundColor:z.map(x=>barColor(x.r)),borderRadius:6,barPercentage:.9,categoryPercentage:.82}]},
+    options:{maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x+'% anomaly · '+fmt(z[c.dataIndex].t)+' visit'}}},
+    scales:{x:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(20,40,73,.05)'}},y:{grid:{display:false}}}}});
+  regExp('chZone','Anomaly per Zone','trace_chart_anomaly_per_zone.csv',
+    ['zone_name','total_visit','identified','gps_coverage_pct','anomaly','anomaly_pct_of_identified','location_mismatch','rapid_same_location','after_7pm'],
+    z.map(x=>[x.k,x.t,x.v.checkable,pct(x.v.checkable,x.v.total).toFixed(1),x.v.anomaly,x.r.toFixed(1),x.v.lm,x.v.rsl,x.v.a7]));
+  const zc=zAll.slice().sort((a,b)=>a.c-b.c);
+  destroy('chCover');
+  // dynamic x-axis based on data range (zoom in so differences are visible)
+  const cvVals=zc.map(x=>x.c);
+  const cvMin=cvVals.length?Math.min(...cvVals):0, cvMax=cvVals.length?Math.max(...cvVals):100;
+  const cvXMin=Math.max(0,Math.floor((cvMin-5)/5)*5);
+  const cvXMax=Math.min(100,Math.max(cvXMin+10,Math.ceil((cvMax+2)/5)*5));
+  charts.chCover=new Chart($('#chCover'),{type:'bar',data:{labels:zc.map(x=>x.k.replace('Zone ','')),
+    datasets:[{data:zc.map(x=>+x.c.toFixed(1)),backgroundColor:zc.map(x=>x.c>=80?'#22c55e':x.c>=40?'#f5a623':'#ef4d6b'),borderRadius:6,barPercentage:.9,categoryPercentage:.82}]},
+    options:{maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.parsed.x+'% cakupan GPS · '+fmt(zc[c.dataIndex].t)+' visit'}}},
+    scales:{x:{min:cvXMin,max:cvXMax,ticks:{callback:v=>v+'%'},grid:{color:'rgba(20,40,73,.05)'}},y:{grid:{display:false}}}}});
+  regExp('chCover','Cakupan GPS per Zone','trace_chart_cakupan_gps_per_zone.csv',
+    ['zone_name','total_visit','identified','not_identified','gps_coverage_pct'],
+    zc.map(x=>[x.k,x.t,x.v.checkable,x.t-x.v.checkable,x.c.toFixed(1)]));
+  destroy('chReason');
+  charts.chReason=new Chart($('#chReason'),{type:'doughnut',data:{labels:['Location Mismatch','Visit After 7PM','Rapid Same Location'],
+    datasets:[{data:[A.lm,A.a7,A.rsl],backgroundColor:['#2f6fed','#f5a623','#ef4d6b'],borderWidth:0}]},
+    options:{maintainAspectRatio:false,cutout:'58%',plugins:{legend:{position:'bottom',labels:{padding:10,usePointStyle:true,boxWidth:8}}}}});
+  regExp('chReason','Komposisi Parameter Anomaly','trace_chart_komposisi_parameter.csv',
+    ['parameter','visit_terdampak','pct_of_identified'],
+    [['Location Mismatch',A.lm,pct(A.lm,A.checkable).toFixed(1)],
+     ['Visit After 7PM',A.a7,pct(A.a7,A.checkable).toFixed(1)],
+     ['Rapid Same Location',A.rsl,pct(A.rsl,A.checkable).toFixed(1)]]);
+  const DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const DOWF=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  destroy('chDow');
+  charts.chDow=new Chart($('#chDow'),{type:'bar',data:{labels:DOW,
+    datasets:[{data:A.dow.map(d=>+pct(d.a,d.c).toFixed(1)),backgroundColor:A.dow.map(d=>barColor(pct(d.a,d.c))),borderRadius:6,categoryPercentage:.75}]},
+    options:{maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{title:it=>DOWF[it[0].dataIndex],label:c=>c.parsed.y+'% anomaly · '+fmt(A.dow[c.dataIndex].c)+' terident.'}}},
+    scales:{x:{grid:{display:false}},y:{ticks:{callback:v=>v+'%'},grid:{color:'rgba(20,40,73,.05)'}}}}});
+  regExp('chDow','Tren Anomaly per Hari','trace_chart_tren_anomaly_per_hari.csv',
+    ['day_of_week','total_visit','identified','anomaly','anomaly_pct_of_identified'],
+    A.dow.map((d,i)=>[DOWF[i],d.t,d.c,d.a,pct(d.a,d.c).toFixed(1)]));
+  // Historical per zone (req3: metric toggle)
+  const metric=$('#histMetric').value; // 'anom' | 'cover'
+  const dim=$('#histDim').value;       // 'zone' | 'region'
+  const src=dim==='region'?A.wkRegion:A.wkZone;
+  const weeks=Object.keys(src).sort();
+  // daftar seri + total visit (untuk cap 20 seri terbesar bila dipecah per region)
+  const tot={};weeks.forEach(w=>Object.entries(src[w]).forEach(([k,v])=>{tot[k]=(tot[k]||0)+v.t;}));
+  let keys=Object.keys(tot).sort();
+  const nAll=keys.length;
+  if(nAll>HIST_MAX_SERIES)keys=keys.slice().sort((a,b)=>tot[b]-tot[a]).slice(0,HIST_MAX_SERIES).sort();
+  $('#histCap').textContent=(metric==='cover'?'% cakupan GPS':'% anomaly')+' per KPS week, per '+(dim==='region'?'region':'zone')
+    +(nAll>keys.length?' · menampilkan '+keys.length+' '+(dim==='region'?'region':'zone')+' terbesar dari '+nAll:'');
+  const dsHist=keys.map((kn,idx)=>({
+    label:kn.replace('Zone ',''),
+    data:weeks.map(w=>{const zc2=src[w][kn];if(!zc2)return null;
+      return metric==='cover'?(zc2.t?+pct(zc2.c,zc2.t).toFixed(1):null):(zc2.c?+pct(zc2.a,zc2.c).toFixed(1):null);}),
+    borderColor:HPAL[idx%HPAL.length],backgroundColor:HPAL[idx%HPAL.length],
+    borderDash:HDASH[idx%HDASH.length],
+    tension:.3,pointRadius:keys.length>10?2:3,pointHoverRadius:5,borderWidth:2,spanGaps:true,fill:false
+  }));
+  destroy('chHist');
+  // tinggi chart menyesuaikan jumlah item legend (bisa sampai 20 seri)
+  chH('boxHist',keys.length>14?330:keys.length>8?290:250);
+  // dynamic y-axis based on data range
+  let hMax=0;dsHist.forEach(d=>d.data.forEach(v=>{if(v!=null&&v>hMax)hMax=v;}));
+  const hYMax=hMax<=0?100:Math.min(100,Math.ceil((hMax+2)/5)*5);
+  charts.chHist=new Chart($('#chHist'),{type:'line',data:{labels:weeks,datasets:dsHist},
+    options:{maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:keys.length>10?6:10,usePointStyle:true,boxWidth:8,font:{size:keys.length>10?10:11}}},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': '+(c.parsed.y==null?'—':c.parsed.y+'%')}}},
+    scales:{x:{grid:{display:false},title:{display:true,text:'KPS Week'}},y:{min:0,max:hYMax,ticks:{callback:v=>v+'%'},grid:{color:'rgba(20,40,73,.05)'}}}}});
+  // export historical: long format, SELURUH seri (tidak dibatasi 20 yang tampil di grafik)
+  const histRows=[];
+  Object.keys(tot).sort().forEach(kn=>{weeks.forEach(w=>{const o=src[w][kn];if(!o)return;
+    histRows.push([w,(dim==='region'?'region_name':'zone_name'),kn,o.t,o.c,o.a,pct(o.c,o.t).toFixed(1),o.c?pct(o.a,o.c).toFixed(1):'']);});});
+  regExp('chHist','Historical Data','trace_chart_historical_'+dim+'.csv',
+    ['kps_week','dimension','name','total_visit','identified','anomaly','gps_coverage_pct','anomaly_pct_of_identified'],histRows);
+}
+/* ---------- Geo table ---------- */
+let geoSort={k:'rate',dir:-1};
+function decorate(v){return {...v,rate:pct(v.anomaly,v.checkable),cover:pct(v.checkable,v.total)};}
+function markSort(tableId,sortObj){$$('#'+tableId+' th[data-k]').forEach(th=>{const on=th.dataset.k===sortObj.k;th.classList.toggle('sorted',on);let s=th.querySelector('.sar');if(!s){s=document.createElement('span');s.className='sar';th.appendChild(s);}s.textContent=on?(sortObj.dir<0?'▼':'▲'):'';});}
+function renderGeo(){
+  const q=($('#geoSearch').value||'').toLowerCase();const tb=$('#geoTable tbody');tb.innerHTML='';
+  markSort('geoTable',geoSort);
+  const cmp=(a,b)=>{const k=geoSort.k;let x=a[k],y=b[k];if(typeof x==='string'){x=x.toLowerCase();y=y.toLowerCase();return x<y?-geoSort.dir:x>y?geoSort.dir:0;}return (x-y)*geoSort.dir;};
+  let zones=Object.entries(A.zone).map(([k,v])=>({name:k,...decorate(v)})).sort(cmp);
+  zones.forEach((z,zi)=>{
+    if(q&&!z.name.toLowerCase().includes(q)&&!hasChildMatch(z.name,q))return;
+    tb.appendChild(rowEl(z,'parent',null,'z'+zi));
+    let regs=Object.entries(A.region).filter(([k])=>k.startsWith(z.name+'||')).map(([k,v])=>({name:k.split('||')[1],key:k,...decorate(v)})).sort(cmp);
+    regs.forEach((rg,ri)=>{
+      tb.appendChild(rowEl(rg,'child','z'+zi,'r'+zi+'_'+ri));
+      let ars=Object.entries(A.area).filter(([k])=>k.startsWith(rg.key+'||')).map(([k,v])=>({name:k.split('||')[2],...decorate(v)})).sort(cmp);
+      ars.forEach(ar=>tb.appendChild(rowEl(ar,'child2','r'+zi+'_'+ri,null)));
+    });
+  });
+}
+function hasChildMatch(zone,q){return Object.keys(A.region).some(k=>k.startsWith(zone+'||')&&k.toLowerCase().includes(q))||Object.keys(A.area).some(k=>k.startsWith(zone+'||')&&k.toLowerCase().includes(q));}
+function rowEl(o,cls,parentId,myId){
+  const tr=document.createElement('tr');tr.className=cls;
+  if(myId)tr.dataset.id=myId;if(parentId&&cls!=='parent')tr.dataset.parent=parentId;
+  if(cls==='parent'||cls==='child')tr.dataset.group=myId;
+  const chev=(cls==='parent'||cls==='child')?'<span class="chev">▶</span> ':'';
+  const cvColor=o.cover>=80?'#22c55e':o.cover>=40?'#f5a623':'#ef4d6b';
+  tr.innerHTML=`<td>${chev}${o.name}</td><td class="num">${fmt(o.total)}</td>
+    <td class="num"><div class="bar" style="display:inline-block;vertical-align:middle;width:56px"><i style="width:${Math.min(100,o.cover)}%;background:${cvColor}"></i></div> ${o.cover.toFixed(0)}%</td>
+    <td class="num">${fmt(o.checkable)}</td><td class="num">${fmt(o.anomaly)}</td>
+    <td class="num"><div class="bar" style="display:inline-block;vertical-align:middle;width:60px"><i style="width:${Math.min(100,o.rate)}%;background:${barColor(o.rate)}"></i></div> ${o.rate.toFixed(1)}%</td>
+    <td class="num">${fmt(o.lm)}</td><td class="num">${fmt(o.a7)}</td><td class="num">${fmt(o.rsl)}</td>
+    <td><span class="pill ${riskClass(o.rate)}">${riskLabel(o.rate)}</span></td>`;
+  if(cls==='parent'||cls==='child'){tr.classList.add('parent');tr.addEventListener('click',()=>toggle(myId,tr));}
+  return tr;
+}
+function toggle(id,tr){
+  const open=tr.classList.toggle('open');const chev=tr.querySelector('.chev');if(chev)chev.classList.toggle('open',open);
+  $$('#geoTable tbody tr').forEach(r=>{if(r.dataset.parent===id){r.style.display=open?'table-row':'none';
+    if(!open&&r.classList.contains('open')){r.classList.remove('open');const c=r.querySelector('.chev');if(c)c.classList.remove('open');
+      $$('#geoTable tbody tr').forEach(rr=>{if(rr.dataset.parent===r.dataset.group)rr.style.display='none';});}}});
+}
+/* ---------- Method ---------- */
+function renderMethod(){
+  const hh=String(Math.floor(P.nightMin/60)).padStart(2,'0')+':'+String(P.nightMin%60).padStart(2,'0');
+  $('#methodCards').innerHTML=
+   `<div class="m"><div class="ic">📍</div><h4>Location Mismatch <span class="badge-th">&gt; ${P.mismatchM} m</span></h4><p>Titik GPS saat visit terlalu jauh dari lokasi toko terdaftar. Indikasi visit tidak dilakukan tepat di toko.</p></div>
+    <div class="m"><div class="ic">⚡</div><h4>Rapid Same Location <span class="badge-th">&gt; ${P.rapidCount} toko / ${P.rapidM} m</span></h4><p>Banyak toko "dikunjungi" dari satu titik berdekatan dalam sehari & territory yang sama. Indikasi visit massal dari satu tempat.</p></div>
+    <div class="m"><div class="ic">🌙</div><h4>Visit After 7 PM <span class="badge-th">${hh} – 23:59</span></h4><p>Waktu mulai kunjungan di luar jam wajar (antara ${hh} hingga tengah malam). Perlu diverifikasi keabsahannya.</p></div>`;
+  $('#methodFoot').innerHTML='';
+}
+/* ---------- Territory table (single week + header sort req4) ---------- */
+function buildWeekOptions(){
+  const prev=$('#mWeek').value;
+  const ws=[];for(let k=0;k<B.iWeek.size;k++){const v=B.iWeek.val(k);if(v&&v!=='(?)')ws.push(v);}
+  ws.sort();
+  $('#mWeek').innerHTML=ws.map(w=>`<option>${w}</option>`).join('');
+  if(ws.length)$('#mWeek').value=ws.includes(prev)?prev:ws[ws.length-1];
+}
+function refreshTerrData(){
+  const wk=$('#mWeek').value;const wkId=wk?B.iWeek.id(wk):-1;
+  const ids=geoIds();
+  const df=$('#mDistrict').value,tf=$('#mTerr').value;
+  const dfId=df?B.iDist.id(df):-1, tfId=tf?B.iTerr.id(tf):-1;
+  const m=new Map();
+  for(let i=0;i<B.n;i++){
+    if(!A.dateOK[B.date[i]])continue;
+    if(!passGeo(i,ids))continue;
+    if(wkId>=0&&B.week[i]!==wkId)continue;
+    if(dfId>=0&&B.district[i]!==dfId)continue;
+    if(tfId>=0&&B.terr[i]!==tfId)continue;
+    const tid=B.terr[i];let t=m.get(tid);
+    if(!t){t={terr:B.iTerr.val(tid),district:B.iDist.val(B.district[i]),zone:B.iZone.val(B.zone[i]),total:0,gps:0,anomaly:0,lm:0,rsl:0,a7:0};m.set(tid,t);}
+    t.total++;if(B.chk[i])t.gps++;if(B.anA[i])t.anomaly++;t.lm+=B.lmA[i];t.rsl+=B.rslA[i];t.a7+=B.a7A[i];
+  }
+  A.terrData=[...m.values()];
+}
+let terrSort={k:'cover',dir:-1};   // default cover descending
+function terrList(){
+  let arr=(A.terrData||[]).map(t=>({...t,cover:pct(t.gps,t.total),rate:pct(t.anomaly,t.gps),visit:t.total}));
+  arr.sort((a,b)=>{const k=terrSort.k;let x=a[k],y=b[k];if(typeof x==='string'){x=(x||'').toLowerCase();y=(y||'').toLowerCase();return x<y?-terrSort.dir:x>y?terrSort.dir:0;}return (x-y)*terrSort.dir;});
+  return arr;
+}
+function renderTerr(){
+  markSort('tTable',terrSort);
+  const arr=terrList();const tb=$('#tTable tbody');tb.innerHTML='';
+  arr.slice(0,400).forEach(t=>{
+    const cv=t.cover, cvColor=cv>=80?'#22c55e':cv>=50?'#f5a623':'#ef4d6b';
+    const tr=document.createElement('tr');tr.className='trow';tr.style.cursor='pointer';tr.dataset.terr=t.terr;
+    tr.innerHTML=`<td><b>${t.terr}</b><div style="color:var(--muted);font-size:11px">${t.district} · ${(t.zone||'').replace('Zone ','')}</div></td>
+      <td class="num">${fmt(t.total)}</td><td class="num">${fmt(t.gps)}</td>
+      <td class="num"><div class="covcell"><div class="bar"><i style="width:${Math.min(100,cv)}%;background:${cvColor}"></i></div><span class="covpct">${cv.toFixed(0)}%</span></div></td>
+      <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td><td class="num">${fmt(t.a7)}</td>
+      <td class="num">${t.gps?t.rate.toFixed(0)+'%':'—'}</td>`;
+    tr.addEventListener('click',()=>{
+      $('#mDistrict').value=t.district;if(combos.mDistrict)combos.mDistrict.refresh();buildTerrOptions();$('#mTerr').value=t.terr;if(combos.mTerr)combos.mTerr.refresh();
+      $$('#tTable .trow').forEach(x=>x.classList.remove('active'));tr.classList.add('active');
+      renderMap(true);computeGeoRec();renderGeoRec();
+    });
+    tb.appendChild(tr);
+  });
+  if(!arr.length)tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">Tidak ada territory sesuai pencarian.</td></tr>';
+  const wk=$('#mWeek').value;
+  $('#tFoot').textContent='Menampilkan '+Math.min(400,arr.length)+' dari '+fmt(arr.length)+' territory · KPS Week '+wk+'. Klik header untuk sortir. LM/RL/7PM = jumlah visit terdampak.';
+}
+/* ---------- Geotag Recommendation (customer-level mode of visit long-lat) ---------- */
+function computeGeoRec(){
+  const ids=geoIds();
+  const df=$('#mDistrict').value,tf=$('#mTerr').value;
+  const dfId=df?B.iDist.id(df):-1, tfId=tf?B.iTerr.id(tf):-1;
+  const map=new Map(); // custId -> aggregate
+  for(let i=0;i<B.n;i++){
+    if(!A.dateOK[B.date[i]])continue;
+    if(!passGeo(i,ids))continue;
+    if(dfId>=0&&B.district[i]!==dfId)continue;
+    if(tfId>=0&&B.terr[i]!==tfId)continue;
+    const cid=B.cust[i];
+    let o=map.get(cid);
+    if(!o){o={cid,name:B.iCust.val(cid),terr:B.iTerr.val(B.terr[i]),district:B.iDist.val(B.district[i]),zone:B.iZone.val(B.zone[i]),
+      total:0,latC:NaN,lonC:NaN,pts:new Map()};map.set(cid,o);}
+    o.total++;
+    // existing customer coords (ambil yang valid pertama)
+    if(isNaN(o.latC)&&!isNaN(B.latC[i])&&B.latC[i]!==0&&!isNaN(B.lonC[i])&&B.lonC[i]!==0){o.latC=B.latC[i];o.lonC=B.lonC[i];}
+    // visit coords → bulatkan 4 desimal untuk hitung modus (lebih akurat)
+    const lv=B.latV[i],ov=B.lonV[i];
+    if(!isNaN(lv)&&!isNaN(ov)&&lv!==0&&ov!==0){
+      const key=lv.toFixed(4)+','+ov.toFixed(4);
+      o.pts.set(key,(o.pts.get(key)||0)+1);
+    }
+  }
+  const arr=[];
+  for(const o of map.values()){
+    let bestKey=null,bestCount=0;
+    for(const [k,c] of o.pts){if(c>bestCount){bestCount=c;bestKey=k;}}
+    let recLat=NaN,recLon=NaN;
+    if(bestKey){const p=bestKey.split(',');recLat=+p[0];recLon=+p[1];}
+    // >=2 usable (rekomendasi tersedia); <=1 need more data
+    const conf=bestCount>=2?'ok':'need';
+    let d=NaN;
+    if(!isNaN(o.latC)&&!isNaN(recLat))d=haversine(o.latC,o.lonC,recLat,recLon);
+    // status: sesuai (<=100m) / perlu update (>100m) / butuh data (rekomendasi tak tersedia)
+    let status;
+    if(conf==='need'){status='need';}
+    else if(!isNaN(d)&&d<=100){status='ok';}
+    else{status='update';}
+    arr.push({cid:o.cid,name:o.name,terr:o.terr,district:o.district,zone:o.zone,total:o.total,
+      latC:o.latC,lonC:o.lonC,recLat,recLon,modeCount:bestCount,distinct:o.pts.size,conf,status,dist:d});
+  }
+  A.geoRec=arr;
+}
+const GR_META={ok:{label:'Rekomendasi tersedia',cls:'p-norm',note:'Modus ≥ 2 titik — kredibel'},
+  need:{label:'Butuh data lebih',cls:'p-high',note:'Modus ≤ 1 titik — need more data'}};
+const GR_STATUS={ok:{label:'Long lat sudah sesuai',cls:'p-norm'},
+  update:{label:'Perlu update long lat',cls:'p-mid'},
+  need:{label:'Butuh data lebih',cls:'p-high'}};
+let grSort={k:'dist',dir:-1};
+function grList(){
+  let arr=(A.geoRec||[]).slice();
+  const f=$('#grFilter').value;
+  if(f!=='all')arr=arr.filter(x=>x.status===f);
+  const q=($('#grSearch').value||'').toLowerCase();
+  if(q)arr=arr.filter(x=>(x.name||'').toLowerCase().includes(q)||(x.terr||'').toLowerCase().includes(q)||(x.district||'').toLowerCase().includes(q));
+  const rank={ok:0,need:1};
+  const srank={ok:0,update:1,need:2};
+  arr.sort((a,b)=>{const k=grSort.k;
+    if(k==='conf'){return (rank[a.conf]-rank[b.conf])*grSort.dir;}
+    if(k==='status'){return (srank[a.status]-srank[b.status])*grSort.dir;}
+    let x=a[k],y=b[k];
+    if(k==='existing'){x=isNaN(a.latC)?-1:1;y=isNaN(b.latC)?-1:1;}
+    if(k==='rec'){x=isNaN(a.recLat)?-1:1;y=isNaN(b.recLat)?-1:1;}
+    if(typeof x==='string'){x=(x||'').toLowerCase();y=(y||'').toLowerCase();return x<y?-grSort.dir:x>y?grSort.dir:0;}
+    if(x==null||isNaN(x))x=-1;if(y==null||isNaN(y))y=-1;
+    return (x-y)*grSort.dir;});
+  return arr;
+}
+function renderGeoRec(){
+  const arr=A.geoRec||[];
+  const nOK=arr.filter(x=>x.conf==='ok').length;
+  const nNeed=arr.filter(x=>x.conf==='need').length;
+  const nSesuai=arr.filter(x=>x.status==='ok').length;
+  const moved=arr.filter(x=>x.status==='update').length;
+  $('#grKpis').innerHTML=
+    kpi('','🏬','Total Customer',fmt(arr.length),'dari data ter-filter')+
+    kpi('g','✅','Rekomendasi Tersedia',fmt(nOK),'modus ≥ 2 titik')+
+    kpi('r','⛔','Butuh Data Lebih',fmt(nNeed),'modus ≤ 1 titik')+
+    kpi('t','📌','Long Lat Sudah Sesuai',fmt(nSesuai),'≤ 100 m dari existing')+
+    kpi('p','📍','Perlu Update Long Lat',fmt(moved),'> 100 m dari existing');
+  markSort('grTable',grSort);
+  const list=grList();const tb=$('#grTable tbody');tb.innerHTML='';
+  const rows=list.slice(0,600);
+  rows.forEach(x=>{
+    const m=GR_META[x.conf];
+    const st=GR_STATUS[x.status];
+    let exist;
+    if(isNaN(x.latC)){exist='<span style="color:var(--muted)">—</span>';}
+    else{const svE=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${x.latC},${x.lonC}`;
+      exist=`${x.latC.toFixed(5)}, ${x.lonC.toFixed(5)} <a href="${svE}" target="_blank" rel="noopener" title="Street View titik existing" style="text-decoration:none">👁️</a>`;}
+    let rec;
+    if(x.conf==='need'||isNaN(x.recLat)){rec='<span style="color:var(--muted)">need more data</span>';}
+    else{const sv=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${x.recLat},${x.recLon}`;
+      rec=`${x.recLat.toFixed(4)}, ${x.recLon.toFixed(4)} <a href="${sv}" target="_blank" rel="noopener" title="Street View titik rekomendasi" style="text-decoration:none">👁️</a>`;}
+    const dcell=(x.conf==='need'||isNaN(x.recLat)||isNaN(x.dist))?'—':fmt(Math.round(x.dist))+' m';
+    const tr=document.createElement('tr');
+    tr.className='grrow';
+    tr.addEventListener('click',()=>{
+      $$('#grTable .grrow').forEach(r=>r.classList.remove('active'));
+      tr.classList.add('active');
+      showGeoRecMap(x);
+    });
+    tr.innerHTML=`<td><b>${x.name}</b></td>
+      <td>${x.terr}<div style="color:var(--muted);font-size:11px">${x.district} · ${(x.zone||'').replace('Zone ','')}</div></td>
+      <td class="num">${fmt(x.total)}</td>
+      <td>${exist}</td>
+      <td>${rec}</td>
+      <td class="num">${x.modeCount||0}</td>
+      <td class="num">${x.distinct}</td>
+      <td class="num">${dcell}</td>
+      <td><span class="pill ${st.cls}">${st.label}</span></td>
+      <td><span class="pill ${m.cls}">${m.label}</span><div style="color:var(--muted);font-size:11px;margin-top:2px">${m.note}</div></td>`;
+    tb.appendChild(tr);
+  });
+  if(!list.length)tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">Tidak ada customer sesuai filter.</td></tr>';
+  $('#grFoot').textContent='Menampilkan '+Math.min(600,list.length)+' dari '+fmt(list.length)+' customer. Klik header untuk sortir · gunakan Export untuk seluruh data. Long-lat rekomendasi = modus titik visit (dibulatkan 4 desimal).';
+}
+function exportGeoRec(){
+  const rows=(A.geoRec||[]).map(x=>[x.name,x.terr,x.district,x.zone,x.total,
+    isNaN(x.latC)?'':x.latC.toFixed(6),isNaN(x.lonC)?'':x.lonC.toFixed(6),
+    isNaN(x.recLat)?'':x.recLat.toFixed(4),isNaN(x.recLon)?'':x.recLon.toFixed(4),
+    x.modeCount||0,x.distinct,(x.conf==='need'||isNaN(x.recLat)||isNaN(x.dist))?'':x.dist.toFixed(0),
+    GR_STATUS[x.status].label,x.conf,GR_META[x.conf].note]);
+  downloadCSV('trace_geotag_recommendation.csv',
+    ['customer_code','territory','district','zone','total_visit','lat_existing','lon_existing','lat_recommended','lon_recommended','mode_count','distinct_points','shift_distance_m','status','confidence','note'],rows);
+}
+/* ---------- Searchable combobox (wraps a native select) ---------- */
+const combos={};
+function makeSearchable(selId,placeholder){
+  const sel=$('#'+selId);
+  if(combos[selId])return combos[selId];
+  sel.style.display='none';
+  const wrap=document.createElement('div');wrap.className='scombo';
+  const input=document.createElement('input');input.type='text';input.className='scombo-input';input.placeholder=placeholder||'Cari...';
+  const panel=document.createElement('div');panel.className='scombo-panel';
+  wrap.appendChild(input);wrap.appendChild(panel);
+  sel.parentNode.insertBefore(wrap,sel.nextSibling);
+  function currentText(){const o=sel.options[sel.selectedIndex];return o?o.textContent:'';}
+  function renderPanel(filter){
+    const f=(filter||'').toLowerCase();panel.innerHTML='';
+    [...sel.options].forEach(o=>{
+      if(f&&!o.textContent.toLowerCase().includes(f))return;
+      const it=document.createElement('div');it.className='scombo-item';it.textContent=o.textContent;
+      if(o.value===sel.value)it.classList.add('sel');
+      it.addEventListener('mousedown',e=>{e.preventDefault();sel.value=o.value;input.value=o.textContent;panel.classList.remove('open');sel.dispatchEvent(new Event('change'));});
+      panel.appendChild(it);
+    });
+    if(!panel.children.length)panel.innerHTML='<div class="scombo-empty">Tidak ada opsi</div>';
+  }
+  input.addEventListener('focus',()=>{input.value='';renderPanel('');panel.classList.add('open');});
+  input.addEventListener('input',()=>{renderPanel(input.value);panel.classList.add('open');});
+  input.addEventListener('blur',()=>setTimeout(()=>{panel.classList.remove('open');input.value=currentText();},130));
+  const api={refresh(){input.value=currentText();}};
+  combos[selId]=api;api.refresh();return api;
+}
+/* ---------- MAP ---------- */
+let map,cluster,lineLayer,outletLayer,highlightLayer;
+let iconAnom,iconNorm;
+const CLUSTER_MAX=80000;
+function initMap(){
+  if(map)return;
+  map=L.map('map',{preferCanvas:true}).setView([-2.5,118],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  cluster=L.markerClusterGroup({chunkedLoading:true,disableClusteringAtZoom:16,maxClusterRadius:50,spiderfyOnMaxZoom:true});
+  map.addLayer(cluster);
+  lineLayer=L.layerGroup().addTo(map);outletLayer=L.layerGroup().addTo(map);highlightLayer=L.layerGroup().addTo(map);
+  map.on('click',()=>highlightLayer.clearLayers());
+  const dot=c=>L.divIcon({className:'',iconSize:[12,12],iconAnchor:[6,6],html:'<div style="width:12px;height:12px;border-radius:50%;background:'+c+';border:1.5px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.4)"></div>'});
+  iconAnom=dot('#ef4d6b');iconNorm=dot('#22c55e');
+}
+function buildMapFilters(){
+  const dset=new Set();Object.values(A.terr).forEach(t=>dset.add(t.district));
+  const ds=[...dset].sort();
+  $('#mDistrict').innerHTML='<option value="">Semua District</option>'+ds.map(d=>`<option>${d}</option>`).join('');
+  if(combos.mDistrict)combos.mDistrict.refresh();
+  buildTerrOptions();
+}
+function buildTerrOptions(){
+  const df=$('#mDistrict').value;
+  let arr=Object.values(A.terr);
+  if(df)arr=arr.filter(t=>t.district===df);
+  arr.sort((a,b)=>a.terr<b.terr?-1:1);
+  $('#mTerr').innerHTML='<option value="">Semua Territory</option>'+arr.map(t=>`<option>${t.terr}</option>`).join('');
+  if(combos.mTerr)combos.mTerr.refresh();
+}
+function renderMap(fit){
+  if(!map)return;
+  cluster.clearLayers();lineLayer.clearLayers();outletLayer.clearLayers();highlightLayer.clearLayers();
+  const df=$('#mDistrict').value,tf=$('#mTerr').value,mode=$('#mMode').value,drawLine=$('#mLine').checked,wk=$('#mWeek').value;
+  const dfId=df?B.iDist.id(df):-1, tfId=tf?B.iTerr.id(tf):-1, wkId=wk?B.iWeek.id(wk):-1;
+  const ids=geoIds();
+  const match=[];
+  for(let i=0;i<B.n;i++){
+    if(!B.chk[i])continue;
+    if(!A.dateOK[B.date[i]])continue;
+    if(!passGeo(i,ids))continue;
+    if(dfId>=0&&B.district[i]!==dfId)continue;
+    if(tfId>=0&&B.terr[i]!==tfId)continue;
+    if(wkId>=0&&B.week[i]!==wkId)continue;
+    const an=B.anA[i];
+    if(mode==='anom'&&!an)continue;
+    if(mode==='normal'&&an)continue;
+    if(mode==='lm'&&!B.lmA[i])continue;
+    if(mode==='rsl'&&!B.rslA[i])continue;
+    if(mode==='a7'&&!B.a7A[i])continue;
+    match.push(i);
+  }
+  if(match.length>CLUSTER_MAX && tfId<0){
+    $('#mapStat').className='mapstat warn';
+    $('#mapStat').innerHTML=`⚠️ <b>${fmt(match.length)}</b> titik cocok filter — terlalu banyak untuk ditampilkan sekaligus. Pilih <b>District</b> / <b>Territory</b> (atau klik baris territory) untuk menampilkan titiknya.`;
+    return;
+  }
+  const markers=[];const bounds=[];let anom=0;
+  for(const i of match){
+    const an=B.anA[i],lat=B.latV[i],lon=B.lonV[i];if(an)anom++;
+    const mk=L.marker([lat,lon],{icon:an?iconAnom:iconNorm});
+    mk.bindPopup(popupHtml(i));
+    mk.on('click',()=>highlightStore(i));
+    markers.push(mk);bounds.push([lat,lon]);
+    if(an&&drawLine&&!isNaN(B.latC[i])){
+      L.polyline([[lat,lon],[B.latC[i],B.lonC[i]]],{color:'#ef4d6b',weight:1,opacity:.4,dashArray:'4 3'}).addTo(lineLayer);
+      L.circleMarker([B.latC[i],B.lonC[i]],{radius:3.5,color:'#fff',weight:1,fillColor:'#2f6fed',fillOpacity:.85}).addTo(outletLayer);
+    }
+  }
+  cluster.addLayers(markers);
+  if(fit&&bounds.length){try{map.fitBounds(bounds,{padding:[26,26],maxZoom:15});}catch(e){}}
+  $('#mapStat').className='mapstat';
+  $('#mapStat').innerHTML=`Menampilkan <b>${fmt(match.length)}</b> titik visit`+(tf?` · territory <b>${tf}</b>`:df?` · district <b>${df}</b>`:'')+` · week <b>${wk}</b> · <b style="color:#ef4d6b">${fmt(anom)}</b> anomaly · dikelompokkan (cluster) saat zoom-out.`;
+}
+function highlightStore(i){
+  highlightLayer.clearLayers();
+  const lat=B.latV[i],lon=B.lonV[i];
+  if(isNaN(B.latC[i])||isNaN(B.lonC[i]))return;
+  L.polyline([[lat,lon],[B.latC[i],B.lonC[i]]],{color:'#1c4fd1',weight:3,opacity:.95}).addTo(highlightLayer);
+  L.circleMarker([lat,lon],{radius:11,color:'#1c4fd1',weight:2,fill:false,opacity:.8}).addTo(highlightLayer);
+  const store=L.circleMarker([B.latC[i],B.lonC[i]],{radius:10,color:'#fff',weight:2.5,fillColor:'#2f6fed',fillOpacity:1}).addTo(highlightLayer);
+  const svVisit=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`;
+  const svStore=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${B.latC[i]},${B.lonC[i]}`;
+  const svBtns=`<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">`+
+    `<a href="${svVisit}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#eef4ff;color:#2f6fed;border:1px solid #cfe0fb;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:12px">👁️ Street View titik visit</a>`+
+    `<a href="${svStore}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#f0ecfe;color:#7c5cff;border:1px solid #ddd3fb;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:12px">🏬 Street View toko</a>`+
+    `</div>`;
+  store.bindPopup(`🏬 <b>Lokasi toko asli</b><br>${B.iCust.val(B.cust[i])}<br>`+(isNaN(B.dist[i])?'':`Jarak dari titik visit: <b>${B.dist[i].toFixed(0)} m</b>`)+svBtns).openPopup();
+}
+function popupHtml(i){
+  const reason=[];if(B.lmA[i])reason.push('Location Mismatch');if(B.rslA[i])reason.push('Rapid Same Location');if(B.a7A[i])reason.push('After 7PM');
+  const lat=B.latV[i],lon=B.lonV[i];
+  const svVisit=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${lat},${lon}`;
+  let sv=`<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">`+
+    `<a href="${svVisit}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#eef4ff;color:#2f6fed;border:1px solid #cfe0fb;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:12px">👁️ Street View titik visit</a>`;
+  if(!isNaN(B.latC[i])&&!isNaN(B.lonC[i])){
+    const svStore=`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${B.latC[i]},${B.lonC[i]}`;
+    sv+=`<a href="${svStore}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:#f0ecfe;color:#7c5cff;border:1px solid #ddd3fb;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:12px">🏬 Street View toko</a>`;
+  }
+  sv+=`</div>`;
+  return `<b>${B.iCust.val(B.cust[i])}</b><br>${B.iEmp.val(B.emp[i])}<br>`+
+    `${B.iTerr.val(B.terr[i])} · ${B.iDist.val(B.district[i])}<br>`+
+    `${B.iArea.val(B.area[i])} · ${B.iZone.val(B.zone[i])}<br>`+
+    `Tanggal: ${B.iDate.val(B.date[i])} · Week ${B.iWeek.val(B.week[i])}<br>`+
+    (isNaN(B.dist[i])?'':`Jarak ke toko: <b>${B.dist[i].toFixed(0)} m</b><br>`)+
+    `Status: <b style="color:${B.anA[i]?'#ef4d6b':'#22c55e'}">${B.anA[i]?(reason.join(' | ')):'Normal'}</b>`+
+    sv;
+}
+/* ---------- Geotag Recommendation map (historical visits per store) ---------- */
+let grMap,grLayer;
+function initGrMap(){
+  if(grMap)return;
+  grMap=L.map('grMap',{preferCanvas:true}).setView([-2.5,118],5);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(grMap);
+  grLayer=L.layerGroup().addTo(grMap);
+}
+function showGeoRecMap(item){
+  initGrMap();setTimeout(()=>grMap.invalidateSize(),30);
+  grLayer.clearLayers();
+  // kumpulkan SELURUH historical visit toko (abaikan filter week & lainnya)
+  const cid=item.cid;const pts=[];const bounds=[];
+  for(let i=0;i<B.n;i++){
+    if(B.cust[i]!==cid)continue;
+    const lv=B.latV[i],ov=B.lonV[i];
+    if(!isNaN(lv)&&!isNaN(ov)&&lv!==0&&ov!==0){pts.push([lv,ov,i]);bounds.push([lv,ov]);}
+  }
+  // titik historical visit (abu-abu)
+  pts.forEach(p=>{
+    L.circleMarker([p[0],p[1]],{radius:4,color:'#fff',weight:1,fillColor:'#94a3b8',fillOpacity:.85})
+      .bindPopup(`Historical visit<br>${B.iDate.val(B.date[p[2]])} · Week ${B.iWeek.val(B.week[p[2]])}<br>${p[0].toFixed(5)}, ${p[1].toFixed(5)}`)
+      .addTo(grLayer);
+  });
+  // lokasi toko existing (biru)
+  if(!isNaN(item.latC)&&!isNaN(item.lonC)){
+    L.circleMarker([item.latC,item.lonC],{radius:9,color:'#fff',weight:2.5,fillColor:'#2f6fed',fillOpacity:1})
+      .bindPopup(`🏬 <b>Lokasi toko existing</b><br>${item.name}<br>${item.latC.toFixed(5)}, ${item.lonC.toFixed(5)}`).addTo(grLayer);
+    bounds.push([item.latC,item.lonC]);
+  }
+  // titik rekomendasi modus (teal)
+  if(!isNaN(item.recLat)&&!isNaN(item.recLon)){
+    L.circleMarker([item.recLat,item.recLon],{radius:10,color:'#fff',weight:2.5,fillColor:'#14b8a6',fillOpacity:1})
+      .bindPopup(`📌 <b>Rekomendasi (modus)</b><br>${item.name}<br>${item.recLat.toFixed(5)}, ${item.recLon.toFixed(5)}<br>Modus: <b>${item.modeCount||0} titik</b>`+((!isNaN(item.dist))?`<br>Jarak dari existing: <b>${Math.round(item.dist)} m</b>`:'')).addTo(grLayer);
+    bounds.push([item.recLat,item.recLon]);
+    // garis existing → rekomendasi
+    if(!isNaN(item.latC)&&!isNaN(item.lonC)){
+      L.polyline([[item.latC,item.lonC],[item.recLat,item.recLon]],{color:'#14b8a6',weight:2,opacity:.6,dashArray:'5 4'}).addTo(grLayer);
+    }
+  }
+  const cap=`<b>${item.name}</b> · ${item.terr} · ${item.district} — ${fmt(pts.length)} historical visit${item.distinct?` · ${item.distinct} titik unik`:''}.`;
+  $('#grMapCap').innerHTML=cap;
+  if(bounds.length){try{grMap.fitBounds(bounds,{padding:[30,30],maxZoom:17});}catch(e){}}
+}
+/* ---------- Export ---------- */
+function downloadCSV(name,header,rows){
+  const esc=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  const csv=[header.join(',')].concat(rows.map(r=>r.map(esc).join(','))).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+function exportGeo(){
+  const rows=[];
+  const push=(lvl,z,ar,v)=>rows.push([lvl,z,ar,v.total,v.checkable,pct(v.checkable,v.total).toFixed(1),v.anomaly,pct(v.anomaly,v.checkable).toFixed(1),v.lm,v.a7,v.rsl]);
+  Object.entries(A.zone).forEach(([z,v])=>push('Zone',z,'',v));
+  Object.entries(A.region).forEach(([k,v])=>{const p=k.split('||');push('Region',p[0],p[1],v);});
+  Object.entries(A.area).forEach(([k,v])=>{const p=k.split('||');push('Area',p[0]+' / '+p[1],p[2],v);});
+  downloadCSV('trace_anomaly_by_region.csv',['level','zone_region','area','total_visit','identified','gps_coverage_pct','anomaly','anomaly_pct_of_identified','location_mismatch','after_7pm','rapid_same_location'],rows);
+}
+/* ---------- Export visit-level CSV split by zone (7 files) ---------- */
+const EXP_HEADER=['visit_id','customer_code','channel','customer_segment_internal_classification_kps_week','isms_lat_visit','isms_long_visit','isms_lat_customer','isms_lon_customer','visit_start_timestamp','distance_meter','is_longlat_available','is_anomaly','anomaly_flag','zone_name','region_name','area_name','sales_point_name','district_code','territory_code','employee_name','supervisor_name'];
+function expRow(i,zn){
+  const flags=[];if(B.lmA[i])flags.push('Location Mismatch');if(B.rslA[i])flags.push('Rapid Same Location');if(B.a7A[i])flags.push('Visit After 7PM');
+  return [
+    B.visitId[i], B.iCust.val(B.cust[i]), B.iChannel.val(B.channel[i]), B.iSeg.val(B.seg[i]),
+    isNaN(B.latV[i])?'':B.latV[i], isNaN(B.lonV[i])?'':B.lonV[i],
+    isNaN(B.latC[i])?'':B.latC[i], isNaN(B.lonC[i])?'':B.lonC[i],
+    B.ts[i], isNaN(B.dist[i])?'':Math.round(B.dist[i]),
+    B.chk[i], B.anA[i], flags.join(', '),
+    zn, B.iReg.val(B.region[i]), B.iArea.val(B.area[i]),
+    B.iSales.val(B.sales[i]), B.iDist.val(B.district[i]), B.iTerr.val(B.terr[i]),
+    B.iEmp.val(B.emp[i]), B.iSup.val(B.sup[i])
+  ];
+}
+/* --- minimal ZIP writer (store method, no compression) so all zones fit in 1 download --- */
+const CRC_TABLE=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);t[n]=c>>>0;}return t;})();
+function crc32(bytes){let c=0xFFFFFFFF;for(let i=0;i<bytes.length;i++)c=CRC_TABLE[(c^bytes[i])&0xFF]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
+function makeZip(files){
+  // files: [{name, bytes(Uint8Array)}]
+  const enc=new TextEncoder();const chunks=[];const central=[];let offset=0;
+  const u16=v=>[v&0xFF,(v>>8)&0xFF];const u32=v=>[v&0xFF,(v>>8)&0xFF,(v>>16)&0xFF,(v>>24)&0xFF];
+  files.forEach(f=>{
+    const nameB=enc.encode(f.name);const data=f.bytes;const crc=crc32(data);
+    const local=[0x50,0x4b,0x03,0x04,...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(data.length),...u32(data.length),...u16(nameB.length),...u16(0)];
+    const localArr=new Uint8Array(local.length+nameB.length+data.length);
+    localArr.set(local,0);localArr.set(nameB,local.length);localArr.set(data,local.length+nameB.length);
+    chunks.push(localArr);
+    const cen=[0x50,0x4b,0x01,0x02,...u16(20),...u16(20),...u16(0),...u16(0),...u16(0),...u16(0),...u32(crc),...u32(data.length),...u32(data.length),...u16(nameB.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset)];
+    const cenArr=new Uint8Array(cen.length+nameB.length);cenArr.set(cen,0);cenArr.set(nameB,cen.length);
+    central.push(cenArr);
+    offset+=localArr.length;
+  });
+  let cenSize=0;central.forEach(c=>cenSize+=c.length);
+  const cenStart=offset;
+  const end=[0x50,0x4b,0x05,0x06,...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cenSize),...u32(cenStart),...u16(0)];
+  const parts=[...chunks,...central,new Uint8Array(end)];
+  let total=0;parts.forEach(p=>total+=p.length);
+  const out=new Uint8Array(total);let pos=0;parts.forEach(p=>{out.set(p,pos);pos+=p.length;});
+  return out;
+}
+function csvString(header,rows){
+  const esc=v=>{v=(v==null?'':String(v));return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;};
+  return [header.join(',')].concat(rows.map(r=>r.map(esc).join(','))).join('\n');
+}
+function exportByZone(){
+  const btn=$('#expZoneBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Menyiapkan...';
+  // group all row indices by zone (unfiltered → semua zone tampil)
+  const byZone=new Map();
+  for(let i=0;i<B.n;i++){const zn=B.iZone.val(B.zone[i]);let arr=byZone.get(zn);if(!arr){arr=[];byZone.set(zn,arr);}arr.push(i);}
+  const zones=[...byZone.keys()].sort();
+  $('#expFoot').textContent='Menyiapkan '+zones.length+' file CSV (per zone) → dibungkus 1 ZIP...';
+  setTimeout(()=>{
+    const enc=new TextEncoder();const files=[];let totalRows=0;const summary=[];
+    zones.forEach(zn=>{
+      const idxs=byZone.get(zn);
+      const rows=idxs.map(i=>expRow(i,zn));
+      totalRows+=rows.length;
+      const safe=(zn||'unknown').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'');
+      files.push({name:'trace_visit_'+safe+'.csv',bytes:enc.encode(csvString(EXP_HEADER,rows))});
+      summary.push(zn+' ('+fmt(rows.length)+')');
+    });
+    const zipBytes=makeZip(files);
+    const blob=new Blob([zipBytes],{type:'application/zip'});const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='trace_visit_by_zone.csv.zip';a.click();URL.revokeObjectURL(url);
+    btn.disabled=false;btn.textContent=old;
+    $('#expFoot').innerHTML='✅ Selesai — <b>'+zones.length+' zone</b> ('+fmt(totalRows)+' baris) dibungkus dalam 1 file ZIP: '+summary.join(' · ');
+  },30);
+}
+/* ---------- Hero Coach: territory-level call-to-action for supervisors ---------- */
+/* Ambang sederhana supaya mudah dimengerti supervisor district */
+const HC_COVER_LOW=70;   // cakupan GPS < 70% = rendah
+const HC_ANOM_HIGH=30;   // anomaly >= 30% dari visit teridentifikasi = tinggi
+const HC_MIN_GPS=20;     // minimal visit ber-GPS agar anomaly layak dinilai
+function heroCTA(cover,anomRate,gps){
+  const c=Math.round(cover), a=Math.round(anomRate);
+  if(gps<HC_MIN_GPS)
+    return {prio:'Perlu Perhatian',cta:'PERLU PERHATIAN — Aktifkan GPS saat kunjungan. Data lokasi masih terlalu sedikit ('+fmt(gps)+' visit ber-GPS) untuk dievaluasi.'};
+  const lowCover=cover<HC_COVER_LOW, highAnom=anomRate>=HC_ANOM_HIGH;
+  if(lowCover&&highAnom)
+    return {prio:'Prioritas Tinggi',cta:'PRIORITAS TINGGI — Dampingi field force: cakupan GPS rendah ('+c+'%) & anomaly tinggi ('+a+'%). Pastikan lokasi aktif setiap check-in + validasi kunjungan langsung.'};
+  if(lowCover)
+    return {prio:'Perlu Perhatian',cta:'PERLU PERHATIAN — Cakupan GPS rendah ('+c+'%). Ingatkan field force aktifkan lokasi/GPS setiap check-in di toko.'};
+  if(highAnom)
+    return {prio:'Perlu Perhatian',cta:'PERLU PERHATIAN — Anomaly tinggi ('+a+'%). Cek pola kunjungan: jarak ke toko, jam kunjungan, & visit menumpuk di satu titik.'};
+  return {prio:'Aman',cta:'AMAN — Kualitas eksekusi terjaga (GPS '+c+'%, anomaly '+a+'%). Pertahankan konsistensi.'};
+}
+function exportHeroCoach(){
+  const btn=$('#heroCoachBtn');const old=btn.textContent;btn.disabled=true;btn.textContent='⏳ Menyiapkan...';
+  setTimeout(()=>{
+    // Agregasi level territory dari SEMUA baris (tanpa filter) — 1 baris per territory
+    const m=new Map();
+    for(let i=0;i<B.n;i++){
+      const tid=B.terr[i];let t=m.get(tid);
+      if(!t){t={terr:B.iTerr.val(tid),district:B.iDist.val(B.district[i]),area:B.iArea.val(B.area[i]),region:B.iReg.val(B.region[i]),zone:B.iZone.val(B.zone[i]),
+        total:0,gps:0,anomaly:0,emp:new Map(),sup:new Map()};m.set(tid,t);}
+      t.total++;if(B.chk[i])t.gps++;if(B.anA[i])t.anomaly++;
+      // employee & supervisor dominan (modus) per territory
+      t.emp.set(B.emp[i],(t.emp.get(B.emp[i])||0)+1);
+      t.sup.set(B.sup[i],(t.sup.get(B.sup[i])||0)+1);
+    }
+    const modeVal=(map,intr)=>{let bk=null,bc=-1;for(const [k,c] of map){if(c>bc){bc=c;bk=k;}}return bk==null?'':intr.val(bk);};
+    let nPrio=0,nAttn=0,nAman=0;
+    const rows=[...m.values()].map(t=>{
+      const cover=pct(t.gps,t.total), anomRate=pct(t.anomaly,t.gps);
+      const {prio,cta}=heroCTA(cover,anomRate,t.gps);
+      if(prio==='Prioritas Tinggi')nPrio++;else if(prio==='Perlu Perhatian')nAttn++;else nAman++;
+      // 2 kolom baru: cakupan GPS % & anomaly % (bulat). Anomaly '' bila visit ber-GPS tak cukup dinilai.
+      const gpsPct=Math.round(cover);
+      const anomPct=(t.gps>=HC_MIN_GPS)?Math.round(anomRate):'';
+      return {sortPrio:(prio==='Prioritas Tinggi'?0:prio==='Perlu Perhatian'?1:2),
+        row:[t.terr,t.district,t.area,t.region,t.zone,modeVal(t.sup,B.iSup),modeVal(t.emp,B.iEmp),cta,gpsPct,anomPct]};
+    });
+    // urut: prioritas tinggi dulu, lalu perlu perhatian, lalu aman
+    rows.sort((a,b)=>a.sortPrio-b.sortPrio);
+    const header=['territory_code','district_code','area_name','region_name','zone_name','supervisor_name','employee_name','call_to_actions','gps_coverage_pct','anomaly_pct'];
+    downloadCSV('trace_hero_coach_actions.csv',header,rows.map(r=>r.row));
+    btn.disabled=false;btn.textContent=old;
+    $('#heroFoot').innerHTML='✅ Terkirim ke Hero Coach — <b>'+fmt(rows.length)+' territory</b>: '+
+      '<span style="color:#d63a58;font-weight:700">'+nPrio+' Prioritas Tinggi</span> · '+
+      '<span style="color:#c07f10;font-weight:700">'+nAttn+' Perlu Perhatian</span> · '+
+      '<span style="color:#16a34a;font-weight:700">'+nAman+' Aman</span>. File: <b>trace_hero_coach_actions.csv</b> (diurutkan dari prioritas tertinggi).';
+  },30);
+}
+/* ---------- Recompute pipeline ---------- */
+function recomputeAll(){aggregate();renderAll();buildMapFilters();buildWeekOptions();refreshTerrData();renderTerr();renderMap();computeGeoRec();renderGeoRec();}
+let recalcTimer=null;
+function scheduleRecalc(){
+  $('#parambar').classList.add('busy');$('#recalcTxt').textContent='Menghitung ulang...';
+  clearTimeout(recalcTimer);
+  recalcTimer=setTimeout(()=>{
+    const oldRadius=P.rapidM;readParamsFrom('d');
+    const needRapid=(P.rapidM!==oldRadius)||!B.uniq;
+    setTimeout(()=>{
+      if(needRapid)computeRapid();
+      renderMethod();recomputeAll();
+      $('#parambar').classList.remove('busy');$('#recalcTxt').textContent='Sinkron ✓';
+    },15);
+  },260);
+}
+function applyDateFilter(){
+  FILT.from=$('#dateFrom').value||'';FILT.to=$('#dateTo').value||'';
+  if(FILT.from&&FILT.to&&FILT.from>FILT.to){const t=FILT.from;FILT.from=FILT.to;FILT.to=t;$('#dateFrom').value=FILT.from;$('#dateTo').value=FILT.to;}
+  recomputeAll();
+}
+/* ---------- Wiring ---------- */
+$$('#geoTable th[data-k]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;geoSort.dir=(geoSort.k===k)?-geoSort.dir:-1;geoSort.k=k;renderGeo();}));
+$$('#tTable th[data-k]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;terrSort.dir=(terrSort.k===k)?-terrSort.dir:-1;terrSort.k=k;renderTerr();}));
+$('#geoSearch').addEventListener('input',renderGeo);
+$('#geoExport').addEventListener('click',exportGeo);
+$$('#grTable th[data-k]').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k;grSort.dir=(grSort.k===k)?-grSort.dir:-1;grSort.k=k;renderGeoRec();}));
+$('#grSearch').addEventListener('input',renderGeoRec);
+$('#grFilter').addEventListener('change',renderGeoRec);
+$('#grExport').addEventListener('click',exportGeoRec);
+$('#expZoneBtn').addEventListener('click',exportByZone);
+$('#heroCoachBtn').addEventListener('click',exportHeroCoach);
+$('#histMetric').addEventListener('change',renderCharts);
+$('#histDim').addEventListener('change',renderCharts);
+['dMismatch','dRadius','dStores','dNight'].forEach(id=>$('#'+id).addEventListener('input',scheduleRecalc));
+$('#dateFrom').addEventListener('change',applyDateFilter);
+$('#dateTo').addEventListener('change',applyDateFilter);
+// multi-select open/close
+['msZone','msRegion','msArea','msDistrict','msTerritory'].forEach(id=>{
+  $('#'+id+'Btn').addEventListener('click',e=>{e.stopPropagation();const p=$('#'+id+'Panel');const open=p.classList.contains('open');
+    $$('.ms-panel').forEach(x=>x.classList.remove('open'));if(!open)p.classList.add('open');});
+});
+document.addEventListener('click',()=>$$('.ms-panel').forEach(x=>x.classList.remove('open')));
+$$('.ms-panel').forEach(p=>p.addEventListener('click',e=>e.stopPropagation()));
+$('#mDistrict').addEventListener('change',()=>{buildTerrOptions();renderMap(true);refreshTerrData();renderTerr();computeGeoRec();renderGeoRec();});
+$('#mTerr').addEventListener('change',()=>{renderMap(true);refreshTerrData();renderTerr();computeGeoRec();renderGeoRec();});
+$('#mMode').addEventListener('change',()=>renderMap());
+$('#mLine').addEventListener('change',()=>renderMap());
+$('#mWeek').addEventListener('change',()=>{refreshTerrData();renderTerr();renderMap(true);});
+$('#pickBtn').addEventListener('click',()=>$('#file').click());
+$('#reloadBtn').addEventListener('click',()=>{loaded=false;$('#dash').style.display='none';$('#landing').style.display='block';$('#prog i').style.width='0';$('#phaseText').style.display='none';$('#reloadBtn').style.display='none';$('#datefilter').style.display='none';['msZone','msRegion','msArea','msDistrict','msTerritory'].forEach(id=>$('#'+id).classList.remove('show'));$('#file').value='';});
+$('#file').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f);});
+</script>
+</body>
+</html>
