@@ -21,3 +21,6 @@ Thumbs.db
 
 # log driver Snowflake
 *.log
+
+# state Report terakhir (per laptop)
+data/state.json

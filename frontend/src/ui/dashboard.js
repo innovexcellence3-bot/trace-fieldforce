@@ -1,8 +1,10 @@
 /* Dashboard Field Force: KPI, narasi, grafik, tabel, peta. Satu pipeline `recomputeAll()`. */
-import { $, esc, fmt, fmtCompact, fmtDateTime, pct, store } from '../core/dom.js';
+import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
 import { S, minToHHMM, hhmmToMin } from '../core/state.js';
 import { aggregate, captureGeoAll, computeGeoRec, computeRapid, computeTerrData, computeZoneProgress } from '../engine/analytics.js';
 import { api } from '../api.js';
+import { persist } from '../core/persist.js';
+import { loadRapid, saveRapid } from '../engine/snapshot.js';
 import { initChartContextMenu, renderCharts, renderHistory } from './charts.js';
 import { exportByZone, exportGeo, exportHeroCoach } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
@@ -64,25 +66,24 @@ function renderMethod() {
   const P = S.P;
   const hh = minToHHMM(P.nightMin);
   $('#methodCards').innerHTML =
-    `<div class="m"><div class="ic">📍</div><div><h4>Location Mismatch <span class="badge-th">&gt; ${fmt(P.mismatchM)} m</span></h4><p>Titik GPS saat visit terlalu jauh dari lokasi toko terdaftar. Indikasi visit tidak dilakukan tepat di toko.</p></div></div>
-     <div class="m"><div class="ic">⚡</div><div><h4>Rapid Same Location <span class="badge-th">&gt; ${P.rapidCount} toko / ${P.rapidM} m</span></h4><p>Banyak toko "dikunjungi" dari satu titik berdekatan dalam sehari &amp; territory yang sama. Indikasi visit massal dari satu tempat.</p></div></div>
-     <div class="m"><div class="ic">🌙</div><div><h4>Visit After 7 PM <span class="badge-th">${hh} – 23:59</span></h4><p>Waktu mulai kunjungan di luar jam wajar (antara ${hh} hingga tengah malam). Perlu diverifikasi keabsahannya.</p></div></div>`;
+    `<div class="m"><div class="ic">📍</div><div><h4>Location Mismatch <span class="badge-th">&gt; ${fmt(P.mismatchM)} m</span></h4><p>GPS visit terlalu jauh dari lokasi toko.</p></div></div>
+     <div class="m"><div class="ic">⚡</div><div><h4>Rapid Same Location <span class="badge-th">&gt; ${P.rapidCount} toko / ${P.rapidM} m</span></h4><p>Banyak toko di-visit dari satu titik, di hari &amp; territory yang sama.</p></div></div>
+     <div class="m"><div class="ic">🌙</div><div><h4>Visit After 7 PM <span class="badge-th">${hh} – 23:59</span></h4><p>Visit dimulai di luar jam wajar.</p></div></div>`;
 }
 
 function renderHeader() {
   const ds = S.dataset || {};
   const B = S.B;
   $('#dashTitle').textContent = ds.name || 'Dataset';
-  const src = ds.source === 'snowflake' ? '❄️ Snowflake' : '⬆️ Upload';
+  const p = ds.params || {};
   $('#dashMeta').innerHTML = [
-    `<span>${src}</span>`,
-    `<span><b>${fmt(B.n)}</b> baris</span>`,
+    ds.source === 'snowflake' ? `<span>❄️ KPS <b>${p.weekFrom}–${p.weekTo}</b> · ${esc(p.channel)}</span>` : '<span>📄 CSV</span>',
+    `<span><b>${fmt(B.n)}</b> visit</span>`,
     `<span>Tanggal <b>${B.gMin || '—'}</b> → <b>${B.gMax || '—'}</b></span>`,
     `<span><b>${B.iZone.size}</b> zone · <b>${fmt(B.iTerr.size)}</b> territory</span>`,
     ds.createdAt ? `<span>Diambil ${fmtDateTime(ds.createdAt)}</span>` : '',
   ].join('');
   $('#dlDatasetBtn').href = api.downloadUrl(ds.id);
-  $('#dsChipName').textContent = `${ds.name || 'Dataset'} · ${fmtCompact(B.n)} baris`;
   $('#tfInline').textContent = '· Periode: ' + S.A.dateMin + ' → ' + S.A.dateMax;
 }
 
@@ -134,6 +135,7 @@ export function recomputeAll() {
   refreshTerr();
   renderMap(mapFilter());
   refreshGeoRec();
+  persist();
 }
 
 function syncDashParams() {
@@ -146,20 +148,20 @@ export function readParams(pre) {
   P.rapidM = Math.max(1, +$('#' + pre + 'Radius').value || 50);
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.nightMin = hhmmToMin($('#' + pre + 'Night').value);
-  store.set('params', P);
 }
 
-/** Dipanggil setelah S.B terisi (dataset baru dibuka). */
-export function openDashboard() {
+/** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
+export function openDashboard(saved = {}) {
   S.FILT = { from: '', to: '' };
   S.GF = { zone: [], region: [], area: [], district: [], territory: [] };
-  computeRapid();
+  if (!S.B.uniq || S.B.uniqM !== S.P.rapidM) computeRapid();
   aggregate();
   captureGeoAll();
+  restoreFilters(saved);
   S.loaded = true;
   const B = S.B;
   for (const id of ['dateFrom', 'dateTo']) { $('#' + id).min = B.gMin; $('#' + id).max = B.gMax; }
-  $('#dateFrom').value = B.gMin; $('#dateTo').value = B.gMax;
+  $('#dateFrom').value = S.FILT.from || B.gMin; $('#dateTo').value = S.FILT.to || B.gMax;
   $('#mDistrict').value = ''; $('#mTerr').value = '';
   syncDashParams();
   renderMethod();
@@ -174,6 +176,34 @@ export function openDashboard() {
   invalidateMaps();
 }
 
+/* Pulihkan filter tersimpan, hanya nilai yang memang ada di dataset ini. */
+function restoreFilters(saved) {
+  const G = S.GEOALL, B = S.B;
+  const f = saved.filters || {}, g = f.geo || {};
+  const union = (obj) => { const s = new Set(); Object.values(obj).forEach((set) => set.forEach((v) => s.add(v))); return s; };
+  const keep = (arr, valid) => (Array.isArray(arr) ? arr.filter((v) => valid.has(v)) : []);
+  S.GF = {
+    zone: keep(g.zone, new Set(G.zones)), region: keep(g.region, union(G.z2r)), area: keep(g.area, union(G.zr2a)),
+    district: keep(g.district, new Set(G.districts)), territory: keep(g.territory, union(G.d2t)),
+  };
+  const inRange = (d) => (d && d >= B.gMin && d <= B.gMax ? d : '');
+  S.FILT = { from: inRange(f.from), to: inRange(f.to) };
+  const v = saved.view || {};
+  if (['zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
+  if (['cover', 'anom'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
+}
+
+/* Rapid Same Location per radius: ambil dari cache server, hitung hanya bila belum ada. */
+async function ensureRapid() {
+  const B = S.B, id = S.dataset?.id;
+  if (B.uniq && B.uniqM === S.P.rapidM) return;
+  const cached = id ? await loadRapid(id, S.P.rapidM, B.n) : null;
+  if (cached) { B.uniq = cached; B.uniqM = S.P.rapidM; return; }
+  computeRapid();
+  if (id) saveRapid(id, S.P.rapidM, B.uniq);
+}
+export { ensureRapid };
+
 /* ---------------- wiring (sekali saat start) ---------------- */
 let recalcTimer = null;
 function scheduleRecalc() {
@@ -181,10 +211,9 @@ function scheduleRecalc() {
   $('#recalcTxt').textContent = 'Menghitung ulang...';
   clearTimeout(recalcTimer);
   recalcTimer = setTimeout(() => {
-    const oldRadius = S.P.rapidM;
     readParams('d');
-    setTimeout(() => {
-      if (S.P.rapidM !== oldRadius || !S.B.uniq) computeRapid();
+    setTimeout(async () => {
+      await ensureRapid();
       renderMethod();
       recomputeAll();
       $('#parambar').classList.remove('busy');
@@ -219,8 +248,8 @@ export function initDashboard() {
   $('#grExport').addEventListener('click', exportGeoRec);
   $('#expZoneBtn').addEventListener('click', exportByZone);
   $('#heroCoachBtn').addEventListener('click', exportHeroCoach);
-  $('#histMetric').addEventListener('change', renderHistory);
-  $('#histDim').addEventListener('change', renderHistory);
+  $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
+  $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
   ['dMismatch', 'dRadius', 'dStores', 'dNight'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);

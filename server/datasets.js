@@ -1,26 +1,28 @@
-/* Data Library: setiap dataset = 1 file CSV + 1 file meta JSON di data/cache/.
-     data/cache/<id>.csv        data visit (format kolom = output query Snowflake)
-     data/cache/<id>.meta.json  { id, name, source, params, rows, bytes, createdAt, stats } */
-import { createReadStream, existsSync, mkdirSync } from 'node:fs';
-import { readdir, readFile, rename, rm, stat, writeFile, open } from 'node:fs/promises';
+/* Data Library + state Report.
+
+     data/cache/<id>.csv          data visit (output query Snowflake)
+     data/cache/<id>.meta.json    { id, name, source, params, rows, bytes, createdAt, stats }
+     data/cache/<id>.snap/        snapshot hasil olahan dashboard (kolom biner + header.json),
+                                  dibuat browser saat dataset pertama kali dibuka → Report berikutnya
+                                  tidak perlu parsing CSV lagi. Juga cache Rapid per radius.
+     data/state.json              Report terakhir: dataset aktif, parameter, filter */
+import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
+import { readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { CACHE_DIR } from './config.js';
+import { pipeline } from 'node:stream/promises';
+import { CACHE_DIR, ROOT } from './config.js';
 
 mkdirSync(CACHE_DIR, { recursive: true });
-
-/* Kolom minimum agar dashboard bisa menghitung anomaly. */
-export const REQUIRED_COLUMNS = [
-  'CUSTOMER_CODE', 'KPS_WEEK', 'VISIT_START_TIMESTAMP',
-  'ISMS_LAT_VISIT', 'ISMS_LON_VISIT', 'ISMS_LAT_CUSTOMER', 'ISMS_LON_CUSTOMER',
-  'ZONE_NAME', 'TERRITORY_CODE',
-];
-/* Nama kolom alternatif yang diterima (mis. file hasil "Export CSV per Zone" versi lama). */
-export const COLUMN_ALIASES = { ISMS_LONG_VISIT: 'ISMS_LON_VISIT', ISMS_LONG_CUSTOMER: 'ISMS_LON_CUSTOMER' };
+const STATE_FILE = join(ROOT, 'data', 'state.json');
 
 const ID_RE = /^[a-z0-9][a-z0-9-]{2,80}$/;
+const SNAP_FILE_RE = /^[a-z0-9_-]{1,40}\.(bin|json)$/i;
 export const isValidId = (id) => ID_RE.test(String(id || ''));
+export const isValidSnapFile = (f) => SNAP_FILE_RE.test(String(f || ''));
 export const csvPath = (id) => join(CACHE_DIR, `${id}.csv`);
 const metaPath = (id) => join(CACHE_DIR, `${id}.meta.json`);
+const snapDir = (id) => join(CACHE_DIR, `${id}.snap`);
+export const snapPath = (id, file) => join(snapDir(id), file);
 
 export function newId(prefix) {
   const d = new Date();
@@ -29,15 +31,15 @@ export function newId(prefix) {
   return `${prefix}-${stamp}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+const withSnap = (meta) => ({ ...meta, snapshot: existsSync(snapPath(meta.id, 'header.json')) });
+
 export async function listDatasets() {
-  const files = await readdir(CACHE_DIR);
   const out = [];
-  for (const f of files) {
+  for (const f of await readdir(CACHE_DIR)) {
     if (!f.endsWith('.meta.json')) continue;
     try {
       const meta = JSON.parse(await readFile(join(CACHE_DIR, f), 'utf8'));
-      if (!existsSync(csvPath(meta.id))) continue;
-      out.push(meta);
+      if (existsSync(csvPath(meta.id))) out.push(withSnap(meta));
     } catch { /* meta rusak: abaikan */ }
   }
   return out.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
@@ -47,13 +49,14 @@ export async function getDataset(id) {
   if (!isValidId(id)) return null;
   try {
     const meta = JSON.parse(await readFile(metaPath(id), 'utf8'));
-    return existsSync(csvPath(id)) ? meta : null;
+    return existsSync(csvPath(id)) ? withSnap(meta) : null;
   } catch { return null; }
 }
 
 export async function saveMeta(meta) {
-  await writeFile(metaPath(meta.id), JSON.stringify(meta, null, 2));
-  return meta;
+  const { snapshot, ...clean } = meta;
+  await writeFile(metaPath(meta.id), JSON.stringify(clean, null, 2));
+  return withSnap(clean);
 }
 
 export async function updateDataset(id, patch) {
@@ -70,7 +73,6 @@ export async function updateDataset(id, patch) {
     };
     if (!meta.rows) meta.rows = meta.stats.rows;
   }
-  meta.lastOpenedAt = new Date().toISOString();
   return saveMeta(meta);
 }
 
@@ -78,41 +80,50 @@ export async function deleteDataset(id) {
   if (!isValidId(id)) return false;
   await rm(csvPath(id), { force: true });
   await rm(metaPath(id), { force: true });
+  await rm(snapDir(id), { recursive: true, force: true });
+  const st = await readState();
+  if (st.activeDatasetId === id) await writeState({ ...st, activeDatasetId: null });
   return true;
 }
 
-export function datasetStream(id) {
-  return createReadStream(csvPath(id));
-}
-
-/* Baca baris header sebuah CSV, kembalikan daftar kolom (UPPERCASE, alias dinormalisasi). */
-export async function readHeader(file) {
-  const fh = await open(file, 'r');
-  try {
-    const buf = Buffer.alloc(64 * 1024);
-    const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
-    let text = buf.subarray(0, bytesRead).toString('utf8');
-    if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
-    const nl = text.indexOf('\n');
-    const line = (nl < 0 ? text : text.slice(0, nl)).replace(/\r$/, '');
-    return line.split(',').map((h) => {
-      const c = h.trim().replace(/^"|"$/g, '').toUpperCase();
-      return COLUMN_ALIASES[c] || c;
-    });
-  } finally {
-    await fh.close();
-  }
-}
-
-export function missingColumns(header) {
-  const have = new Set(header);
-  return REQUIRED_COLUMNS.filter((c) => !have.has(c));
-}
+export const datasetStream = (id) => createReadStream(csvPath(id));
 
 /* Finalisasi file .part → .csv lalu tulis meta. */
 export async function finalize(partFile, meta) {
   await rename(partFile, csvPath(meta.id));
-  const st = await stat(csvPath(meta.id));
-  meta.bytes = st.size;
+  meta.bytes = (await stat(csvPath(meta.id))).size;
   return saveMeta(meta);
+}
+
+/* ---------------- snapshot ---------------- */
+export async function writeSnapFile(id, file, readable) {
+  mkdirSync(snapDir(id), { recursive: true });
+  const target = snapPath(id, file);
+  const part = target + '.part';
+  try {
+    await pipeline(readable, createWriteStream(part));
+    await rename(part, target);
+  } catch (err) {
+    await rm(part, { force: true });
+    throw err;
+  }
+}
+export async function clearSnapshot(id) {
+  await rm(snapDir(id), { recursive: true, force: true });
+}
+
+/* ---------------- state Report ---------------- */
+export async function readState() {
+  try { return JSON.parse(await readFile(STATE_FILE, 'utf8')); } catch { return { activeDatasetId: null }; }
+}
+export async function writeState(state) {
+  const clean = {
+    activeDatasetId: isValidId(state.activeDatasetId) ? state.activeDatasetId : null,
+    params: state.params && typeof state.params === 'object' ? state.params : undefined,
+    filters: state.filters && typeof state.filters === 'object' ? state.filters : undefined,
+    view: state.view && typeof state.view === 'object' ? state.view : undefined,
+    updatedAt: new Date().toISOString(),
+  };
+  await writeFile(STATE_FILE, JSON.stringify(clean, null, 2));
+  return clean;
 }

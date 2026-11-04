@@ -4,19 +4,23 @@ Aplikasi web untuk verifikasi lokasi visit field force: membandingkan titik GPS 
 (store master), lalu mendeteksi **Location Mismatch**, **Rapid Same Location**, dan **Visit After 7 PM**,
 lengkap dengan peta, drill-down wilayah, geotag recommendation, dan export.
 
-Data bisa diambil dengan tiga cara:
+Aplikasi punya 2 menu:
 
-1. **Query Snowflake** langsung dari aplikasi (login SSO `externalbrowser`).
-2. **Data Tersimpan**: setiap hasil query/upload disimpan sebagai CSV di `data/cache/`, jadi bisa dibuka
-   lagi kapan saja **tanpa query ulang**.
-3. **Upload CSV** hasil export manual.
+- **Data Connection**: tarik data dari Snowflake (login SSO `externalbrowser`). Setiap hasil query
+  disimpan sebagai CSV di `data/cache/`, lalu pilih dataset mana yang dipakai Report.
+- **Report**: dashboard anomaly. Dataset aktif, parameter, dan filter terakhir disimpan otomatis
+  (`data/state.json`), jadi refresh atau buka ulang aplikasi langsung kembali ke Report yang sama.
+
+Saat dataset pertama kali dibuka, CSV diolah lalu disimpan sebagai **snapshot** biner
+(`data/cache/<id>.snap/`). Pembukaan berikutnya memuat snapshot ini (uji: 1,2 juta baris → ~3 detik,
+dibanding ~28 detik dari CSV). Hasil Rapid Same Location juga di-cache per radius.
 
 ```
 trace-fieldforce/
 ├── server/                 Backend Node.js (Express)
 │   ├── index.js            API /api/... + menyajikan frontend/dist
 │   ├── snowflake.js        koneksi SSO + streaming hasil query ke CSV
-│   ├── datasets.js         Data Library (data/cache/*.csv + *.meta.json)
+│   ├── datasets.js         dataset (CSV + meta + snapshot) dan state Report
 │   ├── config.js           baca .env
 │   └── sql/visit_verification.sql   query visit (KPS week & channel jadi parameter)
 ├── frontend/               UI — Vite + JavaScript (ES modules), Chart.js, Leaflet
@@ -25,10 +29,11 @@ trace-fieldforce/
 │       ├── main.js         entry point, navigasi, buka dataset
 │       ├── api.js          semua panggilan ke server
 │       ├── core/           helper DOM & state bersama
-│       ├── engine/         parsing CSV streaming + engine anomaly (logika sama dengan trace21.html)
+│       ├── engine/         parsing CSV, snapshot, engine anomaly (hasil sama dengan trace21.html)
 │       ├── ui/             dashboard, grafik, tabel, peta, filter, export, sumber data
 │       └── styles/main.css
-├── data/cache/             dataset tersimpan (dibuat otomatis, tidak di-commit)
+├── data/cache/             dataset + snapshot (dibuat otomatis, tidak di-commit)
+├── data/state.json         Report terakhir (tidak di-commit)
 ├── scripts/use-node.bat    menyiapkan Node.js portable untuk file .bat
 ├── setup.bat / start.bat / dev.bat
 ├── .env.example            setting default (Snowflake account, user, warehouse, port)
@@ -103,18 +108,13 @@ Butuh Node.js 20+ (atau jalankan dari jendela yang sudah memanggil `scripts\use-
 | GET | `/api/datasets/:id/download` | unduh CSV |
 | PATCH | `/api/datasets/:id` | ganti nama / simpan ringkasan |
 | DELETE | `/api/datasets/:id` | hapus dataset |
-| POST | `/api/datasets/upload` | upload CSV (body = isi file, header `X-File-Name`) |
+| GET/PUT | `/api/datasets/:id/snap/:file` | snapshot hasil olahan (`header.json`, `<kolom>.bin`, `rapid-<m>.bin`) |
+| DELETE | `/api/datasets/:id/snap` | hapus snapshot (dibuat ulang saat dibuka) |
+| GET/PUT | `/api/state` | Report terakhir: dataset aktif, parameter, filter |
 | POST | `/api/snowflake/query` | `{ weekFrom, weekTo, channel, name?, user? }` → `{ jobId }` |
 | GET | `/api/jobs/:id` | progress query |
 | POST | `/api/jobs/:id/cancel` | batalkan query |
 | POST | `/api/snowflake/disconnect` | putuskan koneksi Snowflake |
-
-## Format CSV
-
-Kolom wajib (huruf besar/kecil bebas): `customer_code, kps_week, visit_start_timestamp, isms_lat_visit,
-isms_lon_visit, isms_lat_customer, isms_lon_customer, zone_name, territory_code`. Kolom lain dari query
-(`region_name, area_name, district_code, employee_name, supervisor_name`, dst.) dipakai bila ada.
-`visit_start_timestamp` berformat `YYYY-MM-DD HH:MM:SS[.fff]`.
 
 Perhitungan anomaly berjalan di browser (cepat & interaktif saat parameter atau filter diubah), sedangkan
 server mengurus koneksi Snowflake dan penyimpanan data. Data tidak dikirim ke mana pun selain laptop Anda.

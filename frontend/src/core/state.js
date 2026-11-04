@@ -13,7 +13,8 @@ export const S = {
   B: null,
   A: {},
   loaded: false,
-  dataset: null, // meta dataset yang sedang dibuka
+  dataset: null,   // meta dataset yang sedang dimuat di Report
+  activeId: null,  // dataset aktif untuk Report (disimpan di server)
 };
 
 export const minToHHMM = (m) => String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');

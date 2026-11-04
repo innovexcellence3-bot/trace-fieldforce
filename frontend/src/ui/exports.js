@@ -1,6 +1,7 @@
 /* Export: CSV generik, ZIP per zone (visit level), Hero Coach (territory CTA), drill-down wilayah, geotag. */
 import { $, fmt, pct, sleep } from '../core/dom.js';
 import { S } from '../core/state.js';
+import { tsOf, visitIdOf } from '../engine/loader.js';
 
 const escCsv = (v) => { v = v == null ? '' : String(v); return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
 export const csvString = (header, rows) => [header.join(',')].concat(rows.map((r) => r.map(escCsv).join(','))).join('\n');
@@ -47,9 +48,9 @@ function expRow(i, zn) {
   const flags = [];
   if (B.lmA[i]) flags.push('Location Mismatch'); if (B.rslA[i]) flags.push('Rapid Same Location'); if (B.a7A[i]) flags.push('Visit After 7PM');
   return [
-    B.visitId.get(i) ?? (B.iCust.val(B.cust[i]) + '_' + B.ts[i]), B.iCust.val(B.cust[i]), B.iChannel.val(B.channel[i]), B.iSeg.val(B.seg[i]),
+    visitIdOf(B, i), B.iCust.val(B.cust[i]), B.iChannel.val(B.channel[i]), B.iSeg.val(B.seg[i]),
     isNaN(B.latV[i]) ? '' : B.latV[i], isNaN(B.lonV[i]) ? '' : B.lonV[i], isNaN(B.latC[i]) ? '' : B.latC[i], isNaN(B.lonC[i]) ? '' : B.lonC[i],
-    B.ts[i], isNaN(B.dist[i]) ? '' : Math.round(B.dist[i]), B.chk[i], B.anA[i], flags.join(', '),
+    tsOf(B, i), isNaN(B.dist[i]) ? '' : Math.round(B.dist[i]), B.chk[i], B.anA[i], flags.join(', '),
     zn, B.iReg.val(B.region[i]), B.iArea.val(B.area[i]), B.iSales.val(B.sales[i]), B.iDist.val(B.district[i]), B.iTerr.val(B.terr[i]),
     B.iEmp.val(B.emp[i]), B.iSup.val(B.sup[i]),
   ];

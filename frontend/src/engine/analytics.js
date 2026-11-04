@@ -1,11 +1,14 @@
-/* Engine deteksi anomaly visit (port dari trace21.html, logika tidak berubah).
+/* Engine deteksi anomaly visit (port dari trace21.html, logika & hasil tidak berubah).
    - Location Mismatch : jarak visit → toko > P.mismatchM
    - Rapid Same Location: toko unik dalam radius P.rapidM (per territory + tanggal) > P.rapidCount
    - Visit After 7PM   : jam mulai visit > P.nightMin
-   Hanya visit "teridentifikasi" (punya long-lat visit & toko, bukan 0) yang dinilai. */
+   Hanya visit "teridentifikasi" (punya long-lat visit & toko, bukan 0) yang dinilai.
+   Loop per baris memakai kunci numerik (bukan string) supaya cepat untuk jutaan baris. */
 import { pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { haversine, weekdayOf } from './loader.js';
+
+const K20 = 1048576; // 2^20, untuk menggabungkan beberapa id menjadi 1 kunci angka
 
 export function computeRapid() {
   const { B, P } = S;
@@ -19,32 +22,46 @@ export function computeRapid() {
     if (!arr) { arr = []; groups.set(key, arr); }
     arr.push(i);
   }
-  const cell = P.rapidM;
+  const cell = P.rapidM, cell2 = cell * cell;
+  const GK = 67108864; // 2^26
   for (const arr of groups.values()) {
+    const m = arr.length;
     const refLat = B.latV[arr[0]];
     const mLat = 111320, mLon = 111320 * Math.cos(refLat * Math.PI / 180);
-    const grid = new Map();
-    const xs = new Float64Array(arr.length), ys = new Float64Array(arr.length);
-    for (let a = 0; a < arr.length; a++) {
+    const xs = new Float64Array(m), ys = new Float64Array(m);
+    let x0 = Infinity, y0 = Infinity;
+    for (let a = 0; a < m; a++) {
       const i = arr[a];
       xs[a] = B.lonV[i] * mLon; ys[a] = B.latV[i] * mLat;
-      const key = Math.floor(xs[a] / cell) + ',' + Math.floor(ys[a] / cell);
+      if (xs[a] < x0) x0 = xs[a];
+      if (ys[a] < y0) y0 = ys[a];
+    }
+    /* sel grid relatif terhadap titik minimum grup (sama dengan grid absolut: hanya digeser) */
+    x0 = Math.floor(x0 / cell); y0 = Math.floor(y0 / cell);
+    const gxs = new Float64Array(m), gys = new Float64Array(m);
+    const grid = new Map();
+    for (let a = 0; a < m; a++) {
+      gxs[a] = Math.floor(xs[a] / cell) - x0; gys[a] = Math.floor(ys[a] / cell) - y0;
+      const key = gxs[a] * GK + gys[a];
       let gg = grid.get(key);
       if (!gg) { gg = []; grid.set(key, gg); }
       gg.push(a);
     }
-    for (let a = 0; a < arr.length; a++) {
-      const gx = Math.floor(xs[a] / cell), gy = Math.floor(ys[a] / cell);
+    for (let a = 0; a < m; a++) {
       const set = new Set();
       for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
-        const bucket = grid.get((gx + dx) + ',' + (gy + dy));
+        const bucket = grid.get((gxs[a] + dx) * GK + (gys[a] + dy));
         if (!bucket) continue;
-        for (const b of bucket) if (Math.hypot(xs[a] - xs[b], ys[a] - ys[b]) <= cell) set.add(B.cust[arr[b]]);
+        for (const b of bucket) {
+          const ex = xs[a] - xs[b], ey = ys[a] - ys[b];
+          if (ex * ex + ey * ey <= cell2) set.add(B.cust[arr[b]]);
+        }
       }
       uniq[arr[a]] = set.size;
     }
   }
   B.uniq = uniq;
+  B.uniqM = P.rapidM;
 }
 
 function buildDateOK() {
@@ -72,66 +89,93 @@ export function passGeo(i, ids) {
   return true;
 }
 
+const REASONS = ['No Anomaly', 'Location Mismatch', 'Rapid Same Location', 'Location Mismatch | Rapid Same Location', 'Visit After 7 PM',
+  'Location Mismatch | Visit After 7 PM', 'Rapid Same Location | Visit After 7 PM', 'Location Mismatch | Rapid Same Location | Visit After 7 PM'];
+
 export function aggregate() {
   const { B, A, P } = S;
   const n = B.n;
   if (!B.lmA || B.lmA.length !== n) { B.lmA = new Int8Array(n); B.rslA = new Int8Array(n); B.a7A = new Int8Array(n); B.anA = new Int8Array(n); }
   buildDateOK();
-  A.total = 0; A.anomaly = 0; A.lm = 0; A.rsl = 0; A.a7 = 0; A.checkable = 0; A.notcheck = 0;
-  A.reason = {}; A.cust = new Set();
-  A.zone = {}; A.region = {}; A.area = {}; A.terr = {}; A.date = {}; A.wkZone = {}; A.wkRegion = {};
-  A.dow = Array.from({ length: 7 }, () => ({ t: 0, c: 0, a: 0 }));
-  const nightMin = P.nightMin, misM = P.mismatchM, rc = P.rapidCount;
-  const ids = geoIds();
+  let total = 0, anomaly = 0, sLm = 0, sRsl = 0, sA7 = 0, checkable = 0, notcheck = 0, nCust = 0;
+  const reasonCnt = new Float64Array(9); // 0..7 = mask anomaly (visit teridentifikasi), 8 = koordinat tidak lengkap
+  const custSeen = new Uint8Array(B.iCust.size);
   const newAgg = () => ({ total: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0, checkable: 0 });
   const bump = (map, key, isA, lm, rsl, a7, chk) => {
-    let o = map[key];
-    if (!o) { o = newAgg(); map[key] = o; }
+    let o = map.get(key);
+    if (!o) { o = newAgg(); map.set(key, o); }
     o.total++; if (isA) o.anomaly++; o.lm += lm; o.rsl += rsl; o.a7 += a7; if (chk) o.checkable++;
   };
+  const tri = () => ({ t: 0, c: 0, a: 0 });
+  const zoneM = new Map(), regM = new Map(), areaM = new Map(), wkZM = new Map(), wkRM = new Map();
+  const terr = {};
+  const dateT = new Float64Array(B.iDate.size), dateC = new Float64Array(B.iDate.size), dateA = new Float64Array(B.iDate.size);
+  const dow = Array.from({ length: 7 }, tri);
+  const nightMs = (P.nightMin + 1) * 60000; // jam > nightMin (menit penuh) ⇔ ms ≥ (nightMin+1) menit
+  const misM = P.mismatchM, rc = P.rapidCount;
+  const ids = geoIds();
+  const geoAll = !(ids.gz || ids.gr || ids.ga || ids.gd || ids.gt);
   const nd = B.iDate.size;
   const dowCache = new Int8Array(nd);
   for (let k = 0; k < nd; k++) dowCache[k] = weekdayOf(B.iDate.val(k));
+  const CHK = B.chk, DIST = B.dist, UQ = B.uniq, MS = B.msDay, dateOK = A.dateOK;
+
   for (let i = 0; i < n; i++) {
-    const di = B.date[i];
-    const chk = B.chk[i], dist = B.dist[i], uq = B.uniq[i];
-    const lm = (chk && dist > misM) ? 1 : 0, rsl = (chk && uq > rc) ? 1 : 0, a7 = (chk && B.tm[i] != null && B.tm[i] > nightMin) ? 1 : 0;
+    const chk = CHK[i];
+    const lm = (chk && DIST[i] > misM) ? 1 : 0;
+    const rsl = (chk && UQ[i] > rc) ? 1 : 0;
+    const a7 = (chk && MS[i] >= nightMs) ? 1 : 0;
     const isA = (lm + rsl + a7) > 0;
     B.lmA[i] = lm; B.rslA[i] = rsl; B.a7A[i] = a7; B.anA[i] = isA ? 1 : 0;
-    if (!A.dateOK[di]) continue;
-    if (!passGeo(i, ids)) continue;
-    A.total++; A.lm += lm; A.rsl += rsl; A.a7 += a7; if (isA) A.anomaly++; if (chk) A.checkable++; else A.notcheck++;
-    let reason;
-    if (isA) { const r = []; if (lm) r.push('Location Mismatch'); if (rsl) r.push('Rapid Same Location'); if (a7) r.push('Visit After 7 PM'); reason = r.join(' | '); }
-    else reason = chk ? 'No Anomaly' : 'Incomplete Coordinate';
-    A.reason[reason] = (A.reason[reason] || 0) + 1;
-    const zone = B.iZone.val(B.zone[i]), region = B.iReg.val(B.region[i]), area = B.iArea.val(B.area[i]);
-    A.cust.add(B.cust[i]);
-    bump(A.zone, zone, isA, lm, rsl, a7, chk);
-    bump(A.region, zone + '||' + region, isA, lm, rsl, a7, chk);
-    bump(A.area, zone + '||' + region + '||' + area, isA, lm, rsl, a7, chk);
+    const di = B.date[i];
+    if (!dateOK[di]) continue;
+    if (!geoAll && !passGeo(i, ids)) continue;
+    total++; sLm += lm; sRsl += rsl; sA7 += a7; if (isA) anomaly++; if (chk) checkable++; else notcheck++;
+    reasonCnt[chk ? (lm | (rsl << 1) | (a7 << 2)) : 8]++;
+    const c = B.cust[i];
+    if (!custSeen[c]) { custSeen[c] = 1; nCust++; }
+    const z = B.zone[i], r = B.region[i];
+    const kR = z * K20 + r;
+    bump(zoneM, z, isA, lm, rsl, a7, chk);
+    bump(regM, kR, isA, lm, rsl, a7, chk);
+    bump(areaM, kR * K20 + B.area[i], isA, lm, rsl, a7, chk);
     const tid = B.terr[i];
-    let te = A.terr[tid];
-    if (!te) { te = { terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone, total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0 }; A.terr[tid] = te; }
+    let te = terr[tid];
+    if (!te) { te = { terr: B.iTerr.val(tid), district: B.iDist.val(B.district[i]), zone: B.iZone.val(z), total: 0, gps: 0, anomaly: 0, lm: 0, rsl: 0, a7: 0 }; terr[tid] = te; }
     te.total++; if (chk) te.gps++; if (isA) te.anomaly++; te.lm += lm; te.rsl += rsl; te.a7 += a7;
     const wd = dowCache[di];
-    if (wd >= 0) { const dd = A.dow[wd]; dd.t++; if (chk) dd.c++; if (isA) dd.a++; }
-    const dstr = B.iDate.val(di);
-    let hd = A.date[dstr];
-    if (!hd) { hd = { t: 0, c: 0, a: 0 }; A.date[dstr] = hd; }
-    hd.t++; if (chk) hd.c++; if (isA) hd.a++;
-    const wkName = B.iWeek.val(B.week[i]);
-    let wz = A.wkZone[wkName];
-    if (!wz) { wz = {}; A.wkZone[wkName] = wz; }
-    let zc = wz[zone];
-    if (!zc) { zc = { t: 0, c: 0, a: 0 }; wz[zone] = zc; }
+    if (wd >= 0) { const dd = dow[wd]; dd.t++; if (chk) dd.c++; if (isA) dd.a++; }
+    dateT[di]++; if (chk) dateC[di]++; if (isA) dateA[di]++;
+    const w = B.week[i];
+    let zc = wkZM.get(w * K20 + z);
+    if (!zc) { zc = tri(); wkZM.set(w * K20 + z, zc); }
     zc.t++; if (chk) zc.c++; if (isA) zc.a++;
-    let wr = A.wkRegion[wkName];
-    if (!wr) { wr = {}; A.wkRegion[wkName] = wr; }
-    let rgc = wr[region];
-    if (!rgc) { rgc = { t: 0, c: 0, a: 0 }; wr[region] = rgc; }
-    rgc.t++; if (chk) rgc.c++; if (isA) rgc.a++;
+    let rg = wkRM.get(w * K20 + r);
+    if (!rg) { rg = tri(); wkRM.set(w * K20 + r, rg); }
+    rg.t++; if (chk) rg.c++; if (isA) rg.a++;
   }
+
+  /* konversi ke struktur berkunci nama (dipakai grafik, tabel, export) */
+  Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, a7: sA7, checkable, notcheck, cust: { size: nCust }, terr, dow });
+  A.reason = {};
+  reasonCnt.forEach((v, k) => { if (v) A.reason[k === 8 ? 'Incomplete Coordinate' : REASONS[k]] = v; });
+  const zn = (id) => B.iZone.val(id);
+  A.zone = {}; for (const [z, v] of zoneM) A.zone[zn(z)] = v;
+  A.region = {}; for (const [k, v] of regM) A.region[zn(Math.floor(k / K20)) + '||' + B.iReg.val(k % K20)] = v;
+  A.area = {};
+  for (const [k, v] of areaM) {
+    const kR = Math.floor(k / K20);
+    A.area[zn(Math.floor(kR / K20)) + '||' + B.iReg.val(kR % K20) + '||' + B.iArea.val(k % K20)] = v;
+  }
+  const nest = (m, intr) => {
+    const out = {};
+    for (const [k, v] of m) { const wk = B.iWeek.val(Math.floor(k / K20)); (out[wk] = out[wk] || {})[intr.val(k % K20)] = v; }
+    return out;
+  };
+  A.wkZone = nest(wkZM, B.iZone);
+  A.wkRegion = nest(wkRM, B.iReg);
+  A.date = {};
+  for (let k = 0; k < nd; k++) if (dateT[k]) A.date[B.iDate.val(k)] = { t: dateT[k], c: dateC[k], a: dateA[k] };
   const ds = Object.keys(A.date).sort();
   A.dateMin = ds[0] || '—';
   A.dateMax = ds[ds.length - 1] || '—';
@@ -211,7 +255,8 @@ export function computeGeoRec({ district, terr }) {
     if (isNaN(o.latC) && !isNaN(B.latC[i]) && B.latC[i] !== 0 && !isNaN(B.lonC[i]) && B.lonC[i] !== 0) { o.latC = B.latC[i]; o.lonC = B.lonC[i]; }
     const lv = B.latV[i], ov = B.lonV[i];
     if (!isNaN(lv) && !isNaN(ov) && lv !== 0 && ov !== 0) {
-      const key = lv.toFixed(4) + ',' + ov.toFixed(4);
+      /* titik dibulatkan 4 desimal (toFixed, sama seperti versi lama), dikodekan jadi 1 angka */
+      const key = (Math.round(+lv.toFixed(4) * 1e4) + 900000) * 4000000 + (Math.round(+ov.toFixed(4) * 1e4) + 1800000);
       o.pts.set(key, (o.pts.get(key) || 0) + 1);
     }
   }
@@ -220,7 +265,7 @@ export function computeGeoRec({ district, terr }) {
     let bestKey = null, bestCount = 0;
     for (const [k, c] of o.pts) if (c > bestCount) { bestCount = c; bestKey = k; }
     let recLat = NaN, recLon = NaN;
-    if (bestKey) { const p = bestKey.split(','); recLat = +p[0]; recLon = +p[1]; }
+    if (bestKey !== null) { recLat = (Math.floor(bestKey / 4000000) - 900000) / 1e4; recLon = ((bestKey % 4000000) - 1800000) / 1e4; }
     const conf = bestCount >= 2 ? 'ok' : 'need';
     let d = NaN;
     if (!isNaN(o.latC) && !isNaN(recLat)) d = haversine(o.latC, o.lonC, recLat, recLon);

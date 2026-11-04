@@ -11,22 +11,23 @@
      GET    /api/datasets/:id/download     isi CSV sebagai file unduhan
      PATCH  /api/datasets/:id              ganti nama / simpan ringkasan (stats)
      DELETE /api/datasets/:id
-     POST   /api/datasets/upload           upload CSV (body = isi file, header X-File-Name)
+     GET    /api/datasets/:id/snap/:file   snapshot hasil olahan (header.json, <kolom>.bin, rapid-<m>.bin)
+     PUT    /api/datasets/:id/snap/:file
+     DELETE /api/datasets/:id/snap
+     GET    /api/state                     Report terakhir (dataset aktif, parameter, filter)
+     PUT    /api/state
      POST   /api/snowflake/query           { weekFrom, weekTo, channel, name?, user? } → { jobId }
      POST   /api/snowflake/disconnect
      GET    /api/jobs/:id                  progress query
      POST   /api/jobs/:id/cancel */
 import express from 'express';
 import { spawn } from 'node:child_process';
-import { createWriteStream, existsSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { Transform } from 'node:stream';
-import { pipeline } from 'node:stream/promises';
 import { config, DIST_DIR } from './config.js';
 import {
-  csvPath, datasetStream, deleteDataset, finalize, getDataset, listDatasets,
-  missingColumns, newId, readHeader, updateDataset,
+  clearSnapshot, csvPath, deleteDataset, getDataset, isValidId, isValidSnapFile, listDatasets,
+  newId, readState, snapPath, updateDataset, writeSnapFile, writeState,
 } from './datasets.js';
 import * as sf from './snowflake.js';
 
@@ -83,41 +84,31 @@ app.delete('/api/datasets/:id', wrap(async (req, res) => {
   res.json({ ok: true });
 }));
 
-app.post('/api/datasets/upload', wrap(async (req, res) => {
-  const fileName = decodeURIComponent(String(req.get('x-file-name') || 'upload.csv')).slice(0, 160);
-  const id = newId('up');
-  const part = csvPath(id) + '.part';
-  let rows = -1; // baris header tidak dihitung
-  let lastByte = 10;
-  const counter = new Transform({
-    transform(chunk, _enc, cb) {
-      for (let i = 0; i < chunk.length; i++) if (chunk[i] === 10) rows++;
-      if (chunk.length) lastByte = chunk[chunk.length - 1];
-      cb(null, chunk);
-    },
-  });
-  try {
-    await pipeline(req, counter, createWriteStream(part));
-  } catch (err) {
-    await rm(part, { force: true });
-    throw err;
-  }
-  if (lastByte !== 10) rows++; // baris terakhir tanpa newline
-  const missing = missingColumns(await readHeader(part));
-  if (missing.length) {
-    await rm(part, { force: true });
-    return res.status(400).json({ error: `Kolom wajib tidak ditemukan: ${missing.join(', ')}` });
-  }
-  const meta = await finalize(part, {
-    id,
-    name: fileName.replace(/\.csv$/i, ''),
-    source: 'upload',
-    params: { fileName },
-    rows: Math.max(0, rows),
-    createdAt: new Date().toISOString(),
-  });
-  res.json(meta);
+/* ---------------- Snapshot (hasil olahan dashboard) ---------------- */
+app.get('/api/datasets/:id/snap/:file', wrap(async (req, res) => {
+  if (!isValidId(req.params.id) || !isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Nama file tidak valid.' });
+  const file = snapPath(req.params.id, req.params.file);
+  if (!existsSync(file)) return res.status(404).json({ error: 'Snapshot belum ada.' });
+  res.sendFile(file, { headers: { 'Cache-Control': 'no-store' } });
 }));
+
+app.put('/api/datasets/:id/snap/:file', wrap(async (req, res) => {
+  if (!isValidSnapFile(req.params.file)) return res.status(400).json({ error: 'Nama file tidak valid.' });
+  const meta = await requireDataset(req, res);
+  if (!meta) return;
+  await writeSnapFile(meta.id, req.params.file, req);
+  res.json({ ok: true });
+}));
+
+app.delete('/api/datasets/:id/snap', wrap(async (req, res) => {
+  if (!isValidId(req.params.id)) return res.status(400).json({ error: 'ID tidak valid.' });
+  await clearSnapshot(req.params.id);
+  res.json({ ok: true });
+}));
+
+/* ---------------- State Report (dataset aktif, parameter, filter) ---------------- */
+app.get('/api/state', wrap(async (_req, res) => res.json(await readState())));
+app.put('/api/state', wrap(async (req, res) => res.json(await writeState(req.body || {}))));
 
 /* ---------------- Snowflake query jobs ---------------- */
 const jobs = new Map();

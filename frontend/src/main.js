@@ -1,96 +1,113 @@
-/* Entry point TRACE: navigasi, view switching, membuka dataset (stream dari server → engine → dashboard). */
+/* Entry point TRACE: 2 menu (Data Connection & Report), routing via #hash, dan pemuatan Report.
+
+   Report memakai "state terakhir" dari server (data/state.json): dataset aktif + parameter + filter.
+   Data dimuat dari snapshot hasil olahan (cepat); parsing CSV hanya terjadi sekali per dataset. */
 import '@fontsource-variable/inter';
 import '@fontsource-variable/plus-jakarta-sans';
 import './styles/main.css';
-import { $, $$, esc, fmt, nextFrame, store, toast } from './core/dom.js';
-import { S, DEFAULT_PARAMS, minToHHMM } from './core/state.js';
+import { $, $$, esc, fmt, fmtCompact, nextFrame, toast } from './core/dom.js';
+import { S, DEFAULT_PARAMS } from './core/state.js';
+import { persist } from './core/persist.js';
 import { api } from './api.js';
 import { parseCsvStream } from './engine/loader.js';
 import { datasetStats } from './engine/analytics.js';
-import { initDashboard, openDashboard, readParams } from './ui/dashboard.js';
-import { initDataSource, refreshLibrary } from './ui/datasource.js';
+import { loadSnapshot, saveSnapshot } from './engine/snapshot.js';
+import { ensureRapid, initDashboard, openDashboard } from './ui/dashboard.js';
+import { getDatasets, initDataSource, refreshLibrary } from './ui/datasource.js';
 import { invalidateMaps } from './ui/maps.js';
 
-/* ---------------- loader overlay ---------------- */
 const loader = {
   show(title) { $('#loaderTitle').textContent = title; $('#loaderBar').style.width = '0'; $('#loaderPhase').textContent = ''; $('#loader').hidden = false; },
   progress(f, text) { $('#loaderBar').style.width = (Math.max(0, Math.min(1, f)) * 100).toFixed(1) + '%'; if (text) $('#loaderPhase').textContent = text; },
   hide() { $('#loader').hidden = true; },
 };
 
-/* ---------------- views ---------------- */
-let menu = 'field';
-function showView() {
-  const field = menu === 'field';
-  $('#view-home').hidden = !(field && !S.loaded);
-  $('#view-dash').hidden = !(field && S.loaded);
-  $('#view-retailer').hidden = menu !== 'retailer';
-  $('#view-pasgar').hidden = menu !== 'pasgar';
-  $('#filterbar').hidden = !(field && S.loaded);
-  $('#dsChip').hidden = !S.loaded;
-  if (field && S.loaded) invalidateMaps();
-}
-function goHome() {
-  S.loaded = false;
-  menu = 'field';
-  $$('#nav a').forEach((x) => x.classList.toggle('active', x.dataset.menu === 'field'));
-  showView();
-  refreshLibrary();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+let saved = {};       // state terakhir dari server
+let loading = null;   // promise pemuatan Report yang sedang berjalan
 
-/* ---------------- buka dataset ---------------- */
-async function openDataset(meta) {
-  if (!meta?.id) return;
-  readParams('p');
-  loader.show(meta.name || 'Membuka dataset');
+/* ---------------- memuat dataset ke Report ---------------- */
+async function loadReport(id) {
+  const meta = getDatasets().find((d) => d.id === id);
+  if (!meta) { S.activeId = null; persist(true); return false; }
+  S.loaded = false;
+  S.B = null;
+  loader.show(meta.name);
   try {
-    const res = await fetch(api.fileUrl(meta.id));
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
-    const total = +res.headers.get('content-length') || meta.bytes || 0;
-    await parseCsvStream(res.body, total, (f, rows) => loader.progress(f * 0.9, `① Membaca CSV · ${fmt(rows)} baris`));
-    loader.progress(0.93, '② Menghitung Rapid Same Location & flag anomaly...');
-    await nextFrame(); await nextFrame();
+    let B = await loadSnapshot(id, (f) => loader.progress(f * 0.8, `⚡ Memuat data olahan · ${fmtCompact(meta.rows || 0)} visit`)).catch(() => null);
+    const fromSnapshot = !!B;
+    if (B) {
+      S.B = B;
+    } else {
+      const res = await fetch(api.fileUrl(id));
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `HTTP ${res.status}`);
+      const total = +res.headers.get('content-length') || meta.bytes || 0;
+      await parseCsvStream(res.body, total, (f, rows) => loader.progress(f * 0.75, `Membaca CSV pertama kali · ${fmt(rows)} baris`));
+    }
     S.dataset = meta;
-    S.loaded = true;
-    showView(); // tampilkan dulu supaya peta & grafik punya ukuran saat digambar
-    openDashboard();
-    loader.progress(1, '③ Selesai');
-    window.scrollTo({ top: 0 });
-    api.saveStats(meta.id, datasetStats()).catch(() => {});
-    store.set('lastDataset', meta.id);
+    loader.progress(0.85, 'Menghitung anomaly…');
+    await nextFrame(); await nextFrame();
+    await ensureRapid();
+    showRoute('report', true);
+    openDashboard(saved);
+    loader.progress(1, 'Selesai');
+    if (!fromSnapshot) {
+      api.saveStats(id, datasetStats()).catch(() => {});
+      loader.progress(1, 'Menyimpan data olahan agar berikutnya cepat…');
+      await saveSnapshot(id, S.B).then(() => refreshLibrary()).catch((e) => console.warn('snapshot', e));
+    }
+    return true;
   } catch (e) {
     console.error(e);
     S.loaded = false;
-    showView();
-    toast('⚠️ Gagal membuka dataset: ' + esc(e.message), 'err');
+    toast('⚠️ Gagal memuat Report: ' + esc(e.message), 'err');
+    return false;
   } finally {
     loader.hide();
   }
 }
 
-/* ---------------- init ---------------- */
-function initParams() {
-  const P = { ...DEFAULT_PARAMS, ...store.get('params', {}) };
-  $('#pMismatch').value = P.mismatchM; $('#pRadius').value = P.rapidM; $('#pStores').value = P.rapidCount; $('#pNight').value = minToHHMM(P.nightMin);
-  ['pMismatch', 'pRadius', 'pStores', 'pNight'].forEach((id) => $('#' + id).addEventListener('change', () => readParams('p')));
+/* Pakai dataset untuk Report (filter direset, parameter dipertahankan). */
+async function useDataset(id) {
+  S.activeId = id;
+  saved = { params: S.P };
+  S.loaded = false;
+  await persist(true);
+  refreshLibrary();
+  if (location.hash === '#/report') route(); else location.hash = '#/report';
 }
 
-$$('#nav a').forEach((a) => a.addEventListener('click', () => {
-  menu = a.dataset.menu;
-  $$('#nav a').forEach((x) => x.classList.toggle('active', x === a));
-  showView();
-}));
-$$('[data-go="home"]').forEach((a) => a.addEventListener('click', (e) => {
-  e.preventDefault();
-  menu = 'field';
-  $$('#nav a').forEach((x) => x.classList.toggle('active', x.dataset.menu === 'field'));
-  showView();
-}));
-$('#changeDataBtn').addEventListener('click', goHome);
-$('#backHomeBtn').addEventListener('click', goHome);
+/* ---------------- routing ---------------- */
+function showRoute(name, withData) {
+  $$('#nav a').forEach((a) => a.classList.toggle('active', a.dataset.route === name));
+  $('#view-connection').hidden = name !== 'connection';
+  $('#view-report').hidden = name !== 'report';
+  const has = name === 'report' && withData;
+  $('#reportBody').hidden = !has;
+  $('#reportEmpty').hidden = !(name === 'report' && !withData);
+  $('#filterbar').hidden = !has;
+  if (has) invalidateMaps();
+}
 
-initParams();
-initDashboard();
-initDataSource({ open: openDataset, loader });
-showView();
+async function route() {
+  const name = location.hash === '#/report' ? 'report' : 'connection';
+  if (name === 'connection') { showRoute('connection'); refreshLibrary(); return; }
+  if (!S.activeId) { showRoute('report', false); return; }
+  if (S.loaded && S.dataset?.id === S.activeId) { showRoute('report', true); return; }
+  if (!loading) loading = loadReport(S.activeId).finally(() => { loading = null; });
+  const ok = await loading;
+  showRoute('report', ok && S.loaded);
+}
+
+/* ---------------- start ---------------- */
+async function start() {
+  initDashboard();
+  saved = await api.state().catch(() => ({}));
+  S.activeId = saved.activeDatasetId || null;
+  S.P = { ...DEFAULT_PARAMS, ...(saved.params || {}) };
+  await initDataSource({ use: useDataset });
+  if (S.activeId && !getDatasets().some((d) => d.id === S.activeId)) S.activeId = null;
+  if (!location.hash || location.hash === '#') location.replace(S.activeId ? '#/report' : '#/connection');
+  window.addEventListener('hashchange', route);
+  route();
+}
+start();

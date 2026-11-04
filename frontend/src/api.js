@@ -17,22 +17,6 @@ export const api = {
   cancelJob: (id) => fetch(`/api/jobs/${id}/cancel`, { method: 'POST' }).then(json),
   disconnect: () => fetch('/api/snowflake/disconnect', { method: 'POST' }).then(json),
 
-  /* Upload memakai XHR supaya ada progress upload. */
-  upload(file, onProgress) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', '/api/datasets/upload');
-      xhr.setRequestHeader('Content-Type', 'text/csv');
-      xhr.setRequestHeader('X-File-Name', encodeURIComponent(file.name));
-      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
-      xhr.onload = () => {
-        let body = {};
-        try { body = JSON.parse(xhr.responseText); } catch { /* ignore */ }
-        if (xhr.status >= 200 && xhr.status < 300) resolve(body);
-        else reject(new Error(body.error || `HTTP ${xhr.status}`));
-      };
-      xhr.onerror = () => reject(new Error('Upload gagal (koneksi ke server terputus).'));
-      xhr.send(file);
-    });
-  },
+  state: () => fetch('/api/state').then(json),
+  saveState: (st) => fetch('/api/state', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(st) }).then(json),
 };
