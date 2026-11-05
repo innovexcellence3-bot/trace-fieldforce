@@ -60,6 +60,13 @@ function renderLeaders() {
   $('#leadSpot').innerHTML = spotted.map((a) => li(a, `${a.p.toFixed(0)}% <small>${a.f}/${a.n}</small>`, a.p, 'var(--spot)')).join('') || '<li class="empty">No shared spots 🎉</li>';
 }
 
+/* Filter "With shared spot only": tampilkan pilihan urutan (spot terbesar = outlet terbanyak dalam 1 spot, atau jumlah spot) dan terapkan. */
+function syncSpotSort() {
+  const on = $('#tSpotOnly').value === '1';
+  $('#tSpotSort').hidden = !on;
+  if (on) sortTerrBy($('#tSpotSort').value === 'count' ? 'spots' : 'spotStores');
+}
+
 /** Buka Visit Map dan fokus ke satu territory. */
 export function goToTerritory(t) {
   showTab('lens');
@@ -208,6 +215,8 @@ function restoreFilters(saved) {
   if (['national', 'zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom', 'spot'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
   $('#tSpotOnly').value = v.terrSpot === '1' ? '1' : '';
+  $('#tSpotSort').value = v.terrSpotSort === 'count' ? 'count' : 'size';
+  syncSpotSort();
 }
 
 /* Rapid Same Location per radius: ambil dari cache server, hitung hanya bila belum ada. */
@@ -258,8 +267,8 @@ export function initDashboard() {
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
   $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
-  /* Filter "With shared spot only": tabel langsung diurutkan dari spot terbanyak (lalu spot terbesar). */
-  $('#tSpotOnly').addEventListener('change', () => { if ($('#tSpotOnly').value === '1') sortTerrBy('spots'); renderTerr(onTerrPick); persist(); });
+  $('#tSpotOnly').addEventListener('change', () => { syncSpotSort(); renderTerr(onTerrPick); persist(); });
+  $('#tSpotSort').addEventListener('change', () => { syncSpotSort(); renderTerr(onTerrPick); persist(); });
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   /* panel parameter di kanan: buka lewat strip / tab tepi, tutup lewat ×, latar, atau Esc */

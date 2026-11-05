@@ -431,11 +431,11 @@
       </div>
       <div class="card">
         <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div>
-          <div class="hctl"><select id="tSpotOnly" title="Show only territories that have a shared spot"><option value="">All territories</option><option value="1">With shared spot only</option></select><select id="mWeek"></select></div></div>
+          <div class="hctl"><select id="tSpotOnly" title="Show only territories that have a shared spot"><option value="">All territories</option><option value="1">With shared spot only</option></select><select id="tSpotSort" title="Sort shared spot territories" hidden><option value="size">Sort: biggest spot (most outlets)</option><option value="count">Sort: most spots</option></select><select id="mWeek"></select></div></div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
             <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>
-            <th class="num" data-k="spots" title="Shared spots in this territory (whole period)"><i data-pi="spot"></i> Spots</th>
+            <th class="num" data-k="spots" title="Shared spots in this territory (whole period)"><i data-pi="spot"></i> Spots</th><th class="num" data-k="spotStores" title="Unique outlets in this territory's biggest shared spot">Biggest spot</th>
             <th class="num" data-k="lm" title="Location Mismatch"><i data-pi="lm"></i> Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location"><i data-pi="rsl"></i> Rapid Loc.</th><th class="num" data-k="rate">Anom. %</th>
           </tr></thead><tbody></tbody></table>
         </div>

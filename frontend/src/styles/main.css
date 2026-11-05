@@ -289,6 +289,7 @@ td.num,th.num{text-align:right}
 #geoTable .inbar .bar{width:40px}
 #geoTable tr.child td:first-child{padding-left:30px}#geoTable tr.child2 td:first-child{padding-left:52px}#geoTable tr.child3 td:first-child{padding-left:76px}
 #tTable .spotpill{padding:2px 7px}
+#tTable .spotsize{color:var(--spot)}#tTable small.dim{font-size:11px}
 #tTable th{white-space:normal;line-height:1.25;vertical-align:bottom}
 #tTable th,#tTable td{padding:10px 7px}
 #tTable .inbar{gap:6px}#tTable .inbar .bar{width:30px}#tTable .inbar .v{min-width:32px}

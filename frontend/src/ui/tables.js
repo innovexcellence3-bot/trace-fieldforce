@@ -118,7 +118,9 @@ function toggle(id, tr) {
 const terrSort = { k: 'cover', dir: -1 };
 export function sortTerrBy(k, dir = -1) { terrSort.k = k; terrSort.dir = dir; }
 /* Kolom Spots: seri diurutkan lagi menurut spot terbesar (toko terbanyak dalam 1 spot). */
-const terrCmp = (so) => (so.k === 'spots' ? (a, b) => cmpBy(so)(a, b) || (a.spotStores - b.spotStores) * so.dir : cmpBy(so));
+const terrCmp = (so) => (so.k === 'spots' ? (a, b) => cmpBy(so)(a, b) || ((a.spotStores || 0) - (b.spotStores || 0)) * so.dir
+  : so.k === 'spotStores' ? (a, b) => ((a.spotStores || 0) - (b.spotStores || 0)) * so.dir || ((a.spots || 0) - (b.spots || 0)) * so.dir
+    : cmpBy(so));
 export function renderTerr(onPick) {
   markSort('tTable', terrSort);
   const spotOnly = $('#tSpotOnly').value === '1';
@@ -132,6 +134,7 @@ export function renderTerr(onPick) {
       <td class="num">${fmt(t.total)}</td>
       <td class="num">${inbar(t.cover, coverColor(t.cover), t.cover.toFixed(0) + '%')}</td>
       <td class="num">${t.spots ? `<span class="spotpill${t.spots > 1 ? ' multi' : ''}" title="${t.spots} shared spot(s) · most crowded: ${t.spotStores} stores">${pi('spot')} ${t.spots}</span>` : '<span class="dim">—</span>'}</td>
+      <td class="num">${t.spots ? `<b class="spotsize">${fmt(t.spotStores)}</b> <small class="dim">outlets</small>` : '<span class="dim">—</span>'}</td>
       <td class="num">${fmt(t.lm)}</td><td class="num">${fmt(t.rsl)}</td>
       <td class="num">${t.gps ? t.rate.toFixed(0) + '%' : '—'}</td>`;
     tr.addEventListener('click', () => {
@@ -141,7 +144,7 @@ export function renderTerr(onPick) {
     });
     tb.appendChild(tr);
   });
-  if (!arr.length) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No territories match the filters.</td></tr>';
+  if (!arr.length) tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px">No territories match the filters.</td></tr>';
   const nSpot = (S.A.terrData || []).filter((t) => t.spots).length;
   $('#tSpotOnly').options[1].textContent = `With shared spot only (${fmt(nSpot)})`;
   $('#tFoot').textContent = (arr.length > 400 ? `400 of ${fmt(arr.length)}` : fmt(arr.length)) + (spotOnly ? ' territories with shared spot' : ' territories') + ' · KPS week ' + $('#mWeek').value;
