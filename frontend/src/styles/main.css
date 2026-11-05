@@ -256,6 +256,8 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 .chartbox{position:relative;height:250px}
 .chartbox[data-exp]{cursor:context-menu}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:2px 0 12px}
+.mcheck{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;white-space:nowrap;color:var(--ink2);font-weight:600}
+.mcheck input{width:15px;height:15px;margin:0;accent-color:var(--spot)}
 select,input[type=search]{background:#fff;color:var(--ink);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;font:13px var(--font);outline:none}
 select:focus,input[type=search]:focus{border-color:var(--acc)}
 input[type=search]{min-width:240px}
@@ -351,7 +353,7 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 /* pop up tabel (raw visits shared spot) */
 .modal{position:fixed;inset:0;z-index:3000;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:24px 16px}
 .modal[hidden]{display:none}
-.modal-card{background:var(--card,#fff);border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.28);width:min(1180px,100%);max-height:calc(100vh - 48px);display:flex;flex-direction:column;padding:20px;min-height:0}
+.modal-card{background:var(--card,#fff);border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.28);width:min(1480px,100%);max-height:calc(100vh - 48px);display:flex;flex-direction:column;padding:20px;min-height:0}
 .modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
 .modal-head h3{margin:0 0 3px;font:700 16px var(--display)}.modal-head .cap{color:var(--muted);font-size:12.5px}
 .modal-act{display:flex;align-items:center;gap:8px}
@@ -359,6 +361,8 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .modal-x:hover{background:#e6e9ef}
 .modal .tbl-wrap{flex:1 1 auto;min-height:0}
 #rawTable td{font-variant-numeric:tabular-nums}
+#rawTable th{white-space:normal;line-height:1.25;vertical-align:bottom}
+#rawTable th,#rawTable td{padding:8px 9px;font-size:12px}#rawTable{min-width:0}
 
 /* ---------------- report v2 ---------------- */
 

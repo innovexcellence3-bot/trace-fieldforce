@@ -9,7 +9,7 @@ import { loadRapid, saveRapid } from '../engine/snapshot.js';
 import { alignTrendRow, clearHistFocus, initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
-import { initMap, invalidateMaps, renderMap } from './maps.js';
+import { initMap, invalidateMaps, renderMap, setSpotsVisible } from './maps.js';
 import { initSpotRaw } from './spotraw.js';
 import { initTerrSort, renderGeo, renderTerr, sortTerrBy } from './tables.js';
 
@@ -211,6 +211,8 @@ function restoreFilters(saved) {
   if (['national', 'zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom', 'spot'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
   $('#tSpotOnly').value = v.terrSpot === '1' ? '1' : '';
+  $('#mShowSpots').checked = v.mapSpots !== false;
+  setSpotsVisible($('#mShowSpots').checked);
   if ($('#tSpotOnly').value === '1') sortTerrBy('spotStores');
 }
 
@@ -297,5 +299,6 @@ export function initDashboard() {
   $('#mDistrict').addEventListener('change', () => { buildTerrOptions(); renderMap(mapFilter(), true); refreshTerr(); });
   $('#mTerr').addEventListener('change', () => { renderMap(mapFilter(), true); refreshTerr(); });
   $('#mMode').addEventListener('change', () => renderMap(mapFilter()));
+  $('#mShowSpots').addEventListener('change', () => { setSpotsVisible($('#mShowSpots').checked); persist(); });
   $('#mWeek').addEventListener('change', () => { refreshTerr(); renderMap(mapFilter(), true); });
 }

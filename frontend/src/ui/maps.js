@@ -28,7 +28,8 @@ export function initMap() {
   L.tileLayer(TILE, TILE_OPT).addTo(map);
   cluster = L.markerClusterGroup({ chunkedLoading: true, disableClusteringAtZoom: 16, maxClusterRadius: 50, spiderfyOnMaxZoom: true });
   map.addLayer(cluster);
-  spotLayer = L.layerGroup().addTo(map);
+  spotLayer = L.layerGroup();
+  if ($('#mShowSpots').checked) spotLayer.addTo(map);
   highlightLayer = L.layerGroup().addTo(map);
   map.on('click', () => highlightLayer.clearLayers());
   const dot = (c) => L.divIcon({ className: '', iconSize: [12, 12], iconAnchor: [6, 6], html: '<div style="width:12px;height:12px;border-radius:50%;background:' + c + ';border:1.5px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.4)"></div>' });
@@ -83,6 +84,12 @@ function markVisit(i) {
       .addTo(highlightLayer);
   }
   L.circleMarker([lat, lon], { radius: 12, color: BLUE, weight: 2.5, fill: false, opacity: 0.9, interactive: false }).addTo(highlightLayer);
+}
+
+/** Centang "Show shared spots": tampilkan / sembunyikan layer spot tanpa menggambar ulang titik visit. */
+export function setSpotsVisible(on) {
+  if (!map) return;
+  if (on) spotLayer.addTo(map); else spotLayer.remove();
 }
 
 /* Shared spot: lingkaran radius R + label jumlah toko. */

@@ -4,9 +4,13 @@ import { S } from '../core/state.js';
 import { tsOf, visitIdOf } from '../engine/loader.js';
 import { downloadCSV } from './exports.js';
 
+/* [kunci, judul, format tampilan (angka)] — nilai mentah dipakai untuk sort & CSV */
+const ll = (v) => (Number.isFinite(v) ? v.toFixed(6) : '');
 const COLS = [
   ['cust', 'Customer code'], ['vid', 'Visit ID'], ['ts', 'Visit timestamp'], ['terr', 'Territory code'],
   ['dist', 'District code'], ['area', 'Area name'], ['region', 'Region name'], ['zone', 'Zone name'],
+  ['latV', 'Visit latitude', ll], ['lonV', 'Visit longitude', ll], ['latC', 'Store latitude', ll], ['lonC', 'Store longitude', ll],
+  ['meters', 'Distance to store (m)', (v) => (Number.isFinite(v) ? fmt(Math.round(v)) : '')],
 ];
 const sort = { k: 'ts', dir: 1 }; // default: timestamp ascending
 let rows = [], title = '';
@@ -16,6 +20,7 @@ function rowsOf(idx) {
   return idx.map((i) => ({
     cust: B.iCust.val(B.cust[i]), vid: visitIdOf(B, i), ts: tsOf(B, i), terr: B.iTerr.val(B.terr[i]),
     dist: B.iDist.val(B.district[i]), area: B.iArea.val(B.area[i]), region: B.iReg.val(B.region[i]), zone: B.iZone.val(B.zone[i]),
+    latV: B.latV[i], lonV: B.lonV[i], latC: B.latC[i], lonC: B.lonC[i], meters: B.dist[i],
   }));
 }
 
@@ -28,7 +33,7 @@ function render() {
     th.classList.toggle('sorted', on);
     th.querySelector('.sar').textContent = on ? (dir < 0 ? '▼' : '▲') : '';
   });
-  $('#rawTable tbody').innerHTML = rows.map((r) => '<tr>' + COLS.map(([c]) => `<td>${esc(r[c])}</td>`).join('') + '</tr>').join('');
+  $('#rawTable tbody').innerHTML = rows.map((r) => '<tr>' + COLS.map(([c, , f]) => (f ? `<td class="num">${f(r[c])}</td>` : `<td>${esc(r[c])}</td>`)).join('') + '</tr>').join('');
 }
 
 export function openSpotRaw(tid, k) {
@@ -44,13 +49,14 @@ export function openSpotRaw(tid, k) {
   render();
   $('#rawModal').hidden = false;
   $('#rawModal .tbl-wrap').scrollTop = 0;
+  $('#rawModal .tbl-wrap').scrollLeft = 0;
 }
 
 function close() { $('#rawModal').hidden = true; }
 
 export function initSpotRaw() {
   const head = $('#rawTable thead tr');
-  head.innerHTML = COLS.map(([c, l]) => `<th data-k="${c}">${l}<span class="sar"></span></th>`).join('');
+  head.innerHTML = COLS.map(([c, l, f]) => `<th data-k="${c}"${f ? ' class="num"' : ''}>${l}<span class="sar"></span></th>`).join('');
   head.addEventListener('click', (e) => {
     const th = e.target.closest('th[data-k]');
     if (!th) return;
@@ -61,6 +67,7 @@ export function initSpotRaw() {
   $('#rawModal').addEventListener('click', (e) => { if (e.target.id === 'rawModal') close(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('#rawModal').hidden) close(); });
   $('#rawCsv').addEventListener('click', () => downloadCSV(`trace_shared_spot_raw_${title}.csv`,
-    ['customer_code', 'visit_id', 'visit_timestamp', 'territory_code', 'district_code', 'area_name', 'region_name', 'zone_name'],
-    rows.map((r) => COLS.map(([c]) => r[c]))));
+    ['customer_code', 'visit_id', 'visit_timestamp', 'territory_code', 'district_code', 'area_name', 'region_name', 'zone_name',
+      'visit_latitude', 'visit_longitude', 'store_latitude', 'store_longitude', 'distance_to_store_m'],
+    rows.map((r) => COLS.map(([c, , f]) => (c === 'meters' ? (Number.isFinite(r[c]) ? Math.round(r[c]) : '') : f ? ll(r[c]) : r[c])))));
 }
