@@ -15,6 +15,55 @@ Chart.defaults.color = '#6b7280';
 Chart.defaults.font.family = "'Inter Variable','Segoe UI',sans-serif";
 Chart.defaults.borderColor = 'rgba(15,23,42,.06)';
 
+/* Data label (nilai di ujung batang / di atas titik). Aktif per grafik lewat options.plugins.dataLabels = { display: true, ... }.
+   Opsi: format(v) → teks, datasets: [index dataset yang diberi label], size, rotate (vertikal, untuk batang sempit). */
+const dataLabels = {
+  id: 'dataLabels',
+  afterDatasetsDraw(chart, _args, opts) {
+    if (!opts || opts.display !== true) return;
+    const { ctx } = chart;
+    const horiz = chart.options.indexAxis === 'y';
+    const size = opts.size || 11;
+    const format = opts.format || ((v) => v + '%');
+    ctx.save();
+    ctx.font = `600 ${size}px ${Chart.defaults.font.family}`;
+    chart.data.datasets.forEach((ds, di) => {
+      if (opts.datasets && !opts.datasets.includes(di)) return;
+      if (!chart.isDatasetVisible(di)) return;
+      const meta = chart.getDatasetMeta(di);
+      const isLine = meta.type === 'line';
+      meta.data.forEach((el, i) => {
+        const v = ds.data[i];
+        if (v == null || Number.isNaN(v) || el.skip) return;
+        const txt = format(v, i, di);
+        const w = ctx.measureText(txt).width;
+        ctx.fillStyle = isLine ? (ds.borderColor || '#334155') : '#334155';
+        if (horiz) {
+          ctx.textBaseline = 'middle';
+          let x = el.x + 5;
+          ctx.textAlign = 'left';
+          if (x + w > chart.width - 2) { x = el.x - 6; ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; }
+          ctx.fillText(txt, x, el.y);
+        } else if (opts.rotate) {
+          ctx.save();
+          ctx.translate(el.x, el.y - 4);
+          ctx.rotate(-Math.PI / 2);
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(txt, 0, 0);
+          ctx.restore();
+        } else {
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          const x = Math.min(chart.width - w / 2 - 2, Math.max(chart.chartArea.left + w / 2 + 2, el.x)); // jangan terpotong di tepi
+          ctx.fillText(txt, x, Math.max(size + 1, el.y - (isLine ? 7 : 4)));
+        }
+      });
+    });
+    ctx.restore();
+  },
+};
+Chart.register(dataLabels);
+const DL_H = { padding: { right: 46 } }; // ruang label untuk batang horizontal
+
 const charts = {};
 const CHART_EXP = {};
 const destroy = (id) => { if (charts[id]) { charts[id].destroy(); delete charts[id]; } };
@@ -33,7 +82,7 @@ export function renderCharts() {
   charts.chZone = new Chart($('#chZone'), {
     type: 'bar',
     data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.r.toFixed(1)), backgroundColor: z.map((x) => barColor(x.r)), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
-    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% anomaly · ' + fmt(z[c.dataIndex].t) + ' visits' } } },
+    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% anomaly · ' + fmt(z[c.dataIndex].t) + ' visits' } } },
       scales: { x: { ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
   regExp('chZone', 'Anomaly rate by zone', 'trace_chart_anomaly_per_zone.csv',
@@ -49,7 +98,7 @@ export function renderCharts() {
   charts.chCover = new Chart($('#chCover'), {
     type: 'bar',
     data: { labels: zc.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: zc.map((x) => +x.c.toFixed(1)), backgroundColor: zc.map((x) => (x.c >= 80 ? '#16a34a' : x.c >= 40 ? '#f59e0b' : '#e5484d')), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
-    options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% GPS coverage · ' + fmt(zc[c.dataIndex].t) + ' visits' } } },
+    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% GPS coverage · ' + fmt(zc[c.dataIndex].t) + ' visits' } } },
       scales: { x: { min: cvXMin, max: cvXMax, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
   regExp('chCover', 'GPS coverage by zone', 'trace_chart_gps_coverage_by_zone.csv',
@@ -66,8 +115,8 @@ export function renderCharts() {
       { type: 'line', label: 'Verifiable visits', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
         borderColor: 'rgba(37,99,235,.45)', backgroundColor: 'rgba(37,99,235,.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: true },
     ] },
-    options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false },
+    options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 30 } },
+      plugins: { legend: { display: false }, dataLabels: { display: true, datasets: [0], rotate: true, size: 9 },
         tooltip: { callbacks: { title: (it) => `${HRS[it[0].dataIndex]}:00 – ${HRS[it[0].dataIndex]}:59`,
           label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No verifiable visits' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} verifiable visits`) } } },
       scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: (v, i) => (i % 3 === 0 ? HRS[i] : '') } },
@@ -84,7 +133,7 @@ export function renderCharts() {
   charts.chDow = new Chart($('#chDow'), {
     type: 'bar',
     data: { labels: DOW, datasets: [{ data: A.dow.map((d) => +pct(d.a, d.c).toFixed(1)), backgroundColor: A.dow.map((d) => barColor(pct(d.a, d.c))), borderRadius: 7, categoryPercentage: 0.75 }] },
-    options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { title: (it) => DOWF[it[0].dataIndex], label: (c) => c.parsed.y + '% anomaly · ' + fmt(A.dow[c.dataIndex].c) + ' verifiable' } } },
+    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { title: (it) => DOWF[it[0].dataIndex], label: (c) => c.parsed.y + '% anomaly · ' + fmt(A.dow[c.dataIndex].c) + ' verifiable' } } },
       scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => v + '%' }, grid } } },
   });
   regExp('chDow', 'Anomaly by weekday', 'trace_chart_anomaly_by_weekday.csv',
@@ -107,7 +156,7 @@ export function renderSpotChart() {
     charts[id] = new Chart($('#' + id), {
       type: 'bar',
       data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.p.toFixed(1)), backgroundColor: z.map((x) => `rgba(99,102,241,${0.35 + 0.65 * (maxP ? x.p / maxP : 0)})`), borderRadius: 7, barPercentage: 0.9, categoryPercentage: id === 'chSpot' ? 0.8 : 0.82, maxBarThickness: id === 'chSpot' ? 30 : undefined }] },
-      options: { maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.parsed.x}% · ${z[c.dataIndex].f} of ${z[c.dataIndex].n} territories · ${z[c.dataIndex].s} spots` } } },
+      options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => `${c.parsed.x}% · ${z[c.dataIndex].f} of ${z[c.dataIndex].n} territories · ${z[c.dataIndex].s} spots` } } },
         scales: { x: { min: 0, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
     });
     regExp(id, 'Shared spot territories by zone', 'trace_chart_shared_spot_by_zone.csv', header, rows);
@@ -167,8 +216,9 @@ export function renderHistory() {
   charts.chHist = new Chart($('#chHist'), {
     type: 'line',
     data: { labels: weeks, datasets: ds },
-    options: { maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
+    options: { maintainAspectRatio: false, layout: { padding: keys.length <= 3 ? { top: 16, right: 12 } : 0 },
+      plugins: { dataLabels: { display: keys.length <= 3, size: 10 }, // label per titik hanya jika seri sedikit (mis. National) agar tidak menumpuk
+        legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => {
           if (c.parsed.y == null) return c.dataset.label + ': —';
           const o = isSpot ? src[weeks[c.dataIndex]]?.[keys[c.datasetIndex]] : null;
