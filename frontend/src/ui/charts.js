@@ -253,18 +253,22 @@ export function initChartContextMenu() {
 
 /* Kolom kiri (Anomaly by hour di atas, Anomaly by weekday di bawah) disejajarkan dengan tinggi Weekly trend. */
 export function alignTrendRow() {
-  const right = $('#boxHist')?.closest('.card');
+  const hist = $('#boxHist');
+  const right = hist?.closest('.card');
   const boxes = [$('#boxHour'), $('#boxDow')];
   if (!right || !right.offsetHeight || boxes.some((b) => !b)) return; // tab sedang tersembunyi
   const stacked = getComputedStyle(right.parentElement).gridTemplateColumns.split(' ').length < 2;
   let h = 260;
   if (!stacked) {
+    /* Pakai tinggi "natural" card kanan (tinggi chart yang di-set + header/padding), bukan offsetHeight
+       yang bisa sudah ikut melar mengikuti kolom kiri. Sisa ruang diisi lewat flex di CSS. */
+    const rightNat = right.offsetHeight - hist.offsetHeight + (parseFloat(hist.style.height) || hist.offsetHeight);
     const chrome = boxes.reduce((sum, b) => sum + b.closest('.card').offsetHeight - b.offsetHeight, 0);
     const gap = parseFloat(getComputedStyle($('#trendLeft')).rowGap) || 16;
-    h = Math.max(150, Math.floor((right.offsetHeight - gap - chrome) / 2));
+    h = Math.max(150, Math.floor((rightNat - gap - chrome) / 2));
   }
   boxes.forEach((b) => { b.style.height = h + 'px'; });
-  charts.chHour?.resize(); charts.chDow?.resize();
+  charts.chHour?.resize(); charts.chDow?.resize(); charts.chHist?.resize();
 }
 let alignTimer;
 window.addEventListener('resize', () => { clearTimeout(alignTimer); alignTimer = setTimeout(alignTrendRow, 150); });

@@ -247,6 +247,10 @@ code{font-family:ui-monospace,Consolas,monospace;font-size:.92em;background:#f3f
 #boxDow,#boxHour{height:200px}
 .hl-line{color:#2563eb;font-weight:700}
 .trend-left{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* Kedua kolom selalu mengisi tinggi baris grid: chart ikut melar, jadi tidak ada ruang kosong di bawah card. */
+.trend-left>.card{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+.trend-right{display:flex;flex-direction:column;min-width:0}
+.trend-left .chartbox,.trend-right .chartbox{flex:1 1 auto;min-height:0}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(380px,100%),1fr));gap:16px;align-items:start}
 .mapgrid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
 .hrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
