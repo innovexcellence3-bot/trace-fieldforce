@@ -122,14 +122,14 @@ export function renderCharts() {
     data: { labels: HRS, datasets: [
       { type: 'bar', label: 'Anomaly %', data: A.hour.map((d) => (d.c ? +pct(d.a, d.c).toFixed(1) : null)),
         backgroundColor: A.hour.map((d) => barColor(pct(d.a, d.c))), borderRadius: 6, categoryPercentage: 0.8, yAxisID: 'y', order: 2 },
-      { type: 'line', label: 'Verifiable visits', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
+      { type: 'line', label: 'Visits with GPS', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
         borderColor: 'rgba(37,99,235,.45)', backgroundColor: 'rgba(37,99,235,.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: true },
     ] },
     options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 30 } },
       /* Lebar penuh: label mendatar; di layar sempit (batang kecil) label ditulis tegak. */
       plugins: { legend: { display: false }, dataLabels: { display: true, datasets: [0], size: 10, rotate: (ch) => ch.width < 900 },
         tooltip: { callbacks: { title: (it) => `${HRS[it[0].dataIndex]}:00 – ${HRS[it[0].dataIndex]}:59`,
-          label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No verifiable visits' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} verifiable visits`) } } },
+          label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No visits with GPS' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} visits with GPS`) } } },
       scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: function (v, i) { return this.chart.width < 900 ? (i % 3 === 0 ? HRS[i] : '') : HRS[i] + ':00'; } } },
         y: { beginAtZero: true, ticks: { callback: (v) => v + '%', maxTicksLimit: 6 }, grid },
         y2: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { maxTicksLimit: 5, color: 'rgba(37,99,235,.55)', callback: (v) => (v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : v) } } } },
@@ -140,16 +140,19 @@ export function renderCharts() {
 
   const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const DOWF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dIdx = S.P.ignoreSat ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]; // Sabtu disembunyikan bila diabaikan
+  const dw = dIdx.map((i) => A.dow[i]);
+  $('#dowCap').textContent = S.P.ignoreSat ? `% anomaly, Sunday–Friday · Saturday ignored (${fmt(A.satIgnored || 0)} visits)` : '% anomaly, Sunday–Saturday';
   destroy('chDow');
   charts.chDow = new Chart($('#chDow'), {
     type: 'bar',
-    data: { labels: DOW, datasets: [{ data: A.dow.map((d) => +pct(d.a, d.c).toFixed(1)), backgroundColor: A.dow.map((d) => barColor(pct(d.a, d.c))), borderRadius: 7, categoryPercentage: 0.75 }] },
-    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { title: (it) => DOWF[it[0].dataIndex], label: (c) => c.parsed.y + '% anomaly · ' + fmt(A.dow[c.dataIndex].c) + ' verifiable' } } },
+    data: { labels: dIdx.map((i) => DOW[i]), datasets: [{ data: dw.map((d) => +pct(d.a, d.c).toFixed(1)), backgroundColor: dw.map((d) => barColor(pct(d.a, d.c))), borderRadius: 7, categoryPercentage: 0.75 }] },
+    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { title: (it) => DOWF[dIdx[it[0].dataIndex]], label: (c) => c.parsed.y + '% anomaly · ' + fmt(dw[c.dataIndex].c) + ' with GPS' } } },
       scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => v + '%' }, grid } } },
   });
   regExp('chDow', 'Anomaly by weekday', 'trace_chart_anomaly_by_weekday.csv',
     ['day_of_week', 'total_visit', 'identified', 'anomaly', 'anomaly_pct_of_identified'],
-    A.dow.map((d, i) => [DOWF[i], d.t, d.c, d.a, pct(d.a, d.c).toFixed(1)]));
+    dIdx.map((i) => [DOWF[i], A.dow[i].t, A.dow[i].c, A.dow[i].a, pct(A.dow[i].a, A.dow[i].c).toFixed(1)]));
 
   renderHistory();
 }

@@ -33,8 +33,8 @@ function renderKPIs() {
   const mini = (ico, v, title) => `<span class="kmini" title="${title}">${ico} ${fmt(v)}</span>`;
   $('#kpis').innerHTML =
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
-    rk(cover, gps[1], 'GPS coverage', gps[0], `<b>${fmt(A.checkable)}</b> verifiable visits`) +
-    rk(rate, level[1], 'Anomalous visits', level[0], `<b>${fmt(A.anomaly)}</b> of verifiable visits`,
+    rk(cover, gps[1], 'GPS coverage', gps[0], `<b>${fmt(A.checkable)}</b> visits with GPS`) +
+    rk(rate, level[1], 'Anomalous visits', level[0], `<b>${fmt(A.anomaly)}</b> of visits with GPS`,
       `<span class="kminis">${mini(pi('lm'), A.lm, 'Location Mismatch')}${mini(pi('rsl'), A.rsl, 'Rapid Same Location')}</span>`) +
     rk(spotP, 'var(--spot)', 'Shared spot territories', `${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}`, `<b>${fmt(A.spot.spotN)}</b> shared spots`);
 }
@@ -165,6 +165,7 @@ function syncDashParams() {
   const P = S.P;
   $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount;
   $('#dSpotM').value = P.spotM; $('#dSpotStores').value = P.spotStores;
+  $('#dIgnoreSat').checked = P.ignoreSat !== false;
 }
 export function readParams(pre) {
   const P = S.P;
@@ -173,6 +174,7 @@ export function readParams(pre) {
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 20);
   P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 20);
+  P.ignoreSat = $('#dIgnoreSat').checked;
 }
 
 /** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
@@ -287,11 +289,13 @@ export function initDashboard() {
     const D = DEFAULT_PARAMS;
     $('#dMismatch').value = D.mismatchM; $('#dRadius').value = D.rapidM; $('#dStores').value = D.rapidCount;
     $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
+    $('#dIgnoreSat').checked = D.ignoreSat;
     scheduleRecalc();
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
   ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
+  $('#dIgnoreSat').addEventListener('change', scheduleRecalc);
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);
   $('#resetFilterBtn').addEventListener('click', resetFilters);

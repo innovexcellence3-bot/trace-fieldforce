@@ -327,6 +327,9 @@
           <label>Store limit<span><input type="number" id="dSpotStores" value="20" min="1"><em>stores</em></span></label>
         </div>
       </section>
+      <section class="prule r-sat">
+        <label class="pr-check"><input type="checkbox" id="dIgnoreSat" checked><span><b>Ignore Saturday visits</b><em>Saturday visits are flagged and left out of every metric, chart, table and the map.</em></span></label>
+      </section>
     </div>
     <div class="pd-foot">
       <span class="recalc" id="recalc"><span class="spin"></span><span id="recalcTxt">Changes apply instantly and are saved.</span></span>
@@ -358,16 +361,16 @@
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
       </div>
-      <div class="card trend-side"><h3>Anomaly by weekday</h3><div class="cap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+      <div class="card trend-side"><h3>Anomaly by weekday</h3><div class="cap" id="dowCap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
     </div>
-    <!-- Baris 2: perbandingan per zone -->
+    <!-- Baris 2: pola per jam (lebar penuh, 24 batang) -->
+    <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = visits with GPS</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
+    <!-- Baris 3: perbandingan per zone -->
     <div class="grid3">
-      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">Anomalous visits as % of visits with GPS</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
       <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
       <div class="card"><h3>Shared spot territories by zone</h3><div class="cap">% of territories with ≥ 1 shared spot</div><div class="chartbox" id="boxSpotZone" data-exp="chSpotZone"><canvas id="chSpotZone"></canvas></div></div>
     </div>
-    <!-- Baris 3: pola per jam (lebar penuh, 24 batang) -->
-    <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = verifiable visits</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>
   </section>
 
@@ -394,7 +397,7 @@
       <div class="tbl-wrap" style="max-height:620px">
         <table id="geoTable"><thead><tr>
           <th data-k="name">Region</th><th class="num" data-k="total">Visits</th>
-          <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable">Verifiable</th>
+          <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable" title="Visits with complete GPS coordinates">With GPS</th>
           <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
           <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store"><i data-pi="lm"></i> Location Mismatch</th>
           <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot"><i data-pi="rsl"></i> Rapid Same Location</th><th data-k="rate">Status</th>

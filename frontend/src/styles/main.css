@@ -474,6 +474,9 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 .prule .th{font-weight:800;color:var(--rc);background:var(--rs);padding:0 6px;border-radius:6px;white-space:nowrap}
 .pr-in{display:grid;grid-template-columns:1fr;gap:10px;margin-top:12px}
 .pr-in.two{grid-template-columns:1fr 1fr}
+.pr-check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.pr-check input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--rc,#2563eb);flex:0 0 auto}
+.pr-check b{display:block;font-size:13.5px}.pr-check em{display:block;font-style:normal;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.45}
 .pr-in label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
 .pr-in label span{display:flex;align-items:center;gap:6px}
 .pr-in input{width:100%;min-width:0;background:#fafbfc;border:1px solid var(--line2);border-radius:10px;padding:9px 10px;font:700 14.5px var(--font);color:var(--ink);outline:none}
