@@ -10,7 +10,7 @@ import { alignTrendRow, initChartContextMenu, renderCharts, renderHistory, rende
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { initMap, invalidateMaps, renderMap } from './maps.js';
-import { initTerrSort, renderGeo, renderTerr } from './tables.js';
+import { initTerrSort, renderGeo, renderTerr, sortTerrBy } from './tables.js';
 
 export const kpi = (icoCls, ico, lbl, val, foot, footCls) =>
   `<div class="kpi"><div class="ico ${icoCls}">${ico}</div><div class="lbl">${lbl}</div><div class="val">${val}</div><div class="foot ${footCls || ''}">${foot}</div></div>`;
@@ -58,30 +58,6 @@ function renderLeaders() {
   const spotted = Object.entries(A.area).map(([k, v]) => { const p = k.split('||'); return { name: p[2], sub: p[1], f: v.spotTerr, n: v.terrN, p: pct(v.spotTerr, v.terrN) }; })
     .filter((a) => a.f > 0).sort((a, b) => b.p - a.p || b.f - a.f).slice(0, 5);
   $('#leadSpot').innerHTML = spotted.map((a) => li(a, `${a.p.toFixed(0)}% <small>${a.f}/${a.n}</small>`, a.p, 'var(--spot)')).join('') || '<li class="empty">No shared spots 🎉</li>';
-}
-
-/* Executive Summary: kartu Shared spot (ringkasan, grafik per zone, daftar territory terbanyak). */
-function renderSpotlight() {
-  const A = S.A, sp = A.spot;
-  const rate = pct(sp.spotTerr, sp.terrN);
-  $('#spotCap').innerHTML = `A spot = more than <b>${sp.K}</b> unique stores visited within <b>${sp.R} m</b> of one point, by the same territory, in the selected period.`;
-  $('#spotBig').innerHTML = `<b>${fmt(sp.spotTerr)}</b><span>/ ${fmt(sp.terrN)} territories</span><em>${rate.toFixed(1)}% · ${fmt(sp.spotN)} spots</em>`;
-  renderSpotChart();
-  renderSpotList();
-}
-
-/* daftar territory di kartu Shared spot (urutan dari pilihan #spotSort) */
-function renderSpotList() {
-  const A = S.A;
-  /* semua territory ber-spot. default: spot terbesar (toko terbanyak dalam 1 spot); opsi: spot terbanyak */
-  const bySpots = $('#spotSort').value === 'count';
-  const top = Object.values(A.terr).filter((t) => t.spots)
-    .sort(bySpots ? (a, b) => b.spots - a.spots || b.spotStores - a.spotStores : (a, b) => b.spotStores - a.spotStores || b.spots - a.spots);
-  $('#spotListN').textContent = top.length ? `(${fmt(top.length)})` : '';
-  const list = $('#spotList');
-  list.innerHTML = top.length ? top.map((t) => `<li data-tid="${t.tid}"><span class="nm"><b>${esc(t.terr)}</b><small>${esc(t.district)} · ${esc((t.zone || '').replace('Zone ', ''))}</small></span>
-      <span class="spotpill${t.spots > 1 ? ' multi' : ''}">${pi('spot')} ${t.spots} spot${t.spots > 1 ? 's' : ''}</span><span class="max${bySpots ? '' : ' hl'}">biggest: <b>${t.spotStores}</b> stores</span><span class="go">→</span></li>`).join('')
-    : '<li class="empty">No territory has a shared spot in this selection 🎉</li>';
 }
 
 /** Buka Visit Map dan fokus ke satu territory. */
@@ -171,7 +147,7 @@ function refreshTerr() { computeTerrData(mapFilter()); renderTerr(onTerrPick); }
 /* ---------------- pipeline ---------------- */
 export function recomputeAll() {
   aggregate();
-  renderKPIs(); renderSpotlight(); renderCharts(); renderLeaders(); renderGeo(goToTerritory);
+  renderKPIs(); renderSpotChart(); renderCharts(); renderLeaders(); renderGeo(goToTerritory);
   buildMapFilters(); buildWeekOptions();
   refreshTerr();
   renderMap(mapFilter());
@@ -231,7 +207,7 @@ function restoreFilters(saved) {
   const v = saved.view || {};
   if (['national', 'zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom', 'spot'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
-  if (['size', 'count'].includes(v.spotSort)) $('#spotSort').value = v.spotSort;
+  $('#tSpotOnly').value = v.terrSpot === '1' ? '1' : '';
 }
 
 /* Rapid Same Location per radius: ambil dari cache server, hitung hanya bila belum ada. */
@@ -282,9 +258,8 @@ export function initDashboard() {
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
   $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
-  $('#spotList').addEventListener('click', (e) => { const li = e.target.closest('li[data-tid]'); if (li) goToTerritory(S.A.terr[li.dataset.tid]); });
-  $('#tSpotOnly').addEventListener('change', () => renderTerr(onTerrPick));
-  $('#spotSort').addEventListener('change', () => { renderSpotList(); persist(); });
+  /* Filter "With shared spot only": tabel langsung diurutkan dari spot terbanyak (lalu spot terbesar). */
+  $('#tSpotOnly').addEventListener('change', () => { if ($('#tSpotOnly').value === '1') sortTerrBy('spots'); renderTerr(onTerrPick); persist(); });
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   /* panel parameter di kanan: buka lewat strip / tab tepi, tutup lewat ×, latar, atau Esc */

@@ -116,10 +116,13 @@ function toggle(id, tr) {
 
 /* ---------------- territory level ---------------- */
 const terrSort = { k: 'cover', dir: -1 };
+export function sortTerrBy(k, dir = -1) { terrSort.k = k; terrSort.dir = dir; }
+/* Kolom Spots: seri diurutkan lagi menurut spot terbesar (toko terbanyak dalam 1 spot). */
+const terrCmp = (so) => (so.k === 'spots' ? (a, b) => cmpBy(so)(a, b) || (a.spotStores - b.spotStores) * so.dir : cmpBy(so));
 export function renderTerr(onPick) {
   markSort('tTable', terrSort);
   const spotOnly = $('#tSpotOnly').value === '1';
-  const arr = (S.A.terrData || []).filter((t) => !spotOnly || t.spots).map((t) => ({ ...t, cover: pct(t.gps, t.total), rate: pct(t.anomaly, t.gps) })).sort(cmpBy(terrSort));
+  const arr = (S.A.terrData || []).filter((t) => !spotOnly || t.spots).map((t) => ({ ...t, cover: pct(t.gps, t.total), rate: pct(t.anomaly, t.gps) })).sort(terrCmp(terrSort));
   const tb = $('#tTable tbody');
   tb.innerHTML = '';
   arr.slice(0, 400).forEach((t) => {
@@ -139,7 +142,9 @@ export function renderTerr(onPick) {
     tb.appendChild(tr);
   });
   if (!arr.length) tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px">No territories match the filters.</td></tr>';
-  $('#tFoot').textContent = (arr.length > 400 ? `400 of ${fmt(arr.length)}` : fmt(arr.length)) + ' territories · KPS week ' + $('#mWeek').value;
+  const nSpot = (S.A.terrData || []).filter((t) => t.spots).length;
+  $('#tSpotOnly').options[1].textContent = `With shared spot only (${fmt(nSpot)})`;
+  $('#tFoot').textContent = (arr.length > 400 ? `400 of ${fmt(arr.length)}` : fmt(arr.length)) + (spotOnly ? ' territories with shared spot' : ' territories') + ' · KPS week ' + $('#mWeek').value;
 }
 export function initTerrSort(rerender) {
   $$('#tTable th[data-k]').forEach((th) => th.addEventListener('click', () => {

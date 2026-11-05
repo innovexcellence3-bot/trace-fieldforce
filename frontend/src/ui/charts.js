@@ -154,24 +154,21 @@ export function renderCharts() {
   renderHistory();
 }
 
-/* Shared spot: % territory ter-flag per zone — dipakai di kartu spotlight (chSpot) dan di baris grafik zone (chSpotZone). */
+/* Shared spot: % territory ter-flag per zone (baris grafik zone, chSpotZone). */
 export function renderSpotChart() {
   const A = S.A;
   const z = Object.entries(A.zone).map(([k, v]) => ({ k, f: v.spotTerr, n: v.terrN, s: v.spotN, p: pct(v.spotTerr, v.terrN) })).sort((a, b) => b.p - a.p);
   const maxP = z.length ? Math.max(...z.map((x) => x.p)) : 0;
-  const header = ['zone_name', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged', 'shared_spots'];
-  const rows = z.map((x) => [x.k, x.n, x.f, x.p.toFixed(1), x.s]);
-  ['chSpot', 'chSpotZone'].forEach((id) => {
-    destroy(id);
-    if (!$('#' + id)) return;
-    charts[id] = new Chart($('#' + id), {
-      type: 'bar',
-      data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.p.toFixed(1)), backgroundColor: z.map((x) => `rgba(99,102,241,${0.35 + 0.65 * (maxP ? x.p / maxP : 0)})`), borderRadius: 7, barPercentage: 0.9, categoryPercentage: id === 'chSpot' ? 0.8 : 0.82, maxBarThickness: id === 'chSpot' ? 30 : undefined }] },
-      options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => `${c.parsed.x}% · ${z[c.dataIndex].f} of ${z[c.dataIndex].n} territories · ${z[c.dataIndex].s} spots` } } },
-        scales: { x: { min: 0, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
-    });
-    regExp(id, 'Shared spot territories by zone', 'trace_chart_shared_spot_by_zone.csv', header, rows);
+  destroy('chSpotZone');
+  charts.chSpotZone = new Chart($('#chSpotZone'), {
+    type: 'bar',
+    data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.p.toFixed(1)), backgroundColor: z.map((x) => `rgba(99,102,241,${0.35 + 0.65 * (maxP ? x.p / maxP : 0)})`), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
+    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => `${c.parsed.x}% · ${z[c.dataIndex].f} of ${z[c.dataIndex].n} territories · ${z[c.dataIndex].s} spots` } } },
+      scales: { x: { min: 0, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
+  regExp('chSpotZone', 'Shared spot territories by zone', 'trace_chart_shared_spot_by_zone.csv',
+    ['zone_name', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged', 'shared_spots'],
+    z.map((x) => [x.k, x.n, x.f, x.p.toFixed(1), x.s]));
 }
 
 /* Gabungkan semua zone per week jadi satu seri "National" (jumlahkan semua counter numerik). */

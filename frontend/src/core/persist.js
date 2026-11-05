@@ -11,7 +11,7 @@ export function snapshotState() {
     activeDatasetId: S.activeId || null,
     params: S.P,
     filters: { from: S.FILT.from, to: S.FILT.to, geo: S.GF },
-    view: { histDim: $('#histDim')?.value, histMetric: $('#histMetric')?.value, tab: S.tab, spotSort: $('#spotSort')?.value },
+    view: { histDim: $('#histDim')?.value, histMetric: $('#histMetric')?.value, tab: S.tab, terrSpot: $('#tSpotOnly')?.value },
   };
 }
 

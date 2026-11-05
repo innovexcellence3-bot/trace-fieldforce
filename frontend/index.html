@@ -368,19 +368,6 @@
     </div>
     <!-- Baris 3: pola per jam (lebar penuh, 24 batang) -->
     <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = verifiable visits</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
-    <div class="card spotlight">
-      <div class="spot-head">
-        <div class="spot-badge"><i data-pi="spot" data-size="lg"></i></div>
-        <div><h3>Shared spot territories</h3><div class="cap" id="spotCap"></div></div>
-        <div class="spot-big" id="spotBig"></div>
-      </div>
-      <div class="spot-grid">
-        <div class="spot-pane"><div class="mini-t">% of territories flagged, by zone</div><div class="chartbox" id="boxSpot" data-exp="chSpot"><canvas id="chSpot"></canvas></div></div>
-        <div class="spot-pane"><div class="mini-t row">Territories with shared spots <b id="spotListN" class="spot-n"></b> <span>· click to open on the map</span>
-          <select id="spotSort"><option value="size">Biggest spot (most stores)</option><option value="count">Most spots</option></select></div>
-          <ol class="spotlist" id="spotList"></ol></div>
-      </div>
-    </div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>
   </section>
 
@@ -444,7 +431,7 @@
       </div>
       <div class="card">
         <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div>
-          <div class="hctl"><select id="tSpotOnly"><option value="">All territories</option><option value="1">With shared spot</option></select><select id="mWeek"></select></div></div>
+          <div class="hctl"><select id="tSpotOnly" title="Show only territories that have a shared spot"><option value="">All territories</option><option value="1">With shared spot only</option></select><select id="mWeek"></select></div></div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
             <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>

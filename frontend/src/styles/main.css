@@ -486,34 +486,6 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 
 /* ---------------- Shared spot ---------------- */
 .kpi .ico.i{background:var(--spotsoft)}
-.spotlight{border-color:var(--spotline);background:linear-gradient(135deg,#fbfbff 0%,#ffffff 60%)}
-.spot-head{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}
-.spot-head h3{margin:0}.spot-head .cap{margin:2px 0 0}
-.spot-badge{width:56px;height:44px;flex:0 0 56px;border-radius:13px;display:grid;place-items:center;background:var(--spotsoft);border:1px solid var(--spotline)}
-.spot-big{margin-left:auto;text-align:right;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.spot-big b{font:800 30px var(--display);color:var(--spot);letter-spacing:-.5px}
-.spot-big span{color:var(--muted);font-size:13px}
-.spot-big em{flex-basis:100%;font-style:normal;font-size:12.5px;color:var(--muted)}
-.spot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;align-items:stretch}
-.spot-pane{display:flex;flex-direction:column;min-width:0;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px}
-.spot-pane .chartbox,.spot-pane .spotlist{height:320px!important}
-.spotlist{overflow:auto;padding-right:4px!important}
-.mini-t{font-size:12.5px;font-weight:700;color:var(--ink2);margin-bottom:10px}
-.mini-t span{font-weight:500;color:var(--muted)}
-.mini-t.row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.mini-t .spot-n{color:var(--spot)}
-.mini-t.row select{margin-left:auto;padding:6px 10px;font-size:12.5px}
-.spotlist li .max b{color:var(--ink2)}
-.spotlist li .max.hl b{color:var(--spot)}
-.spotlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.spotlist li{display:grid;grid-template-columns:minmax(0,1fr) auto auto 18px;gap:10px;align-items:center;padding:8px 12px;flex:0 0 auto;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:.15s;background:#fff}
-.spotlist li:hover{border-color:var(--spot);box-shadow:0 4px 14px rgba(99,102,241,.12)}
-.spotlist li .nm b{display:block;font-weight:700}
-.spotlist li .nm small{color:var(--muted);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
-.spotlist li .nm{min-width:0}
-.spotlist li .max{font-size:12px;color:var(--muted);white-space:nowrap}
-.spotlist li .go{color:var(--spot);font-weight:800}
-.spotlist li.empty{cursor:default;display:block;color:var(--muted);text-align:center}
 .spotpill .pi{background:transparent}.spotpill.multi .pi{background:#fff}
 .spotpill{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--spotsoft);color:#4338ca;border:1px solid var(--spotline);white-space:nowrap}
 .spotpill.multi{background:var(--spot);color:#fff;border-color:var(--spot)}
@@ -550,7 +522,6 @@ tr.terr-row:hover .open-map{opacity:1}
   .hero{grid-template-columns:1fr;padding-top:36px}
   .conn-grid,.mapgrid,.grid-top,.rhead{grid-template-columns:minmax(0,1fr)}
   .leaders{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .spot-grid{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:720px){
   .topnav{padding:0 16px;gap:12px}
