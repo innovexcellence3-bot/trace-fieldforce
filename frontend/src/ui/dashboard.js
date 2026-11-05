@@ -6,7 +6,7 @@ import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engi
 import { api } from '../api.js';
 import { persist } from '../core/persist.js';
 import { loadRapid, saveRapid } from '../engine/snapshot.js';
-import { alignTrendRow, initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
+import { alignTrendRow, clearHistFocus, initChartContextMenu, renderCharts, renderHistory, renderSpotChart } from './charts.js';
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { initMap, invalidateMaps, renderMap } from './maps.js';
@@ -288,6 +288,7 @@ export function initDashboard() {
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
+  $('#histAll').addEventListener('click', () => { clearHistFocus(); renderHistory(); });
   ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
   $('#dIgnoreWeekend').addEventListener('change', scheduleRecalc);
   $('#dateFrom').addEventListener('change', applyDateFilter);

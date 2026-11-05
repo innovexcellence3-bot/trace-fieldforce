@@ -185,6 +185,34 @@ function nationalize(src) {
   return out;
 }
 
+/* Weekly trend: fokus legend. Klik 1 item = tampilkan seri itu saja; klik lagi / "Show all" = semua seri.
+   Ctrl/Cmd/Shift + klik = tambah/kurangi seri ke fokus (untuk membandingkan beberapa). Sumbu Y menyesuaikan seri yang tampil. */
+const histFocus = new Set();
+let histCtx = '';
+function histYRange(datasets) {
+  let hMin = Infinity, hMax = -Infinity;
+  datasets.forEach((d) => d.data.forEach((v) => { if (v != null) { if (v < hMin) hMin = v; if (v > hMax) hMax = v; } }));
+  let min = 0, max = 100, step = 10;
+  if (hMax >= hMin) {
+    const span = Math.max(1, hMax - hMin) * 1.25;
+    step = [0.5, 1, 2, 2.5, 5, 10, 20].find((st) => span / st <= 7) || 20; // ±5–7 garis bantu
+    min = Math.max(0, Math.floor((hMin - step * 0.5) / step) * step);
+    max = Math.min(100, Math.ceil((hMax + step * 0.5) / step) * step);
+  }
+  return { min, max, step };
+}
+export function clearHistFocus() { histFocus.clear(); }
+function applyHistFocus(ch, keys) {
+  if (histFocus.size >= keys.length) histFocus.clear();
+  ch.data.datasets.forEach((d, i) => { d.hidden = histFocus.size > 0 && !histFocus.has(keys[i]); });
+  const r = histYRange(ch.data.datasets.filter((d) => !d.hidden));
+  Object.assign(ch.options.scales.y, { min: r.min, max: r.max });
+  ch.options.scales.y.ticks.stepSize = r.step;
+  const btn = $('#histAll');
+  btn.hidden = histFocus.size === 0;
+  btn.textContent = `↺ Show all (${keys.length})`;
+}
+
 export function renderHistory() {
   const A = S.A;
   const metric = $('#histMetric').value;
@@ -198,8 +226,12 @@ export function renderHistory() {
   let keys = Object.keys(tot).sort();
   const nAll = keys.length;
   if (nAll > HIST_MAX_SERIES) keys = keys.slice().sort((a, b) => tot[b] - tot[a]).slice(0, HIST_MAX_SERIES).sort();
+  /* fokus legend dipertahankan saat filter berubah, di-reset saat metric / dimensi diganti */
+  if (histCtx !== metric + '|' + dim) { histCtx = metric + '|' + dim; histFocus.clear(); }
+  for (const k of [...histFocus]) if (!keys.includes(k)) histFocus.delete(k);
   $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'Visits with geotag %' : 'Unusual visit %') + ' per KPS week, ' + (dim === 'national' ? 'national' : 'by ' + (dim === 'region' ? 'region' : 'zone')) +
-    (nAll > keys.length ? ` · top ${keys.length} of ${nAll} by volume` : '');
+    (nAll > keys.length ? ` · top ${keys.length} of ${nAll} by volume` : '') +
+    (keys.length > 1 ? ' · click a legend item to focus on it (Ctrl/Shift + click to compare)' : '');
   const ds = keys.map((kn, idx) => ({
     label: kn.replace('Zone ', ''),
     data: weeks.map((w) => {
@@ -212,25 +244,32 @@ export function renderHistory() {
     tension: 0.3, pointRadius: keys.length > 10 ? 2.5 : 3.5, pointHoverRadius: 6, borderWidth: keys.length > 10 ? 2 : 2.5, spanGaps: true, fill: false,
   }));
   destroy('chHist');
+  ds.forEach((d, i) => { d.hidden = histFocus.size > 0 && !histFocus.has(keys[i]); });
   const hh = keys.length > 14 ? 480 : keys.length > 8 ? 450 : 400;
   chH('boxHist', hh);
-  /* Sumbu Y mengikuti rentang data (bukan selalu 0–100%) supaya naik-turun antar week terlihat jelas. */
-  let hMin = Infinity, hMax = -Infinity;
-  ds.forEach((d) => d.data.forEach((v) => { if (v != null) { if (v < hMin) hMin = v; if (v > hMax) hMax = v; } }));
-  let yMin = 0, yMax = 100, yStep = 10;
-  if (hMax >= hMin) {
-    const span = Math.max(1, hMax - hMin) * 1.25;
-    yStep = [0.5, 1, 2, 2.5, 5, 10, 20].find((st) => span / st <= 7) || 20; // ±5–7 garis bantu
-    yMin = Math.max(0, Math.floor((hMin - yStep * 0.5) / yStep) * yStep);
-    yMax = Math.min(100, Math.ceil((hMax + yStep * 0.5) / yStep) * yStep);
-  }
+  /* Sumbu Y mengikuti rentang data seri yang tampil (bukan selalu 0–100%) supaya naik-turun antar week terlihat jelas. */
+  const yr = histYRange(ds);
+  const yMin = yr.min, yMax = yr.max, yStep = yr.step;
   charts.chHist = new Chart($('#chHist'), {
     type: 'line',
     data: { labels: weeks, datasets: ds },
     options: { maintainAspectRatio: false, layout: { padding: { top: 16, right: 12 } },
       /* Label per titik di semua dimensi; kalau seri banyak (by zone/region), label yang bertabrakan dilewati — nilai lengkap tetap di tooltip. */
       plugins: { dataLabels: { display: true, size: keys.length > 3 ? 9 : 10, avoidOverlap: keys.length > 3 },
-        legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
+        legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 },
+            /* seri yang disembunyikan tampil pudar di legend, seri yang difokus tetap berwarna */
+            generateLabels: (ch) => Chart.defaults.plugins.legend.labels.generateLabels(ch).map((l) => (l.hidden
+              ? { ...l, fillStyle: l.fillStyle + '33', strokeStyle: l.strokeStyle + '33', fontColor: '#b6bcc6' } : l)) },
+          onHover: (e) => { e.native.target.style.cursor = 'pointer'; },
+          onLeave: (e) => { e.native.target.style.cursor = ''; },
+          onClick: (e, item, legend) => {
+            const k = keys[item.datasetIndex], multi = e.native && (e.native.ctrlKey || e.native.metaKey || e.native.shiftKey);
+            if (multi) { if (histFocus.has(k)) histFocus.delete(k); else histFocus.add(k); }
+            else if (histFocus.size === 1 && histFocus.has(k)) histFocus.clear();
+            else { histFocus.clear(); histFocus.add(k); }
+            applyHistFocus(legend.chart, keys);
+            legend.chart.update();
+          } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => {
           if (c.parsed.y == null) return c.dataset.label + ': —';
           const o = isSpot ? src[weeks[c.dataIndex]]?.[keys[c.datasetIndex]] : null;
@@ -238,6 +277,8 @@ export function renderHistory() {
         } } } },
       scales: { x: { grid: { display: false }, title: { display: true, text: 'KPS Week' } }, y: { min: yMin, max: yMax, ticks: { stepSize: yStep, callback: (v) => +v.toFixed(1) + '%' }, grid } } },
   });
+  applyHistFocus(charts.chHist, keys);
+  charts.chHist.update('none');
   alignTrendRow();
   const rows = [];
   Object.keys(tot).sort().forEach((kn) => weeks.forEach((w) => {
