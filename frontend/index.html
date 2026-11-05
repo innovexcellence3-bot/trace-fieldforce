@@ -346,17 +346,9 @@
   <section class="rpanel" data-panel="summary">
     <div class="phead"><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Coverage, anomalies and shared spots at a glance.</p></div>
     <div class="kpis" id="kpis"></div>
-    <div class="grid3">
-      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
-      <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
-      <div class="card"><h3>Shared spot territories by zone</h3><div class="cap">% of territories with ≥ 1 shared spot</div><div class="chartbox" id="boxSpotZone" data-exp="chSpotZone"><canvas id="chSpotZone"></canvas></div></div>
-    </div>
-    <div class="grid-trend">
-      <div class="trend-left" id="trendLeft">
-      <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = verifiable visits</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
-        <div class="card"><h3>Anomaly by weekday</h3><div class="cap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
-      </div>
-      <div class="card trend-right">
+    <!-- Baris 1: Weekly trend (lebar) + Anomaly by weekday -->
+    <div class="grid-top">
+      <div class="card trend-main">
         <div class="hrow">
           <div><h3>Weekly trend</h3><div class="cap" id="histCap"></div></div>
           <div class="hctl">
@@ -366,7 +358,16 @@
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
       </div>
+      <div class="card trend-side"><h3>Anomaly by weekday</h3><div class="cap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
     </div>
+    <!-- Baris 2: perbandingan per zone -->
+    <div class="grid3">
+      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">% of verifiable visits</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+      <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+      <div class="card"><h3>Shared spot territories by zone</h3><div class="cap">% of territories with ≥ 1 shared spot</div><div class="chartbox" id="boxSpotZone" data-exp="chSpotZone"><canvas id="chSpotZone"></canvas></div></div>
+    </div>
+    <!-- Baris 3: pola per jam (lebar penuh, 24 batang) -->
+    <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = verifiable visits</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
     <div class="card spotlight">
       <div class="spot-head">
         <div class="spot-badge"><i data-pi="spot" data-size="lg"></i></div>

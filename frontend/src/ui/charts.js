@@ -45,7 +45,7 @@ const dataLabels = {
           ctx.textAlign = 'left';
           if (x + w > chart.width - 2) { x = el.x - 6; ctx.textAlign = 'right'; ctx.fillStyle = '#ffffff'; }
           ctx.fillText(txt, x, el.y);
-        } else if (opts.rotate) {
+        } else if (typeof opts.rotate === 'function' ? opts.rotate(chart) : opts.rotate) {
           ctx.save();
           ctx.translate(el.x, el.y - 4);
           ctx.rotate(-Math.PI / 2);
@@ -126,10 +126,11 @@ export function renderCharts() {
         borderColor: 'rgba(37,99,235,.45)', backgroundColor: 'rgba(37,99,235,.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: true },
     ] },
     options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 30 } },
-      plugins: { legend: { display: false }, dataLabels: { display: true, datasets: [0], rotate: true, size: 9 },
+      /* Lebar penuh: label mendatar; di layar sempit (batang kecil) label ditulis tegak. */
+      plugins: { legend: { display: false }, dataLabels: { display: true, datasets: [0], size: 10, rotate: (ch) => ch.width < 900 },
         tooltip: { callbacks: { title: (it) => `${HRS[it[0].dataIndex]}:00 – ${HRS[it[0].dataIndex]}:59`,
           label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No verifiable visits' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} verifiable visits`) } } },
-      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: (v, i) => (i % 3 === 0 ? HRS[i] : '') } },
+      scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: function (v, i) { return this.chart.width < 900 ? (i % 3 === 0 ? HRS[i] : '') : HRS[i] + ':00'; } } },
         y: { beginAtZero: true, ticks: { callback: (v) => v + '%', maxTicksLimit: 6 }, grid },
         y2: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { maxTicksLimit: 5, color: 'rgba(37,99,235,.55)', callback: (v) => (v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : v) } } } },
   });
@@ -211,7 +212,7 @@ export function renderHistory() {
     tension: 0.3, pointRadius: keys.length > 10 ? 2.5 : 3.5, pointHoverRadius: 6, borderWidth: keys.length > 10 ? 2 : 2.5, spanGaps: true, fill: false,
   }));
   destroy('chHist');
-  const hh = keys.length > 14 ? 520 : keys.length > 8 ? 490 : 460;
+  const hh = keys.length > 14 ? 480 : keys.length > 8 ? 450 : 400;
   chH('boxHist', hh);
   /* Sumbu Y mengikuti rentang data (bukan selalu 0–100%) supaya naik-turun antar week terlihat jelas. */
   let hMin = Infinity, hMax = -Infinity;
@@ -317,24 +318,15 @@ export function initChartContextMenu() {
   $('#ctxMenu').addEventListener('click', (e) => e.stopPropagation());
 }
 
-/* Kolom kiri (Anomaly by hour di atas, Anomaly by weekday di bawah) disejajarkan dengan tinggi Weekly trend. */
+/* Baris atas: card Anomaly by weekday disamakan tingginya dengan card Weekly trend (kecuali saat ditumpuk di layar sempit). */
 export function alignTrendRow() {
-  const hist = $('#boxHist');
-  const right = hist?.closest('.card');
-  const boxes = [$('#boxHour'), $('#boxDow')];
-  if (!right || !right.offsetHeight || boxes.some((b) => !b)) return; // tab sedang tersembunyi
-  const stacked = getComputedStyle(right.parentElement).gridTemplateColumns.split(' ').length < 2;
-  let h = 260;
-  if (!stacked) {
-    /* Pakai tinggi "natural" card kanan (tinggi chart yang di-set + header/padding), bukan offsetHeight
-       yang bisa sudah ikut melar mengikuti kolom kiri. Sisa ruang diisi lewat flex di CSS. */
-    const rightNat = right.offsetHeight - hist.offsetHeight + (parseFloat(hist.style.height) || hist.offsetHeight);
-    const chrome = boxes.reduce((sum, b) => sum + b.closest('.card').offsetHeight - b.offsetHeight, 0);
-    const gap = parseFloat(getComputedStyle($('#trendLeft')).rowGap) || 16;
-    h = Math.max(150, Math.floor((rightNat - gap - chrome) / 2));
-  }
-  boxes.forEach((b) => { b.style.height = h + 'px'; });
-  charts.chHour?.resize(); charts.chDow?.resize(); charts.chHist?.resize();
+  const hist = $('#boxHist'), dow = $('#boxDow');
+  const main = hist?.closest('.card'), side = dow?.closest('.card');
+  if (!main || !side || !main.offsetHeight) return; // tab sedang tersembunyi
+  const stacked = getComputedStyle(main.parentElement).gridTemplateColumns.split(' ').length < 2;
+  const h = stacked ? 260 : Math.max(200, main.offsetHeight - (side.offsetHeight - dow.offsetHeight));
+  dow.style.height = h + 'px';
+  charts.chDow?.resize(); charts.chHist?.resize();
 }
 let alignTimer;
 window.addEventListener('resize', () => { clearTimeout(alignTimer); alignTimer = setTimeout(alignTrendRow, 150); });
