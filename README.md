@@ -27,7 +27,8 @@ Logic ada di `frontend/src/engine/reinput.js`.
 ### Istilah di UI
 
 - **Visits with geotag** = visit dengan koordinat GPS lengkap (visit & toko); dulu disebut *GPS coverage*.
-- **Unusual visits** = visit ber-geotag yang kena Location Mismatch atau Rapid Same Location; dulu disebut *anomaly*.
+- **Unusual visits** = visit ber-geotag yang kena Location Mismatch, Rapid Same Location, **atau berada di dalam
+  shared spot** (radius spot dari titik pusatnya); dulu disebut *anomaly*.
   Nama kolom export CSV mengikuti istilah ini (`visit_with_geotag`, `unusual_visit_pct`, dst.).
 
 ### Shared spot (unusual visit level territory)

@@ -1,5 +1,5 @@
 /* Report Field Force: 3 tab (Executive Summary, Regional Breakdown, Visit Map). Satu pipeline `recomputeAll()`. */
-import { $, esc, fmt, fmtDateTime, pct } from '../core/dom.js';
+import { $, esc, fmt, fmtCompact, fmtDateTime, pct } from '../core/dom.js';
 import { pi } from './icons.js';
 import { S, DEFAULT_PARAMS, minToHHMM } from '../core/state.js';
 import { aggregate, captureGeoAll, computeRapid, computeTerrData } from '../engine/analytics.js';
@@ -31,12 +31,13 @@ function renderKPIs() {
   const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
   const rk = (v, c, label, status, sub, extra = '') =>
     `<div class="kpi rk">${ring(v, c)}<div class="rk-txt"><small>${label}</small><strong style="color:${c}">${status}</strong><span>${sub}</span>${extra}</div></div>`;
-  const mini = (ico, v, title) => `<span class="kmini" title="${title}">${ico} ${fmt(v)}</span>`;
+  /* chip ringkas (mis. 1,8 rb) supaya 3 chip muat satu baris; angka lengkap di tooltip */
+  const mini = (ico, v, title) => `<span class="kmini" title="${title}: ${fmt(v)}">${ico} ${v >= 10000 ? fmtCompact(v) : fmt(v)}</span>`;
   $('#kpis').innerHTML =
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
     rk(cover, gps[1], 'Visits with geotag', gps[0], `<b>${fmt(A.checkable)}</b> visits with geotag`) +
     rk(rate, level[1], 'Unusual visits', level[0], `<b>${fmt(A.anomaly)}</b> of visits with geotag`,
-      `<span class="kminis">${mini(pi('lm'), A.lm, 'Location Mismatch')}${mini(pi('rsl'), A.rsl, 'Rapid Same Location')}</span>`) +
+      `<span class="kminis">${mini(pi('lm'), A.lm, 'Location Mismatch')}${mini(pi('rsl'), A.rsl, 'Rapid Same Location')}${mini(pi('spot'), A.spotV || 0, 'Visits in a shared spot')}</span>`) +
     rk(spotP, 'var(--spot)', 'Shared spot territories', `${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}`, `<b>${fmt(A.spot.spotN)}</b> shared spots`);
 }
 
