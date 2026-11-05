@@ -27,6 +27,7 @@ const dataLabels = {
     const format = opts.format || ((v) => v + '%');
     ctx.save();
     ctx.font = `600 ${size}px ${Chart.defaults.font.family}`;
+    const placed = [];
     chart.data.datasets.forEach((ds, di) => {
       if (opts.datasets && !opts.datasets.includes(di)) return;
       if (!chart.isDatasetVisible(di)) return;
@@ -54,7 +55,16 @@ const dataLabels = {
         } else {
           ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
           const x = Math.min(chart.width - w / 2 - 2, Math.max(chart.chartArea.left + w / 2 + 2, el.x)); // jangan terpotong di tepi
-          ctx.fillText(txt, x, Math.max(size + 1, el.y - (isLine ? 7 : 4)));
+          let y = Math.max(size + 1, el.y - (isLine ? 7 : 4));
+          if (opts.avoidOverlap) {
+            /* Banyak seri: coba di atas titik, lalu di bawah; lewati label kalau dua-duanya bertabrakan dengan label lain. */
+            const hit = (yy) => placed.some((r) => x - w / 2 < r.x2 && x + w / 2 > r.x1 && yy - size < r.y2 && yy > r.y1);
+            if (hit(y)) { y = el.y + 7 + size; if (y > chart.chartArea.bottom || hit(y)) return; }
+            placed.push({ x1: x - w / 2 - 1, x2: x + w / 2 + 1, y1: y - size - 1, y2: y + 1 });
+            ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineJoin = 'round';
+            ctx.strokeText(txt, x, y);
+          }
+          ctx.fillText(txt, x, y);
         }
       });
     });
@@ -216,8 +226,9 @@ export function renderHistory() {
   charts.chHist = new Chart($('#chHist'), {
     type: 'line',
     data: { labels: weeks, datasets: ds },
-    options: { maintainAspectRatio: false, layout: { padding: keys.length <= 3 ? { top: 16, right: 12 } : 0 },
-      plugins: { dataLabels: { display: keys.length <= 3, size: 10 }, // label per titik hanya jika seri sedikit (mis. National) agar tidak menumpuk
+    options: { maintainAspectRatio: false, layout: { padding: { top: 16, right: 12 } },
+      /* Label per titik di semua dimensi; kalau seri banyak (by zone/region), label yang bertabrakan dilewati — nilai lengkap tetap di tooltip. */
+      plugins: { dataLabels: { display: true, size: keys.length > 3 ? 9 : 10, avoidOverlap: keys.length > 3 },
         legend: { position: 'bottom', labels: { padding: keys.length > 10 ? 6 : 10, usePointStyle: true, boxWidth: 8, font: { size: keys.length > 10 ? 10 : 11 } } },
         tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => {
           if (c.parsed.y == null) return c.dataset.label + ': —';
