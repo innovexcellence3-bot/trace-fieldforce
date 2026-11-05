@@ -33,8 +33,8 @@ function renderKPIs() {
   const mini = (ico, v, title) => `<span class="kmini" title="${title}">${ico} ${fmt(v)}</span>`;
   $('#kpis').innerHTML =
     kpi('', '📋', 'Total visits', fmt(A.total), fmt(A.cust.size) + ' unique stores') +
-    rk(cover, gps[1], 'GPS coverage', gps[0], `<b>${fmt(A.checkable)}</b> visits with GPS`) +
-    rk(rate, level[1], 'Anomalous visits', level[0], `<b>${fmt(A.anomaly)}</b> of visits with GPS`,
+    rk(cover, gps[1], 'Visits with geotag', gps[0], `<b>${fmt(A.checkable)}</b> visits with geotag`) +
+    rk(rate, level[1], 'Unusual visits', level[0], `<b>${fmt(A.anomaly)}</b> of visits with geotag`,
       `<span class="kminis">${mini(pi('lm'), A.lm, 'Location Mismatch')}${mini(pi('rsl'), A.rsl, 'Rapid Same Location')}</span>`) +
     rk(spotP, 'var(--spot)', 'Shared spot territories', `${fmt(A.spot.spotTerr)} of ${fmt(A.spot.terrN)}`, `<b>${fmt(A.spot.spotN)}</b> shared spots`);
 }
@@ -58,13 +58,6 @@ function renderLeaders() {
   const spotted = Object.entries(A.area).map(([k, v]) => { const p = k.split('||'); return { name: p[2], sub: p[1], f: v.spotTerr, n: v.terrN, p: pct(v.spotTerr, v.terrN) }; })
     .filter((a) => a.f > 0).sort((a, b) => b.p - a.p || b.f - a.f).slice(0, 5);
   $('#leadSpot').innerHTML = spotted.map((a) => li(a, `${a.p.toFixed(0)}% <small>${a.f}/${a.n}</small>`, a.p, 'var(--spot)')).join('') || '<li class="empty">No shared spots 🎉</li>';
-}
-
-/* Filter "With shared spot only": tampilkan pilihan urutan (spot terbesar = outlet terbanyak dalam 1 spot, atau jumlah spot) dan terapkan. */
-function syncSpotSort() {
-  const on = $('#tSpotOnly').value === '1';
-  $('#tSpotSort').hidden = !on;
-  if (on) sortTerrBy($('#tSpotSort').value === 'count' ? 'spots' : 'spotStores');
 }
 
 /** Buka Visit Map dan fokus ke satu territory. */
@@ -101,7 +94,7 @@ function renderHeader() {
 }
 
 /* ---------------- tab section ---------------- */
-const TABS = ['summary', 'radar', 'lens'];
+const TABS = ['summary', 'lens', 'radar'];
 export function showTab(tab, save = true) {
   if (!TABS.includes(tab)) tab = 'summary';
   S.tab = tab;
@@ -165,7 +158,7 @@ function syncDashParams() {
   const P = S.P;
   $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount;
   $('#dSpotM').value = P.spotM; $('#dSpotStores').value = P.spotStores;
-  $('#dIgnoreSat').checked = P.ignoreSat !== false;
+  $('#dIgnoreWeekend').checked = P.ignoreWeekend !== false;
 }
 export function readParams(pre) {
   const P = S.P;
@@ -174,7 +167,7 @@ export function readParams(pre) {
   P.rapidCount = Math.max(1, +$('#' + pre + 'Stores').value || 5);
   P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 20);
   P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 20);
-  P.ignoreSat = $('#dIgnoreSat').checked;
+  P.ignoreWeekend = $('#dIgnoreWeekend').checked;
 }
 
 /** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
@@ -217,8 +210,7 @@ function restoreFilters(saved) {
   if (['national', 'zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom', 'spot'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
   $('#tSpotOnly').value = v.terrSpot === '1' ? '1' : '';
-  $('#tSpotSort').value = v.terrSpotSort === 'count' ? 'count' : 'size';
-  syncSpotSort();
+  if ($('#tSpotOnly').value === '1') sortTerrBy('spotStores');
 }
 
 /* Rapid Same Location per radius: ambil dari cache server, hitung hanya bila belum ada. */
@@ -269,8 +261,8 @@ export function initDashboard() {
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
   $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
-  $('#tSpotOnly').addEventListener('change', () => { syncSpotSort(); renderTerr(onTerrPick); persist(); });
-  $('#tSpotSort').addEventListener('change', () => { syncSpotSort(); renderTerr(onTerrPick); persist(); });
+  /* "With shared spot only": mulai dari spot terbesar; urutan lain lewat klik header kolom. */
+  $('#tSpotOnly').addEventListener('change', () => { if ($('#tSpotOnly').value === '1') sortTerrBy('spotStores'); renderTerr(onTerrPick); persist(); });
   $('#geoExport').addEventListener('click', exportGeo);
   $('#rtabs').addEventListener('click', (e) => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
   /* panel parameter di kanan: buka lewat strip / tab tepi, tutup lewat ×, latar, atau Esc */
@@ -289,13 +281,13 @@ export function initDashboard() {
     const D = DEFAULT_PARAMS;
     $('#dMismatch').value = D.mismatchM; $('#dRadius').value = D.rapidM; $('#dStores').value = D.rapidCount;
     $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
-    $('#dIgnoreSat').checked = D.ignoreSat;
+    $('#dIgnoreWeekend').checked = D.ignoreWeekend;
     scheduleRecalc();
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
   ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
-  $('#dIgnoreSat').addEventListener('change', scheduleRecalc);
+  $('#dIgnoreWeekend').addEventListener('change', scheduleRecalc);
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);
   $('#resetFilterBtn').addEventListener('click', resetFilters);

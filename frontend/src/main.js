@@ -45,7 +45,7 @@ async function loadReport(id) {
       await parseCsvStream(res.body, total, (f, rows) => loader.progress(f * 0.75, `Reading CSV (first time only) · ${fmt(rows)} rows`));
     }
     S.dataset = meta;
-    loader.progress(0.85, 'Calculating anomalies…');
+    loader.progress(0.85, 'Finding unusual visits…');
     await nextFrame(); await nextFrame();
     await ensureRapid();
     showRoute('report', true);
@@ -108,7 +108,10 @@ async function start() {
   /* parameter tersimpan dari versi default lama → mulai lagi dari default baru (mis. mismatch 500 m) */
   const sp = saved.params || {};
   if (sp.v === PARAMS_VERSION) S.P = { ...DEFAULT_PARAMS, ...sp };
-  else if (sp.v === 3) S.P = { ...DEFAULT_PARAMS, ...sp, v: PARAMS_VERSION }; // v3→v4: tambah ignoreSat (default aktif)
+  else if (sp.v === 3 || sp.v === 4) { // v3/v4→v5: ignoreSat diganti ignoreWeekend (Sabtu + Minggu, default aktif)
+    const { ignoreSat, ...rest } = sp;
+    S.P = { ...DEFAULT_PARAMS, ...rest, ignoreWeekend: ignoreSat !== false, v: PARAMS_VERSION };
+  }
   else if (sp.v === 2) S.P = { ...DEFAULT_PARAMS, ...sp, rapidM: DEFAULT_PARAMS.rapidM, spotM: DEFAULT_PARAMS.spotM, spotStores: DEFAULT_PARAMS.spotStores, v: PARAMS_VERSION }; // v2→v3: default baru radius & spot
   else S.P = { ...DEFAULT_PARAMS };
   await initDataSource({ use: useDataset });

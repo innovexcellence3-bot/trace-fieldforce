@@ -22,5 +22,5 @@ export function exportGeo() {
   Object.entries(A.zone).forEach(([z, v]) => push('Zone', z, '', v));
   Object.entries(A.region).forEach(([k, v]) => { const p = k.split('||'); push('Region', p[0], p[1], v); });
   Object.entries(A.area).forEach(([k, v]) => { const p = k.split('||'); push('Area', p[0] + ' / ' + p[1], p[2], v); });
-  downloadCSV('trace_anomaly_by_region.csv', ['level', 'zone_region', 'area', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'rapid_same_location', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged', 'shared_spots'], rows);
+  downloadCSV('trace_unusual_visits_by_region.csv', ['level', 'zone_region', 'area', 'total_visit', 'visit_with_geotag', 'visit_with_geotag_pct', 'unusual_visit', 'unusual_visit_pct', 'location_mismatch', 'rapid_same_location', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged', 'shared_spots'], rows);
 }

@@ -92,11 +92,11 @@ export function renderCharts() {
   charts.chZone = new Chart($('#chZone'), {
     type: 'bar',
     data: { labels: z.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: z.map((x) => +x.r.toFixed(1)), backgroundColor: z.map((x) => barColor(x.r)), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
-    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% anomaly · ' + fmt(z[c.dataIndex].t) + ' visits' } } },
+    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% unusual visits · ' + fmt(z[c.dataIndex].t) + ' visits' } } },
       scales: { x: { ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
-  regExp('chZone', 'Anomaly rate by zone', 'trace_chart_anomaly_per_zone.csv',
-    ['zone_name', 'total_visit', 'identified', 'gps_coverage_pct', 'anomaly', 'anomaly_pct_of_identified', 'location_mismatch', 'rapid_same_location'],
+  regExp('chZone', 'Unusual visit rate by zone', 'trace_chart_unusual_visits_per_zone.csv',
+    ['zone_name', 'total_visit', 'visit_with_geotag', 'visit_with_geotag_pct', 'unusual_visit', 'unusual_visit_pct', 'location_mismatch', 'rapid_same_location'],
     z.map((x) => [x.k, x.t, x.v.checkable, pct(x.v.checkable, x.v.total).toFixed(1), x.v.anomaly, x.r.toFixed(1), x.v.lm, x.v.rsl]));
 
   const zc = zAll.slice().sort((a, b) => a.c - b.c);
@@ -108,11 +108,11 @@ export function renderCharts() {
   charts.chCover = new Chart($('#chCover'), {
     type: 'bar',
     data: { labels: zc.map((x) => x.k.replace('Zone ', '')), datasets: [{ data: zc.map((x) => +x.c.toFixed(1)), backgroundColor: zc.map((x) => (x.c >= 80 ? '#16a34a' : x.c >= 40 ? '#f59e0b' : '#e5484d')), borderRadius: 7, barPercentage: 0.9, categoryPercentage: 0.82 }] },
-    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% GPS coverage · ' + fmt(zc[c.dataIndex].t) + ' visits' } } },
-      scales: { x: { min: cvXMin, max: cvXMax, ticks: { callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
+    options: { maintainAspectRatio: false, indexAxis: 'y', layout: DL_H, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { label: (c) => c.parsed.x + '% visits with geotag · ' + fmt(zc[c.dataIndex].t) + ' visits' } } },
+      scales: { x: { min: cvXMin, max: cvXMax, ticks: { stepSize: 5, callback: (v) => v + '%' }, grid }, y: { grid: { display: false } } } },
   });
-  regExp('chCover', 'GPS coverage by zone', 'trace_chart_gps_coverage_by_zone.csv',
-    ['zone_name', 'total_visit', 'identified', 'not_identified', 'gps_coverage_pct'],
+  regExp('chCover', 'Visits with geotag by zone', 'trace_chart_visit_with_geotag_by_zone.csv',
+    ['zone_name', 'total_visit', 'visit_with_geotag', 'visit_without_geotag', 'visit_with_geotag_pct'],
     zc.map((x) => [x.k, x.t, x.v.checkable, x.t - x.v.checkable, x.c.toFixed(1)]));
 
   /* Anomaly by hour: batang = % anomaly, garis = jumlah visit terverifikasi (konteks volume) */
@@ -120,38 +120,38 @@ export function renderCharts() {
   destroy('chHour');
   charts.chHour = new Chart($('#chHour'), {
     data: { labels: HRS, datasets: [
-      { type: 'bar', label: 'Anomaly %', data: A.hour.map((d) => (d.c ? +pct(d.a, d.c).toFixed(1) : null)),
+      { type: 'bar', label: 'Unusual visit %', data: A.hour.map((d) => (d.c ? +pct(d.a, d.c).toFixed(1) : null)),
         backgroundColor: A.hour.map((d) => barColor(pct(d.a, d.c))), borderRadius: 6, categoryPercentage: 0.8, yAxisID: 'y', order: 2 },
-      { type: 'line', label: 'Visits with GPS', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
+      { type: 'line', label: 'Visits with geotag', data: A.hour.map((d) => d.c), yAxisID: 'y2', order: 1,
         borderColor: 'rgba(37,99,235,.45)', backgroundColor: 'rgba(37,99,235,.08)', borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.35, fill: true },
     ] },
     options: { maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 30 } },
       /* Lebar penuh: label mendatar; di layar sempit (batang kecil) label ditulis tegak. */
       plugins: { legend: { display: false }, dataLabels: { display: true, datasets: [0], size: 10, rotate: (ch) => ch.width < 900 },
         tooltip: { callbacks: { title: (it) => `${HRS[it[0].dataIndex]}:00 – ${HRS[it[0].dataIndex]}:59`,
-          label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No visits with GPS' : `${c.parsed.y}% anomaly (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} visits with GPS`) } } },
+          label: (c) => (c.dataset.yAxisID === 'y' ? (c.parsed.y == null ? 'No visits with geotag' : `${c.parsed.y}% unusual (${fmt(A.hour[c.dataIndex].a)} visits)`) : `${fmt(c.parsed.y)} visits with geotag`) } } },
       scales: { x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: false, callback: function (v, i) { return this.chart.width < 900 ? (i % 3 === 0 ? HRS[i] : '') : HRS[i] + ':00'; } } },
         y: { beginAtZero: true, ticks: { callback: (v) => v + '%', maxTicksLimit: 6 }, grid },
         y2: { position: 'right', beginAtZero: true, grid: { display: false }, ticks: { maxTicksLimit: 5, color: 'rgba(37,99,235,.55)', callback: (v) => (v >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : v) } } } },
   });
-  regExp('chHour', 'Anomaly by hour', 'trace_chart_anomaly_by_hour.csv',
-    ['hour', 'total_visit', 'identified', 'anomaly', 'anomaly_pct_of_identified'],
+  regExp('chHour', 'Unusual visits by hour', 'trace_chart_unusual_visits_by_hour.csv',
+    ['hour', 'total_visit', 'visit_with_geotag', 'unusual_visit', 'unusual_visit_pct'],
     A.hour.map((d, h) => [HRS[h] + ':00', d.t, d.c, d.a, d.c ? pct(d.a, d.c).toFixed(1) : '']));
 
   const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const DOWF = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const dIdx = S.P.ignoreSat ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]; // Sabtu disembunyikan bila diabaikan
+  const dIdx = S.P.ignoreWeekend ? [1, 2, 3, 4, 5] : [0, 1, 2, 3, 4, 5, 6]; // Sabtu & Minggu disembunyikan bila diabaikan
   const dw = dIdx.map((i) => A.dow[i]);
-  $('#dowCap').textContent = S.P.ignoreSat ? `% anomaly, Sunday–Friday · Saturday ignored (${fmt(A.satIgnored || 0)} visits)` : '% anomaly, Sunday–Saturday';
+  $('#dowCap').textContent = S.P.ignoreWeekend ? `Unusual visit %, Monday–Friday · weekend ignored (${fmt(A.weekendIgnored || 0)} visits)` : 'Unusual visit %, Sunday–Saturday';
   destroy('chDow');
   charts.chDow = new Chart($('#chDow'), {
     type: 'bar',
     data: { labels: dIdx.map((i) => DOW[i]), datasets: [{ data: dw.map((d) => +pct(d.a, d.c).toFixed(1)), backgroundColor: dw.map((d) => barColor(pct(d.a, d.c))), borderRadius: 7, categoryPercentage: 0.75 }] },
-    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { title: (it) => DOWF[dIdx[it[0].dataIndex]], label: (c) => c.parsed.y + '% anomaly · ' + fmt(dw[c.dataIndex].c) + ' with GPS' } } },
+    options: { maintainAspectRatio: false, layout: { padding: { top: 18 } }, plugins: { legend: { display: false }, dataLabels: { display: true }, tooltip: { callbacks: { title: (it) => DOWF[dIdx[it[0].dataIndex]], label: (c) => c.parsed.y + '% unusual · ' + fmt(dw[c.dataIndex].c) + ' with geotag' } } },
       scales: { x: { grid: { display: false } }, y: { ticks: { callback: (v) => v + '%' }, grid } } },
   });
-  regExp('chDow', 'Anomaly by weekday', 'trace_chart_anomaly_by_weekday.csv',
-    ['day_of_week', 'total_visit', 'identified', 'anomaly', 'anomaly_pct_of_identified'],
+  regExp('chDow', 'Unusual visits by weekday', 'trace_chart_unusual_visits_by_weekday.csv',
+    ['day_of_week', 'total_visit', 'visit_with_geotag', 'unusual_visit', 'unusual_visit_pct'],
     dIdx.map((i) => [DOWF[i], A.dow[i].t, A.dow[i].c, A.dow[i].a, pct(A.dow[i].a, A.dow[i].c).toFixed(1)]));
 
   renderHistory();
@@ -198,7 +198,7 @@ export function renderHistory() {
   let keys = Object.keys(tot).sort();
   const nAll = keys.length;
   if (nAll > HIST_MAX_SERIES) keys = keys.slice().sort((a, b) => tot[b] - tot[a]).slice(0, HIST_MAX_SERIES).sort();
-  $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'GPS coverage %' : 'Anomaly %') + ' per KPS week, ' + (dim === 'national' ? 'national' : 'by ' + (dim === 'region' ? 'region' : 'zone')) +
+  $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'Visits with geotag %' : 'Unusual visit %') + ' per KPS week, ' + (dim === 'national' ? 'national' : 'by ' + (dim === 'region' ? 'region' : 'zone')) +
     (nAll > keys.length ? ` · top ${keys.length} of ${nAll} by volume` : '');
   const ds = keys.map((kn, idx) => ({
     label: kn.replace('Zone ', ''),
@@ -248,7 +248,7 @@ export function renderHistory() {
   }));
   regExp('chHist', 'Weekly trend', 'trace_chart_historical_' + metric + '_' + dim + '.csv',
     isSpot ? ['kps_week', 'dimension', 'name', 'territories', 'territories_with_shared_spot', 'pct_territories_flagged']
-      : ['kps_week', 'dimension', 'name', 'total_visit', 'identified', 'anomaly', 'gps_coverage_pct', 'anomaly_pct_of_identified'], rows);
+      : ['kps_week', 'dimension', 'name', 'total_visit', 'visit_with_geotag', 'unusual_visit', 'visit_with_geotag_pct', 'unusual_visit_pct'], rows);
 }
 
 /* ---------- klik kanan pada grafik ---------- */

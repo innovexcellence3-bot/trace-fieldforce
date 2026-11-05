@@ -328,7 +328,7 @@
         </div>
       </section>
       <section class="prule r-sat">
-        <label class="pr-check"><input type="checkbox" id="dIgnoreSat" checked><span><b>Ignore Saturday visits</b><em>Saturday visits are flagged and left out of every metric, chart, table and the map.</em></span></label>
+        <label class="pr-check"><input type="checkbox" id="dIgnoreWeekend" checked><span><b>Ignore weekend visits</b><em>Saturday and Sunday visits are flagged and left out of every metric, chart, table and the map.</em></span></label>
       </section>
     </div>
     <div class="pd-foot">
@@ -340,35 +340,35 @@
   <!-- tab section -->
   <nav class="rtabs" id="rtabs" aria-label="Report sections">
     <button data-tab="summary" class="active"><em>01</em><i>📊</i><span><b>Executive Summary</b><small>The big picture</small></span></button>
-    <button data-tab="radar"><em>02</em><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
-    <button data-tab="lens"><em>03</em><i>🔭</i><span><b>Visit Map</b><small>Visits by territory</small></span></button>
+    <button data-tab="lens"><em>02</em><i>🔭</i><span><b>Visit Map</b><small>Visits by territory</small></span></button>
+    <button data-tab="radar"><em>03</em><i>🧭</i><span><b>Regional Breakdown</b><small>Zone → region → area</small></span></button>
   </nav>
   <div class="rsection" id="rsection">
 
   <!-- ===== Ringkasan ===== -->
   <section class="rpanel" data-panel="summary">
-    <div class="phead"><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Coverage, anomalies and shared spots at a glance.</p></div>
+    <div class="phead"><span class="phead-num">Section 01</span><h2>Executive Summary</h2><p>Visits with geotag, unusual visits and shared spots at a glance.</p></div>
     <div class="kpis" id="kpis"></div>
-    <!-- Baris 1: Weekly trend (lebar) + Anomaly by weekday -->
+    <!-- Baris 1: Weekly trend (lebar) + Unusual visits by weekday -->
     <div class="grid-top">
       <div class="card trend-main">
         <div class="hrow">
           <div><h3>Weekly trend</h3><div class="cap" id="histCap"></div></div>
           <div class="hctl">
             <select id="histDim"><option value="national" selected>National</option><option value="zone">By zone</option><option value="region">By region</option></select>
-            <select id="histMetric"><option value="cover">GPS coverage %</option><option value="anom">Anomaly %</option><option value="spot">Shared spot territories %</option></select>
+            <select id="histMetric"><option value="cover">Visits with geotag %</option><option value="anom">Unusual visit %</option><option value="spot">Shared spot territories %</option></select>
           </div>
         </div>
         <div class="chartbox" id="boxHist" data-exp="chHist"><canvas id="chHist"></canvas></div>
       </div>
-      <div class="card trend-side"><h3>Anomaly by weekday</h3><div class="cap" id="dowCap">% anomaly, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
+      <div class="card trend-side"><h3>Unusual visits by weekday</h3><div class="cap" id="dowCap">Unusual visit %, Sunday–Saturday</div><div class="chartbox" id="boxDow" data-exp="chDow"><canvas id="chDow"></canvas></div></div>
     </div>
     <!-- Baris 2: pola per jam (lebar penuh, 24 batang) -->
-    <div class="card"><h3>Anomaly by hour</h3><div class="cap">Bars = % anomaly by start hour · <span class="hl-line">line</span> = visits with GPS</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
+    <div class="card"><h3>Unusual visits by hour</h3><div class="cap">Bars = unusual visit % by start hour · <span class="hl-line">line</span> = visits with geotag</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
     <!-- Baris 3: perbandingan per zone -->
     <div class="grid3">
-      <div class="card"><h3>Anomaly rate by zone</h3><div class="cap">Anomalous visits as % of visits with GPS</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
-      <div class="card"><h3>GPS coverage by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+      <div class="card"><h3>Unusual visit rate by zone</h3><div class="cap">Unusual visits as % of visits with geotag</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
+      <div class="card"><h3>Visits with geotag by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
       <div class="card"><h3>Shared spot territories by zone</h3><div class="cap">% of territories with ≥ 1 shared spot</div><div class="chartbox" id="boxSpotZone" data-exp="chSpotZone"><canvas id="chSpotZone"></canvas></div></div>
     </div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>
@@ -376,11 +376,11 @@
 
   <!-- ===== Radar Wilayah ===== -->
   <section class="rpanel" data-panel="radar" hidden>
-    <div class="phead"><span class="phead-num">Section 02</span><h2>Regional Breakdown</h2><p>Where anomalies and shared spots concentrate — drill from zone down to territory.</p></div>
+    <div class="phead"><span class="phead-num">Section 03</span><h2>Regional Breakdown</h2><p>Where unusual visits and shared spots concentrate — drill from zone down to territory.</p></div>
     <div class="leaders">
-      <div class="card lead-card hot"><h3>Highest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
-      <div class="card lead-card cool"><h3>Lowest anomaly rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
-      <div class="card lead-card blind"><h3>Lowest GPS coverage</h3><div class="cap">Bottom 5 areas</div><ol id="leadBlind"></ol></div>
+      <div class="card lead-card hot"><h3>Highest unusual visit rate</h3><div class="cap">Top 5 areas</div><ol id="leadHot"></ol></div>
+      <div class="card lead-card cool"><h3>Lowest unusual visit rate</h3><div class="cap">Top 5 areas</div><ol id="leadCool"></ol></div>
+      <div class="card lead-card blind"><h3>Lowest visits with geotag</h3><div class="cap">Bottom 5 areas</div><ol id="leadBlind"></ol></div>
       <div class="card lead-card spotted"><h3>Most shared-spot territories</h3><div class="cap">% of territories flagged</div><ol id="leadSpot"></ol></div>
     </div>
     <div class="card">
@@ -397,8 +397,8 @@
       <div class="tbl-wrap" style="max-height:620px">
         <table id="geoTable"><thead><tr>
           <th data-k="name">Region</th><th class="num" data-k="total">Visits</th>
-          <th class="num" data-k="cover">GPS coverage</th><th class="num" data-k="checkable" title="Visits with complete GPS coordinates">With GPS</th>
-          <th class="num" data-k="anomaly">Anomalies</th><th class="num" data-k="rate">Anomaly %</th>
+          <th class="num" data-k="cover">Visits with geotag %</th><th class="num" data-k="checkable" title="Visits with complete GPS coordinates">With geotag</th>
+          <th class="num" data-k="anomaly">Unusual visits</th><th class="num" data-k="rate">Unusual visit %</th>
           <th class="num" data-k="lm" title="Visits flagged: GPS too far from the store"><i data-pi="lm"></i> Location Mismatch</th>
           <th class="num" data-k="rsl" title="Visits flagged: many stores visited from one spot"><i data-pi="rsl"></i> Rapid Same Location</th><th data-k="rate">Status</th>
           <th class="num" data-k="spotPct" title="Territories with at least one shared spot (whole period)"><i data-pi="spot"></i> Shared spot territories</th>
@@ -409,7 +409,7 @@
 
   <!-- ===== Lensa Lapangan ===== -->
   <section class="rpanel" data-panel="lens" hidden>
-    <div class="phead"><span class="phead-num">Section 03</span><h2>Visit Map</h2><p>Click a point for visit details &amp; Street View · click a territory to zoom in.</p></div>
+    <div class="phead"><span class="phead-num">Section 02</span><h2>Visit Map</h2><p>Click a point for visit details &amp; Street View · click a territory to zoom in.</p></div>
     <div class="mapgrid">
       <div class="card">
         <div class="toolbar">
@@ -417,7 +417,7 @@
           <select id="mTerr"><option value="">All territories</option></select>
           <select id="mMode">
             <option value="all">All visits</option>
-            <option value="anom">Anomalies only</option>
+            <option value="anom">Unusual visits only</option>
             <option value="normal">Normal only</option>
             <option value="lm">Location Mismatch</option>
             <option value="rsl">Rapid Same Location</option>
@@ -426,20 +426,23 @@
                   </div>
         <div id="map" class="map"></div>
         <div class="maplegend">
-          <span><span class="dot" style="background:#e5484d"></span> Anomaly</span>
+          <span><span class="dot" style="background:#e5484d"></span> Unusual visit</span>
           <span><span class="dot" style="background:#16a34a"></span> Normal</span>
           <span><i data-pi="spot"></i> Shared spot</span>
           <span class="mapstat" id="mapStat"></span>
         </div>
       </div>
       <div class="card">
-        <div class="hrow"><div><h3>Territories</h3><div class="cap">Click a row to show it on the map</div></div>
-          <div class="hctl"><select id="tSpotOnly" title="Show only territories that have a shared spot"><option value="">All territories</option><option value="1">With shared spot only</option></select><select id="tSpotSort" title="Sort shared spot territories" hidden><option value="size">Sort: biggest spot (most outlets)</option><option value="count">Sort: most spots</option></select><select id="mWeek"></select></div></div>
+        <h3>Territories</h3><div class="cap">Click a row to show it on the map · click a column header to sort</div>
+        <div class="tctl">
+          <label>KPS week<select id="mWeek"></select></label>
+          <label>Show<select id="tSpotOnly"><option value="">All territories</option><option value="1">With shared spot only</option></select></label>
+        </div>
         <div class="tbl-wrap" style="max-height:470px">
           <table id="tTable"><thead><tr>
-            <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover">Coverage</th>
+            <th data-k="terr">Territory</th><th class="num" data-k="total">Visits</th><th class="num" data-k="cover" title="Visits with geotag %">With geotag</th>
             <th class="num" data-k="spots" title="Shared spots in this territory (whole period)"><i data-pi="spot"></i> Spots</th><th class="num" data-k="spotStores" title="Unique outlets in this territory's biggest shared spot">Biggest spot</th>
-            <th class="num" data-k="lm" title="Location Mismatch"><i data-pi="lm"></i> Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location"><i data-pi="rsl"></i> Rapid Loc.</th><th class="num" data-k="rate">Anom. %</th>
+            <th class="num" data-k="lm" title="Location Mismatch"><i data-pi="lm"></i> Loc. Mismatch</th><th class="num" data-k="rsl" title="Rapid Same Location"><i data-pi="rsl"></i> Rapid Loc.</th><th class="num" data-k="rate">Unusual %</th>
           </tr></thead><tbody></tbody></table>
         </div>
         <div class="foot-note" id="tFoot"></div>

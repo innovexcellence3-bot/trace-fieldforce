@@ -9,21 +9,27 @@ Aplikasi punya 2 menu:
 - **Data Connection**: tarik data dari Snowflake (login SSO `externalbrowser`). Setiap hasil query
   disimpan sebagai CSV di `data/cache/`, lalu pilih dataset mana yang dipakai Report.
 - **Report**: dashboard anomaly dalam 3 tab — **Executive Summary** (KPI & grafik),
-  **Regional Breakdown** (peringkat area + drill-down zone → region → area), dan **Visit Map**
-  (peta visit + tabel territory). Detection parameters ada di panel kanan yang bisa
-  dibuka-tutup (default Location Mismatch 500 m). Visit hari **Sabtu** di-flag dan diabaikan dari semua metric,
-  grafik, tabel, peta, dan shared spot (default aktif; bisa dimatikan lewat *Ignore Saturday visits* di panel yang sama). Dataset aktif, parameter, dan filter terakhir disimpan otomatis
+  **Visit Map** (peta visit + tabel territory), dan **Regional Breakdown**
+  (peringkat area + drill-down zone → region → area). Detection parameters ada di panel kanan yang bisa
+  dibuka-tutup (default Location Mismatch 500 m). Visit hari **Sabtu & Minggu** di-flag dan diabaikan dari semua metric,
+  grafik, tabel, peta, dan shared spot (default aktif; bisa dimatikan lewat *Ignore weekend visits* di panel yang sama). Dataset aktif, parameter, dan filter terakhir disimpan otomatis
   (`data/state.json`), jadi refresh atau buka ulang aplikasi langsung kembali ke Report yang sama.
 
-### Shared spot (anomaly level territory)
+### Istilah di UI
+
+- **Visits with geotag** = visit dengan koordinat GPS lengkap (visit & toko); dulu disebut *GPS coverage*.
+- **Unusual visits** = visit ber-geotag yang kena Location Mismatch atau Rapid Same Location; dulu disebut *anomaly*.
+  Nama kolom export CSV mengikuti istilah ini (`visit_with_geotag`, `unusual_visit_pct`, dst.).
+
+### Shared spot (unusual visit level territory)
 
 Selain 2 parameter per visit, ada metric level **territory**: sebuah *shared spot* adalah satu titik
 di mana dalam radius **20 m** ada **lebih dari 20 toko unik** yang di-visit oleh territory yang sama,
 selama periode yang difilter. Territory dengan ≥ 1 spot ter-flag; di level zone/region/area angkanya
-= % territory yang ter-flag. Metric ini terpisah dari Anomaly % (yang dihitung per visit). Radius dan
+= % territory yang ter-flag. Metric ini terpisah dari Unusual visit % (yang dihitung per visit). Radius dan
 batas toko bisa diubah di Detection parameters. Tampil di: KPI & kartu *Shared spot territories*
 (Executive Summary), kolom & peringkat di Regional Breakdown (bisa di-drill sampai territory), serta
-lingkaran spot, filter, dan kolom *Spots* di Visit Map.
+lingkaran spot, filter *With shared spot only*, dan kolom *Spots* / *Biggest spot* di Visit Map.
 
 Saat dataset pertama kali dibuka, CSV diolah lalu disimpan sebagai **snapshot** biner
 (`data/cache/<id>.snap/`). Pembukaan berikutnya memuat snapshot ini (uji: 1,2 juta baris → ~3 detik,

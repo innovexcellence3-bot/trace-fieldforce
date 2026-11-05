@@ -40,7 +40,7 @@ function popupHtml(i) {
   if (B.lmA[i]) tags.push('<span class="vp-tag lm">' + pi('lm') + ' Location Mismatch</span>');
   if (B.rslA[i]) tags.push('<span class="vp-tag rsl">' + pi('rsl') + ' Rapid Same Location</span>');
   if (S.SP && S.SP.visitFlag[i]) tags.push('<span class="vp-tag spot">' + pi('spot') + ' Shared spot</span>');
-  const status = B.anA[i] ? '<span class="vp-status bad">Anomaly</span>' : '<span class="vp-status ok">Normal</span>';
+  const status = B.anA[i] ? '<span class="vp-status bad">Unusual visit</span>' : '<span class="vp-status ok">Normal</span>';
   const emp = B.iEmp.val(B.emp[i]);
   const empTxt = !emp || emp.startsWith('(') ? '—' : esc(emp);
   const row = (ico, label, val) => `<div class="vp-row"><span>${ico} ${label}</span><b>${val}</b></div>`;
@@ -145,5 +145,5 @@ export function renderMap(f, fit) {
   bounds.push(...spotPts);
   if (fit && bounds.length) { try { map.fitBounds(bounds, { padding: [26, 26], maxZoom: 15 }); } catch { /* ignore */ } }
   stat.className = 'mapstat';
-  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> anomaly` + (spotPts.length ? ` · <b style="color:${SPOT}">${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : (!f.district && !f.terr && S.A.spot?.spotN ? ' · pick a district / territory to show shared spots' : ''));
+  stat.innerHTML = (f.mode === 'spot' ? 'All weeks · ' : '') + `<b>${fmt(match.length)}</b> visits · <b style="color:${RED}">${fmt(anom)}</b> unusual` + (spotPts.length ? ` · <b style="color:${SPOT}">${fmt(spotPts.length)}</b> shared spot${spotPts.length > 1 ? 's' : ''}` : (!f.district && !f.terr && S.A.spot?.spotN ? ' · pick a district / territory to show shared spots' : ''));
 }
