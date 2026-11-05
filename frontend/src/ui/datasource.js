@@ -110,17 +110,57 @@ function rangeOf(d) {
   return st.weekMin ? `KPS ${esc(st.weekMin)}–${esc(st.weekMax)}` : 'CSV';
 }
 
+/* angka statistik di hero "berhitung" naik saat halaman dibuka */
+function countUp(root) {
+  root.querySelectorAll('[data-count]').forEach((el) => {
+    const end = +el.dataset.count || 0, compact = el.dataset.fmt === 'c';
+    const show = (v) => { el.textContent = compact ? fmtCompact(Math.round(v)) : Math.round(v).toLocaleString('id-ID'); };
+    if (!end || matchMedia('(prefers-reduced-motion: reduce)').matches) { show(end); return; }
+    const t0 = performance.now(), dur = 1400;
+    const step = (t) => { const k = Math.min(1, (t - t0) / dur); show(end * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  });
+}
+function weekSpan(d) {
+  const st = d.stats || {}, p = d.params || {};
+  const a = String(st.weekMin || p.weekFrom || '').replace(/\D/g, ''), b = String(st.weekMax || p.weekTo || '').replace(/\D/g, '');
+  if (a.length < 6 || b.length < 6) return 0;
+  return Math.max(1, (+b.slice(0, 4) - +a.slice(0, 4)) * 52 + (+b.slice(-2) - +a.slice(-2)) + 1);
+}
+
 export function renderActiveCard() {
   const d = datasets.find((x) => x.id === S.activeId);
   const el = $('#activeCard');
+  const manage = '<button class="btn glass" type="button" data-open-data>🔌 Manage data</button>';
   if (!d) {
     el.className = 'activecard none';
-    el.innerHTML = '<div class="ico">📭</div><div class="grow"><small>Report</small><b>No active dataset</b><span>Pull data or pick a dataset below</span></div>';
+    el.innerHTML = `<div class="ac-top"><div class="ico">📭</div><div class="grow"><small>Get started</small><b>No active report yet</b>
+      <span>Connect a data source to start verifying visits</span></div>${manage}</div>`;
     return;
   }
+  const st = d.stats || {};
   el.className = 'activecard';
-  el.innerHTML = `<div class="ico">📊</div><div class="grow"><small>Active report</small><b>${esc(d.name)}</b>
-    <span>${fmtCompact(d.rows || 0)} visits · ${rangeOf(d)}</span></div><a class="btn primary" href="#/report">Open Report →</a>`;
+  el.innerHTML = `<div class="ac-top"><div class="ico">📊</div><div class="grow"><small>Active report</small><b>${esc(d.name)}</b>
+      <span>${rangeOf(d)}</span></div><a class="btn glow" href="#/report">Open Report →</a></div>
+    <div class="ac-stats">
+      <div><strong data-count="${d.rows || st.rows || 0}" data-fmt="c">0</strong><span>visits analysed</span></div>
+      <div><strong data-count="${st.territories || 0}">0</strong><span>territories</span></div>
+      <div><strong data-count="${st.zones || 0}">0</strong><span>zones</span></div>
+      <div><strong data-count="${weekSpan(d)}">0</strong><span>KPS weeks</span></div>
+    </div>`;
+  countUp(el);
+}
+
+/* ringkasan di header panel Data sources; panel dibuka otomatis bila belum ada report aktif */
+function renderDataPanel() {
+  const d = datasets.find((x) => x.id === S.activeId);
+  $('#dpSum').textContent = `Snowflake · ${datasets.length} saved dataset${datasets.length === 1 ? '' : 's'}` + (d ? ` · active: ${d.name}` : ' · no active report');
+  if (!d) $('#dataPanel').open = true;
+}
+function openDataPanel() {
+  const p = $('#dataPanel');
+  p.open = true;
+  p.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 export async function refreshLibrary() {
@@ -131,6 +171,7 @@ export async function refreshLibrary() {
     return datasets;
   }
   renderActiveCard();
+  renderDataPanel();
   const list = $('#libList');
   if (!datasets.length) {
     list.innerHTML = '<div class="empty"><div class="big">📭</div><h4>No datasets yet</h4>Run a query to create one.</div>';
@@ -187,6 +228,7 @@ export async function initDataSource({ use }) {
   });
   $('#libList').addEventListener('click', onLibraryClick);
   $('#libRefresh').addEventListener('click', refreshLibrary);
+  $('#activeCard').addEventListener('click', (e) => { if (e.target.closest('[data-open-data]')) openDataPanel(); });
   await loadConfig();
   return refreshLibrary();
 }

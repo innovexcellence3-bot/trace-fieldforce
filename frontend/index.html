@@ -52,9 +52,17 @@
 <section id="view-connection" hidden>
   <div class="hero">
     <div class="hero-text">
-      <span class="eyebrow">Location Verification Report</span>
-      <h1>Field Force <em>Location Intelligence.</em></h1>
-      <p class="lead">Pull visit data from Snowflake, pick a dataset, and explore it in the Report.</p>
+      <span class="eyebrow"><span class="eb-dot"></span>TRACE · Field Force Visit Intelligence</span>
+      <h1>Field Force <em>Visit Intelligence.</em></h1>
+      <div class="acro" aria-label="TRACE: Tracking Real Activities for Credible Evidence">
+        <span><b>T</b>racking</span><span><b>R</b>eal</span><span><b>A</b>ctivities</span><span class="for">for</span><span><b>C</b>redible</span><span><b>E</b>vidence</span>
+      </div>
+      <p class="lead">See where your field force really is. TRACE checks every store visit against its GPS location and brings the visits that don't add up to the surface, so every decision stands on evidence.</p>
+      <div class="caps">
+        <div class="cap-i"><i data-pi="lm" data-size="lg"></i><div><b>Location Mismatch</b><span>Visit far from the store it claims</span></div></div>
+        <div class="cap-i"><i data-pi="rsl" data-size="lg"></i><div><b>Rapid Same Location</b><span>Many stores visited from one point</span></div></div>
+        <div class="cap-i"><i data-pi="spot" data-size="lg"></i><div><b>Shared Spot</b><span>Territories working from a single spot</span></div></div>
+      </div>
       <div class="activecard" id="activeCard"></div>
     </div>
     <div class="hero-visual" aria-hidden="true">
@@ -165,6 +173,12 @@
     </div>
   </div>
 
+  <details class="datapanel" id="dataPanel">
+    <summary>
+      <span class="dp-ico">🔌</span>
+      <span class="dp-t"><b>Data sources</b><small id="dpSum">Snowflake · saved datasets</small></span>
+      <span class="dp-btn"><span class="dp-open">Manage data</span><span class="dp-close">Hide</span><i>▾</i></span>
+    </summary>
   <div class="conn-grid">
     <div class="card sfcard">
       <div class="card-head">
@@ -221,6 +235,7 @@
       <div class="liblist" id="libList"></div>
     </div>
   </div>
+  </details>
 </section>
 
 <!-- ================================================================ REPORT -->
