@@ -97,8 +97,7 @@ export function passGeo(i, ids) {
   return true;
 }
 
-/* nama alasan dari mask bit: 1 = Location Mismatch, 2 = Rapid Same Location, 4 = Shared Spot */
-const reasonName = (m) => (m ? ['Location Mismatch', 'Rapid Same Location', 'Shared Spot'].filter((_, b) => m & (1 << b)).join(' | ') : 'No Unusual Visit');
+const REASONS = ['No Unusual Visit', 'Location Mismatch', 'Rapid Same Location', 'Location Mismatch | Rapid Same Location'];
 
 export function aggregate() {
   const { B, A, P } = S;
@@ -107,8 +106,8 @@ export function aggregate() {
   buildDateOK();
   const RI = ensureReinput(); // visit input ulang: tidak di-flag unusual / shared spot
   const SP = computeSpots(); // Shared Spot per territory (ikut filter tanggal)
-  let total = 0, anomaly = 0, sLm = 0, sRsl = 0, sSpot = 0, checkable = 0, notcheck = 0, nCust = 0, weekendIgnored = 0;
-  const reasonCnt = new Float64Array(9); // 0..7 = mask unusual (visit ber-geotag), 8 = koordinat tidak lengkap
+  let total = 0, anomaly = 0, sLm = 0, sRsl = 0, checkable = 0, notcheck = 0, nCust = 0, weekendIgnored = 0;
+  const reasonCnt = new Float64Array(5); // 0..3 = mask anomaly (visit teridentifikasi), 4 = koordinat tidak lengkap
   const custSeen = new Uint8Array(B.iCust.size);
   const newAgg = () => ({ total: 0, anomaly: 0, lm: 0, rsl: 0, checkable: 0, terrs: new Set(), lt: -1 });
   const bump = (map, key, isA, lm, rsl, chk, tid) => {
@@ -129,20 +128,19 @@ export function aggregate() {
   const nd = B.iDate.size;
   const dowCache = new Int8Array(nd);
   for (let k = 0; k < nd; k++) dowCache[k] = weekdayOf(B.iDate.val(k));
-  const CHK = B.chk, DIST = B.dist, UQ = B.uniq, MS = B.msDay, dateOK = A.dateOK, SPF = SP.visitFlag;
+  const CHK = B.chk, DIST = B.dist, UQ = B.uniq, MS = B.msDay, dateOK = A.dateOK;
 
   for (let i = 0; i < n; i++) {
     const chk = CHK[i];
     const lm = (chk && !RI[i] && DIST[i] > misM) ? 1 : 0;
     const rsl = (chk && !RI[i] && UQ[i] > rc) ? 1 : 0;
-    const sp = SPF[i]; // visit berada di dalam shared spot (re-input sudah dikecualikan di deteksi spot)
-    const isA = (lm + rsl + sp) > 0; // unusual = Location Mismatch, Rapid Same Location, atau di Shared Spot
+    const isA = (lm + rsl) > 0; // anomaly = Location Mismatch atau Rapid Same Location
     B.lmA[i] = lm; B.rslA[i] = rsl; B.anA[i] = isA ? 1 : 0;
     const di = B.date[i];
     if (!dateOK[di]) { if (A.dateWknd[di] && (geoAll || passGeo(i, ids))) weekendIgnored++; continue; }
     if (!geoAll && !passGeo(i, ids)) continue;
-    total++; sLm += lm; sRsl += rsl; sSpot += sp; if (isA) anomaly++; if (chk) checkable++; else notcheck++;
-    reasonCnt[chk ? (lm | (rsl << 1) | (sp << 2)) : 8]++;
+    total++; sLm += lm; sRsl += rsl; if (isA) anomaly++; if (chk) checkable++; else notcheck++;
+    reasonCnt[chk ? (lm | (rsl << 1)) : 4]++;
     const c = B.cust[i];
     if (!custSeen[c]) { custSeen[c] = 1; nCust++; }
     const z = B.zone[i], r = B.region[i];
@@ -186,9 +184,9 @@ export function aggregate() {
   A.spot = { terrN, spotTerr, spotN, R: SP.R, K: SP.K };
 
   /* konversi ke struktur berkunci nama (dipakai grafik, tabel, export) */
-  Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, spotV: sSpot, checkable, notcheck, cust: { size: nCust }, terr, dow, hour, weekendIgnored });
+  Object.assign(A, { total, anomaly, lm: sLm, rsl: sRsl, checkable, notcheck, cust: { size: nCust }, terr, dow, hour, weekendIgnored });
   A.reason = {};
-  reasonCnt.forEach((v, k) => { if (v) A.reason[k === 8 ? 'Incomplete Coordinate' : reasonName(k)] = v; });
+  reasonCnt.forEach((v, k) => { if (v) A.reason[k === 4 ? 'Incomplete Coordinate' : REASONS[k]] = v; });
   const zn = (id) => B.iZone.val(id);
   A.zone = {}; for (const [z, v] of zoneM) A.zone[zn(z)] = v;
   A.region = {}; for (const [k, v] of regM) A.region[zn(Math.floor(k / K20)) + '||' + B.iReg.val(k % K20)] = v;

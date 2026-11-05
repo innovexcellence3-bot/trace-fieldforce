@@ -446,9 +446,9 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .rk-txt strong{display:block;font:800 20px var(--display);margin-top:3px;letter-spacing:-.3px}
 .rk-txt span{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
 .rk-txt span b{color:var(--ink2)}
-.rk-txt .kminis{display:flex;margin-top:8px;flex-wrap:nowrap;gap:4px}
+.rk-txt .kminis{display:flex;margin-top:8px}
 .rk-txt .kmini .pi{margin-right:2px}
-.kmini{display:inline-flex!important;align-items:center;gap:3px;margin-top:0;font-size:11.5px;color:var(--ink2)}
+.kmini{display:inline-flex!important;align-items:center;gap:4px;margin-top:0;font-size:11.5px;color:var(--ink2)}
 
 .recalc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-weight:600}
 .recalc .spin{width:13px;height:13px;border:2px solid #e5e7eb;border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite;display:none}
@@ -566,8 +566,8 @@ body.pd-open .pedge{opacity:0;pointer-events:none}
 
 .kbig{font:800 13px var(--display);color:var(--ok)}
 .kbig.bad{color:var(--bad)}.kbig.spot{color:var(--spot)}
-.kminis{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
-.kmini{font-size:11px;font-weight:600;color:var(--ink2);background:#f5f7fa;border:1px solid var(--line);padding:2px 6px;white-space:nowrap;border-radius:99px}
+.kminis{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.kmini{font-size:11.5px;font-weight:600;color:var(--ink2);background:#f5f7fa;border:1px solid var(--line);padding:2px 8px;border-radius:99px}
 
 /* ---------------- Shared spot ---------------- */
 .kpi .ico.i{background:var(--spotsoft)}
