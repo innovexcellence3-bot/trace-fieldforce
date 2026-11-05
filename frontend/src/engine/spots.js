@@ -10,6 +10,7 @@
    2. Titik panas yang saling berjarak ≤ R digabung jadi satu spot (connected components).
    3. Pusat spot = titik panas paling padat; toko & visit spot dihitung dalam radius R dari pusat itu. */
 import { S } from '../core/state.js';
+import { ensureReinput } from './reinput.js';
 
 const GK = 67108864; // 2^26, kunci sel grid
 
@@ -123,13 +124,14 @@ function detectSpots(B, idx, R, K, visitFlag) {
 export function computeSpots() {
   const { B, A, P, FILT } = S;
   const R = Math.max(1, +P.spotM || 20), K = Math.max(1, +P.spotStores || 20);
-  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.n}`;
+  const RI = ensureReinput(); // visit re-input tidak ikut deteksi shared spot
+  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.reinputKey}|${B.n}`;
   if (S.SP && S.SP.key === key) return S.SP;
 
   const dateOK = A.dateOK;
   const byTerr = new Map();
   for (let i = 0; i < B.n; i++) {
-    if (!B.chk[i] || !dateOK[B.date[i]]) continue;
+    if (!B.chk[i] || RI[i] || !dateOK[B.date[i]]) continue;
     const t = B.terr[i];
     let arr = byTerr.get(t);
     if (!arr) { arr = []; byTerr.set(t, arr); }
@@ -150,11 +152,12 @@ export function computeSpots() {
 export function computeWeeklySpots() {
   const { B, A, P, FILT } = S;
   const R = Math.max(1, +P.spotM || 20), K = Math.max(1, +P.spotStores || 20);
-  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.n}`;
+  const RI = ensureReinput(); // visit re-input tidak ikut deteksi shared spot
+  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.reinputKey}|${B.n}`;
   if (S.SPW && S.SPW.key === key) return S.SPW;
   const groups = new Map();
   for (let i = 0; i < B.n; i++) {
-    if (!B.chk[i] || !A.dateOK[B.date[i]]) continue;
+    if (!B.chk[i] || RI[i] || !A.dateOK[B.date[i]]) continue;
     const k = B.week[i] * 1048576 + B.terr[i];
     let arr = groups.get(k);
     if (!arr) { arr = []; groups.set(k, arr); }

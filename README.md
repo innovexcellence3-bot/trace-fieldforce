@@ -15,6 +15,15 @@ Aplikasi punya 2 menu:
   grafik, tabel, peta, dan shared spot (default aktif; bisa dimatikan lewat *Ignore weekend visits* di panel yang sama). Dataset aktif, parameter, dan filter terakhir disimpan otomatis
   (`data/state.json`), jadi refresh atau buka ulang aplikasi langsung kembali ke Report yang sama.
 
+### Re-input exclusion (logic di belakang layar)
+
+Bila data visit sempat hilang, field force menginput ulang visit sekaligus sehingga banyak visit tercatat di jam
+(dan titik) yang sama. Visit dianggap **input ulang** bila dalam **±60 menit** dari timestamp-nya ada **≥ 10 visit**
+dari territory yang sama (termasuk visit itu sendiri; hanya berdasarkan waktu). Visit seperti ini tetap dihitung di
+total visit & visits with geotag, tetapi **tidak di-flag sebagai unusual visit dan tidak ikut deteksi shared spot**.
+Jendela waktu & jumlah visit bisa diubah di Detection parameters (*Re-input exclusion*; jendela 0 = nonaktif).
+Logic ada di `frontend/src/engine/reinput.js`.
+
 ### Istilah di UI
 
 - **Visits with geotag** = visit dengan koordinat GPS lengkap (visit & toko); dulu disebut *GPS coverage*.

@@ -7,6 +7,7 @@ import { pct } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { haversine, weekdayOf } from './loader.js';
 import { computeSpots, computeWeeklySpots } from './spots.js';
+import { ensureReinput } from './reinput.js';
 
 const K20 = 1048576; // 2^20, untuk menggabungkan beberapa id menjadi 1 kunci angka
 
@@ -103,6 +104,7 @@ export function aggregate() {
   const n = B.n;
   if (!B.lmA || B.lmA.length !== n) { B.lmA = new Int8Array(n); B.rslA = new Int8Array(n); B.anA = new Int8Array(n); }
   buildDateOK();
+  const RI = ensureReinput(); // visit input ulang: tidak di-flag unusual / shared spot
   const SP = computeSpots(); // Shared Spot per territory (ikut filter tanggal)
   let total = 0, anomaly = 0, sLm = 0, sRsl = 0, checkable = 0, notcheck = 0, nCust = 0, weekendIgnored = 0;
   const reasonCnt = new Float64Array(5); // 0..3 = mask anomaly (visit teridentifikasi), 4 = koordinat tidak lengkap
@@ -130,8 +132,8 @@ export function aggregate() {
 
   for (let i = 0; i < n; i++) {
     const chk = CHK[i];
-    const lm = (chk && DIST[i] > misM) ? 1 : 0;
-    const rsl = (chk && UQ[i] > rc) ? 1 : 0;
+    const lm = (chk && !RI[i] && DIST[i] > misM) ? 1 : 0;
+    const rsl = (chk && !RI[i] && UQ[i] > rc) ? 1 : 0;
     const isA = (lm + rsl) > 0; // anomaly = Location Mismatch atau Rapid Same Location
     B.lmA[i] = lm; B.rslA[i] = rsl; B.anA[i] = isA ? 1 : 0;
     const di = B.date[i];

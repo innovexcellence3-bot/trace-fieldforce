@@ -108,6 +108,7 @@ async function start() {
   /* parameter tersimpan dari versi default lama → mulai lagi dari default baru (mis. mismatch 500 m) */
   const sp = saved.params || {};
   if (sp.v === PARAMS_VERSION) S.P = { ...DEFAULT_PARAMS, ...sp };
+  else if (sp.v === 5) S.P = { ...DEFAULT_PARAMS, ...sp, v: PARAMS_VERSION }; // v5→v6: tambah parameter re-input (default 60 menit / 10 visit)
   else if (sp.v === 3 || sp.v === 4) { // v3/v4→v5: ignoreSat diganti ignoreWeekend (Sabtu + Minggu, default aktif)
     const { ignoreSat, ...rest } = sp;
     S.P = { ...DEFAULT_PARAMS, ...rest, ignoreWeekend: ignoreSat !== false, v: PARAMS_VERSION };

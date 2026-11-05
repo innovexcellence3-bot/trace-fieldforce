@@ -75,7 +75,7 @@ export function goToTerritory(t) {
 function renderParamChips() {
   const P = S.P;
   /* kartu aturan di atas panel parameter */
-  const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', spotN: P.spotStores, spotM: P.spotM + ' m' };
+  const T = { lm: fmt(P.mismatchM) + ' m', rslN: P.rapidCount, rslM: P.rapidM + ' m', spotN: P.spotStores, spotM: P.spotM + ' m', riN: P.reinputCount, riM: '±' + P.reinputMin + ' min' };
   document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; }); // kartu aturan + panel kanan
 }
 
@@ -160,6 +160,7 @@ function syncDashParams() {
   $('#dMismatch').value = P.mismatchM; $('#dRadius').value = P.rapidM; $('#dStores').value = P.rapidCount;
   $('#dSpotM').value = P.spotM; $('#dSpotStores').value = P.spotStores;
   $('#dIgnoreWeekend').checked = P.ignoreWeekend !== false;
+  $('#dReinputMin').value = P.reinputMin; $('#dReinputCount').value = P.reinputCount;
 }
 export function readParams(pre) {
   const P = S.P;
@@ -169,6 +170,8 @@ export function readParams(pre) {
   P.spotM = Math.max(1, +$('#' + pre + 'SpotM').value || 20);
   P.spotStores = Math.max(1, +$('#' + pre + 'SpotStores').value || 20);
   P.ignoreWeekend = $('#dIgnoreWeekend').checked;
+  P.reinputMin = Math.max(0, +$('#dReinputMin').value || 0);
+  P.reinputCount = Math.max(2, +$('#dReinputCount').value || 10);
 }
 
 /** Dipanggil setelah S.B terisi. `saved` = state terakhir (filter & tampilan) untuk dipulihkan. */
@@ -286,12 +289,13 @@ export function initDashboard() {
     $('#dMismatch').value = D.mismatchM; $('#dRadius').value = D.rapidM; $('#dStores').value = D.rapidCount;
     $('#dSpotM').value = D.spotM; $('#dSpotStores').value = D.spotStores;
     $('#dIgnoreWeekend').checked = D.ignoreWeekend;
+    $('#dReinputMin').value = D.reinputMin; $('#dReinputCount').value = D.reinputCount;
     scheduleRecalc();
   });
   $('#histMetric').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histDim').addEventListener('change', () => { renderHistory(); persist(); });
   $('#histAll').addEventListener('click', () => { clearHistFocus(); renderHistory(); });
-  ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
+  ['dMismatch', 'dRadius', 'dStores', 'dSpotM', 'dSpotStores', 'dReinputMin', 'dReinputCount'].forEach((id) => $('#' + id).addEventListener('input', scheduleRecalc));
   $('#dIgnoreWeekend').addEventListener('change', scheduleRecalc);
   $('#dateFrom').addEventListener('change', applyDateFilter);
   $('#dateTo').addEventListener('change', applyDateFilter);

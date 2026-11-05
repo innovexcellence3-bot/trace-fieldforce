@@ -342,6 +342,14 @@
           <label>Store limit<span><input type="number" id="dSpotStores" value="20" min="1"><em>stores</em></span></label>
         </div>
       </section>
+      <section class="prule r-reinput">
+        <div class="pr-top"><div><b>Re-input exclusion</b><em class="terr">per territory</em></div></div>
+        <p>Visits re-entered in bulk after data loss are not flagged as unusual or shared spot: at least <span class="th" data-t="riN"></span> visits of one territory within <span class="th" data-t="riM"></span> of a visit. Set the window to 0 to turn it off.</p>
+        <div class="pr-in two">
+          <label>Time window (±)<span><input type="number" id="dReinputMin" value="60" min="0"><em>min</em></span></label>
+          <label>Min. visits<span><input type="number" id="dReinputCount" value="10" min="2"><em>visits</em></span></label>
+        </div>
+      </section>
       <section class="prule r-sat">
         <label class="pr-check"><input type="checkbox" id="dIgnoreWeekend" checked><span><b>Ignore weekend visits</b><em>Saturday and Sunday visits are flagged and left out of every metric, chart, table and the map.</em></span></label>
       </section>

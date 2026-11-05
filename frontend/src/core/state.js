@@ -4,9 +4,10 @@
    P   = parameter deteksi anomaly
    FILT= filter tanggal, GF = filter geo multi-select, GEOALL = hierarki geo lengkap */
 /* v = versi default. Naikkan bila default berubah supaya state lama ikut memakai default baru. */
-export const PARAMS_VERSION = 5;
+export const PARAMS_VERSION = 6;
 /* ignoreWeekend: visit hari Sabtu & Minggu di-flag & diabaikan di semua metric/grafik/peta (data tidak dihapus). */
-export const DEFAULT_PARAMS = { mismatchM: 500, rapidM: 20, rapidCount: 5, spotM: 20, spotStores: 20, ignoreWeekend: true, v: PARAMS_VERSION };
+/* reinputMin / reinputCount: visit input ulang (≥ reinputCount visit 1 territory dalam ±reinputMin menit) tidak di-flag unusual / shared spot. */
+export const DEFAULT_PARAMS = { mismatchM: 500, rapidM: 20, rapidCount: 5, spotM: 20, spotStores: 20, ignoreWeekend: true, reinputMin: 60, reinputCount: 10, v: PARAMS_VERSION };
 
 export const S = {
   P: { ...DEFAULT_PARAMS },
