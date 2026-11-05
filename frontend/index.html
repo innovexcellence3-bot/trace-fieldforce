@@ -466,6 +466,16 @@
     <div class="phase" id="loaderPhase"></div>
   </div>
 </div>
+<!-- pop up: raw visits di satu shared spot -->
+<div class="modal" id="rawModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="rawTitle">
+    <div class="modal-head">
+      <div><h3 id="rawTitle">Raw visits</h3><div class="cap" id="rawCap"></div></div>
+      <div class="modal-act"><button class="btn ghost sm" id="rawCsv" type="button">⬇ CSV</button><button class="modal-x" id="rawClose" type="button" aria-label="Close">×</button></div>
+    </div>
+    <div class="tbl-wrap"><table id="rawTable"><thead><tr></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
 <div class="ctxmenu" id="ctxMenu"></div>
 <div class="toast" id="toast"></div>
 <script type="module" src="/src/main.js"></script>

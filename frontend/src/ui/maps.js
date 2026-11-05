@@ -5,6 +5,7 @@ import { $, esc, fmt, streetView } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { pi } from './icons.js';
 import { geoIds, passGeo } from '../engine/analytics.js';
+import { openSpotRaw } from './spotraw.js';
 
 const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_OPT = { maxZoom: 19, attribution: '© OpenStreetMap' };
@@ -16,6 +17,13 @@ let map, cluster, highlightLayer, spotLayer, iconAnom, iconNorm;
 
 export function initMap() {
   if (map) return;
+  /* tombol "Show raw visits" di popup shared spot */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest ? e.target.closest('[data-spotraw]') : null;
+    if (!b) return;
+    const [tid, k] = b.dataset.spotraw.split(':').map(Number);
+    openSpotRaw(tid, k);
+  });
   map = L.map('map', { preferCanvas: true }).setView([-2.5, 118], 5);
   L.tileLayer(TILE, TILE_OPT).addTo(map);
   cluster = L.markerClusterGroup({ chunkedLoading: true, disableClusteringAtZoom: 16, maxClusterRadius: 50, spiderfyOnMaxZoom: true });
@@ -92,7 +100,8 @@ function drawSpots(f) {
       out.push([sp.lat, sp.lon]);
       const pop = `${pi('spot')} <b>Shared spot ${k + 1}/${t.spots}</b><br>${esc(t.terr)} · ${esc(t.district)}<br>` +
         `<b>${sp.stores}</b> unique stores · ${fmt(sp.visits)} visits within ${SP.R} m<br>${sp.lat.toFixed(5)}, ${sp.lon.toFixed(5)}` +
-        `<div class="svbtns"><a href="${streetView(sp.lat, sp.lon)}" target="_blank" rel="noopener">👁️ Street View at spot</a></div>`;
+        `<div class="svbtns"><a href="${streetView(sp.lat, sp.lon)}" target="_blank" rel="noopener">👁️ Street View at spot</a>` +
+        `<button type="button" class="raw" data-spotraw="${t.tid}:${k}">📋 Show raw visits</button></div>`;
       L.circle([sp.lat, sp.lon], { radius: SP.R, color: SPOT, weight: 2, dashArray: '5 4', fillColor: SPOT, fillOpacity: 0.14 }).bindPopup(pop).addTo(spotLayer);
       L.marker([sp.lat, sp.lon], { icon: L.divIcon({ className: '', iconSize: null, html: `<div class="spotlbl">${pi('spot')} ${sp.stores}</div>` }), zIndexOffset: 1000 }).bindPopup(pop).addTo(spotLayer);
     }

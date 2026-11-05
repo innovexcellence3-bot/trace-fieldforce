@@ -112,8 +112,9 @@ function detectSpots(B, idx, R, K, visitFlag) {
     let peak = cand[0], best = -1;
     for (const a of cand) { const u = uniqueStores(a); if (u > best) { best = u; peak = a; } }
     let visits = 0;
-    neighbours(peak, (b) => { visits++; if (visitFlag) visitFlag[idx[b]] = 1; });
-    list.push({ lat: B.latV[idx[peak]], lon: B.lonV[idx[peak]], stores: best, visits, peak: idx[peak] });
+    const rows = visitFlag ? [] : null; // indeks visit di dalam spot (untuk "Show raw visits")
+    neighbours(peak, (b) => { visits++; if (visitFlag) { visitFlag[idx[b]] = 1; rows.push(idx[b]); } });
+    list.push({ lat: B.latV[idx[peak]], lon: B.lonV[idx[peak]], stores: best, visits, peak: idx[peak], rows });
   }
   list.sort((p, q) => q.stores - p.stores);
   return list;
@@ -122,7 +123,7 @@ function detectSpots(B, idx, R, K, visitFlag) {
 export function computeSpots() {
   const { B, A, P, FILT } = S;
   const R = Math.max(1, +P.spotM || 20), K = Math.max(1, +P.spotStores || 20);
-  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${B.n}`;
+  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.n}`;
   if (S.SP && S.SP.key === key) return S.SP;
 
   const dateOK = A.dateOK;
@@ -149,7 +150,7 @@ export function computeSpots() {
 export function computeWeeklySpots() {
   const { B, A, P, FILT } = S;
   const R = Math.max(1, +P.spotM || 20), K = Math.max(1, +P.spotStores || 20);
-  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${B.n}`;
+  const key = `${R}|${K}|${FILT.from}|${FILT.to}|${P.ignoreWeekend}|${B.n}`;
   if (S.SPW && S.SPW.key === key) return S.SPW;
   const groups = new Map();
   for (let i = 0; i < B.n; i++) {

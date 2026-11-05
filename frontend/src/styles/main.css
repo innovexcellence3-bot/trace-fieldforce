@@ -346,6 +346,19 @@ tr.trow,tr.trow.active,.sub{color:var(--muted);font-size:11px}
 .vp-btns small{grid-column:1/-1;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:-2px}
 .svbtns a{display:inline-flex;align-items:center;gap:5px;background:#eef2ff;color:#2563eb;border:1px solid #dbe4ff;padding:5px 10px;border-radius:8px;text-decoration:none;font-weight:600;font-size:12px}
 .svbtns a.st{background:#f3effe;color:#7c3aed;border-color:#e4dafc}
+.svbtns button.raw{display:inline-flex;align-items:center;gap:5px;background:var(--spotsoft);color:#4338ca;border:1px solid var(--spotline);padding:5px 10px;border-radius:8px;font:600 12px var(--font);cursor:pointer}
+.svbtns button.raw:hover{background:#e0e7ff}
+/* pop up tabel (raw visits shared spot) */
+.modal{position:fixed;inset:0;z-index:3000;background:rgba(15,23,42,.45);display:grid;place-items:center;padding:24px 16px}
+.modal[hidden]{display:none}
+.modal-card{background:var(--card,#fff);border-radius:18px;box-shadow:0 24px 60px rgba(15,23,42,.28);width:min(1180px,100%);max-height:calc(100vh - 48px);display:flex;flex-direction:column;padding:20px;min-height:0}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.modal-head h3{margin:0 0 3px;font:700 16px var(--display)}.modal-head .cap{color:var(--muted);font-size:12.5px}
+.modal-act{display:flex;align-items:center;gap:8px}
+.modal-x{border:0;background:#f2f4f7;width:34px;height:34px;border-radius:10px;font-size:20px;line-height:1;cursor:pointer;color:var(--ink2)}
+.modal-x:hover{background:#e6e9ef}
+.modal .tbl-wrap{flex:1 1 auto;min-height:0}
+#rawTable td{font-variant-numeric:tabular-nums}
 
 /* ---------------- report v2 ---------------- */
 

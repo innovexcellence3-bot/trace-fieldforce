@@ -10,6 +10,7 @@ import { alignTrendRow, initChartContextMenu, renderCharts, renderHistory, rende
 import { exportGeo } from './exports.js';
 import { buildAllMS, initMSToggles, makeSearchable, refreshCombo } from './filters.js';
 import { initMap, invalidateMaps, renderMap } from './maps.js';
+import { initSpotRaw } from './spotraw.js';
 import { initTerrSort, renderGeo, renderTerr, sortTerrBy } from './tables.js';
 
 export const kpi = (icoCls, ico, lbl, val, foot, footCls) =>
@@ -258,6 +259,7 @@ function resetFilters() {
 
 export function initDashboard() {
   initChartContextMenu();
+  initSpotRaw();
   initMSToggles();
   initTerrSort(() => renderTerr(onTerrPick));
   $('#geoSearch').addEventListener('input', () => renderGeo(goToTerritory));
