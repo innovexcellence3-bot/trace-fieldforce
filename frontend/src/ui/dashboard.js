@@ -229,7 +229,7 @@ function restoreFilters(saved) {
   const inRange = (d) => (d && d >= B.gMin && d <= B.gMax ? d : '');
   S.FILT = { from: inRange(f.from), to: inRange(f.to) };
   const v = saved.view || {};
-  if (['zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
+  if (['national', 'zone', 'region'].includes(v.histDim)) $('#histDim').value = v.histDim;
   if (['cover', 'anom', 'spot'].includes(v.histMetric)) $('#histMetric').value = v.histMetric;
   if (['size', 'count'].includes(v.spotSort)) $('#spotSort').value = v.spotSort;
 }

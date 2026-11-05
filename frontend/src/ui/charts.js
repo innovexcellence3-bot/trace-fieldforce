@@ -114,19 +114,31 @@ export function renderSpotChart() {
   });
 }
 
+/* Gabungkan semua zone per week jadi satu seri "National" (jumlahkan semua counter numerik). */
+function nationalize(src) {
+  const out = {};
+  Object.entries(src).forEach(([w, byKey]) => {
+    const o = {};
+    Object.values(byKey).forEach((v) => Object.entries(v).forEach(([f, x]) => { if (typeof x === 'number') o[f] = (o[f] || 0) + x; }));
+    out[w] = { National: o };
+  });
+  return out;
+}
+
 export function renderHistory() {
   const A = S.A;
   const metric = $('#histMetric').value;
   const dim = $('#histDim').value;
   const isSpot = metric === 'spot';
-  const src = isSpot ? weeklySpotTrend(dim) : (dim === 'region' ? A.wkRegion : A.wkZone);
+  const base = isSpot ? weeklySpotTrend(dim === 'region' ? 'region' : 'zone') : (dim === 'region' ? A.wkRegion : A.wkZone);
+  const src = dim === 'national' ? nationalize(base) : base;
   const weeks = Object.keys(src).sort();
   const tot = {};
   weeks.forEach((w) => Object.entries(src[w]).forEach(([k, v]) => { tot[k] = (tot[k] || 0) + v.t; }));
   let keys = Object.keys(tot).sort();
   const nAll = keys.length;
   if (nAll > HIST_MAX_SERIES) keys = keys.slice().sort((a, b) => tot[b] - tot[a]).slice(0, HIST_MAX_SERIES).sort();
-  $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'GPS coverage %' : 'Anomaly %') + ' per KPS week, by ' + (dim === 'region' ? 'region' : 'zone') +
+  $('#histCap').textContent = (isSpot ? '% territories with a shared spot' : metric === 'cover' ? 'GPS coverage %' : 'Anomaly %') + ' per KPS week, ' + (dim === 'national' ? 'national' : 'by ' + (dim === 'region' ? 'region' : 'zone')) +
     (nAll > keys.length ? ` · top ${keys.length} of ${nAll} by volume` : '');
   const ds = keys.map((kn, idx) => ({
     label: kn.replace('Zone ', ''),
@@ -169,7 +181,7 @@ export function renderHistory() {
   Object.keys(tot).sort().forEach((kn) => weeks.forEach((w) => {
     const o = src[w][kn];
     if (!o) return;
-    const dn = dim === 'region' ? 'region_name' : 'zone_name';
+    const dn = dim === 'national' ? 'national' : dim === 'region' ? 'region_name' : 'zone_name';
     rows.push(isSpot ? [w, dn, kn, o.n, o.f, pct(o.f, o.n).toFixed(1)] : [w, dn, kn, o.t, o.c, o.a, pct(o.c, o.t).toFixed(1), o.c ? pct(o.a, o.c).toFixed(1) : '']);
   }));
   regExp('chHist', 'Weekly trend', 'trace_chart_historical_' + metric + '_' + dim + '.csv',
