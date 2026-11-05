@@ -26,7 +26,7 @@ const mapFilter = () => ({
 function renderKPIs() {
   const A = S.A;
   const rate = pct(A.anomaly, A.checkable), cover = pct(A.checkable, A.total), spotP = pct(A.spot.spotTerr, A.spot.terrN);
-  const level = rate >= 60 ? ['Critical', 'var(--bad)'] : rate >= 40 ? ['High', 'var(--mid)'] : rate >= 20 ? ['Watch', 'var(--warn)'] : ['Healthy', 'var(--ok)'];
+  const level = rate >= 60 ? ['Critical', 'var(--bad)'] : rate >= 40 ? ['High', 'var(--mid)'] : rate >= 15 ? ['Watch', 'var(--warn)'] : ['Healthy', 'var(--ok)']; // Healthy < 15%
   const gps = cover >= 80 ? ['Strong', 'var(--ok)'] : cover >= 50 ? ['Fair', 'var(--warn)'] : ['Weak', 'var(--bad)'];
   const ring = (v, c) => `<div class="ring" style="--v:${Math.min(100, v).toFixed(1)};--c:${c}"><b>${v.toFixed(1)}%</b></div>`;
   const rk = (v, c, label, status, sub, extra = '') =>

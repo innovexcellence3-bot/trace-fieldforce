@@ -391,8 +391,8 @@
     <div class="card"><h3>Unusual visits by hour</h3><div class="cap">Bars = unusual visit % by start hour · <span class="hl-line">line</span> = visits with geotag</div><div class="chartbox" id="boxHour" data-exp="chHour"><canvas id="chHour"></canvas></div></div>
     <!-- Baris 3: perbandingan per zone -->
     <div class="grid3">
-      <div class="card"><h3>Unusual visit rate by zone</h3><div class="cap">Unusual visits as % of visits with geotag</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
       <div class="card"><h3>Visits with geotag by zone</h3><div class="cap">% of visits with complete coordinates</div><div class="chartbox" id="boxCover" data-exp="chCover"><canvas id="chCover"></canvas></div></div>
+      <div class="card"><h3>Unusual visit rate by zone</h3><div class="cap">Unusual visits as % of visits with geotag</div><div class="chartbox" id="boxZone" data-exp="chZone"><canvas id="chZone"></canvas></div></div>
       <div class="card"><h3>Shared spot territories by zone</h3><div class="cap">% of territories with ≥ 1 shared spot</div><div class="chartbox" id="boxSpotZone" data-exp="chSpotZone"><canvas id="chSpotZone"></canvas></div></div>
     </div>
     <div class="tip">Right-click a chart to copy it or export its data.</div>
@@ -411,7 +411,7 @@
       <div class="toolbar">
         <input type="search" id="geoSearch" placeholder="🔎 Search zone / region / area / territory">
         <div class="legend inline">
-          <span><span class="dot" style="background:var(--ok)"></span>Healthy &lt;20%</span>
+          <span><span class="dot" style="background:var(--ok)"></span>Healthy &lt;15%</span>
           <span><span class="dot" style="background:var(--warn)"></span>Watch</span>
           <span><span class="dot" style="background:var(--mid)"></span>High</span>
           <span><span class="dot" style="background:var(--bad)"></span>Critical &gt;60%</span>

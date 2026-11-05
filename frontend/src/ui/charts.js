@@ -5,7 +5,7 @@ import { S } from '../core/state.js';
 import { weeklySpotTrend } from '../engine/analytics.js';
 import { downloadCSV } from './exports.js';
 
-export const barColor = (r) => (r >= 60 ? '#e5484d' : r >= 40 ? '#f97316' : r >= 20 ? '#f59e0b' : '#16a34a');
+export const barColor = (r) => (r >= 60 ? '#e5484d' : r >= 40 ? '#f97316' : r >= 15 ? '#f59e0b' : '#16a34a'); // Healthy (hijau) < 15%
 const HPAL = ['#2563eb', '#14b8a6', '#f59e0b', '#8b5cf6', '#0891b2', '#ec4899', '#22c55e', '#f97316', '#1e3a8a', '#84cc16',
   '#0f766e', '#6366f1', '#a16207', '#1e40af', '#9333ea', '#059669', '#be185d', '#4d7c0f', '#06b6d4', '#78350f'];
 const HDASH = [[], [], [], [], [], [], [], [], [], [], [6, 3], [6, 3], [6, 3], [6, 3], [6, 3], [2, 3], [2, 3], [2, 3], [2, 3], [2, 3]];
